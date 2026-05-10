@@ -1,0 +1,17 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class TaskComment extends Model
+{
+    protected $table = 'tbltask_comments';
+    public $timestamps = true;
+    protected $fillable = ['id', 'content', 'taskid', 'staffid', 'contact_id', 'file_id', 'dateadded'];
+
+    public function addedFrom()
+    {
+        return $this->belongsTo(Staff::class, 'staffid', 'staffid');
+    }
+}

@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Expense extends Model
+{
+    protected $table = 'tblexpenses';
+    public $timestamps = true;
+    protected $fillable = [
+        'category', 'currency', 'amount', 'tax', 'tax2', 'reference_no', 'note', 
+        'expense_name', 'clientid', 'project_id', 'billable', 'invoiceid', 'paymentmode', 
+        'date', 'recurring_type', 'repeat_every', 'recurring', 'cycles', 'total_cycles', 
+        'custom_recurring', 'last_recurring_date', 'create_invoice_billable', 
+        'send_invoice_to_customer', 'recurring_from', 'dateadded', 'addedfrom'
+    ];
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class, 'clientid', 'userid');
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class, 'project_id', 'id');
+    }
+
+    public function categoryRel()
+    {
+        return $this->belongsTo(ExpenseCategory::class, 'category', 'id');
+    }
+
+    public function invoice()
+    {
+        return $this->belongsTo(Invoice::class, 'invoiceid', 'id');
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(Staff::class, 'addedfrom', 'staffid');
+    }
+}
