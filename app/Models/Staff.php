@@ -107,4 +107,29 @@ class Staff extends Authenticatable
     {
         return $this->hasMany(ProjectActivity::class, 'staff_id', 'staffid');
     }
+
+    public function attendance()
+    {
+        return $this->hasMany(StaffAttendance::class, 'staffid', 'staffid');
+    }
+
+    public function leaves()
+    {
+        return $this->hasMany(StaffLeave::class, 'staffid', 'staffid');
+    }
+
+    public function salaryConfig()
+    {
+        return $this->hasOne(StaffSalaryConfig::class, 'staffid', 'staffid');
+    }
+
+    public function payslips()
+    {
+        return $this->hasMany(StaffPayslip::class, 'staffid', 'staffid');
+    }
+
+    public function timers()
+    {
+        return $this->hasMany(TaskTimer::class, 'staff_id', 'staffid');
+    }
 }

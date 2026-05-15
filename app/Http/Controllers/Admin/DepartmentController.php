@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class DepartmentController extends Controller
 {
@@ -41,11 +40,7 @@ class DepartmentController extends Controller
             'hidefromclient' => 'boolean',
         ]);
 
-        $maxId = DB::table('tbldepartments')->max('departmentid') ?? 0;
-        $departmentId = $maxId + 1;
-
         Department::create([
-            'departmentid' => $departmentId,
             'name' => $request->name,
             'email' => $request->email,
             'hidefromclient' => $request->boolean('hidefromclient'),

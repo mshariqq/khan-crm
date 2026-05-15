@@ -16,7 +16,7 @@ class Client extends Authenticatable
         'website', 'datecreated', 'active', 'leadid', 'billing_street', 'billing_city', 
         'billing_state', 'billing_zip', 'billing_country', 'shipping_street', 'shipping_city', 
         'shipping_state', 'shipping_zip', 'shipping_country', 'longitude', 'latitude', 
-        'default_language', 'default_currency', 'show_primary_contact', 'stripe_id', 
+        'default_language', 'default_currency', 'show_primary_contact', 
         'registration_confirmed', 'addedfrom', 'customer_group_id'
     ];
 

@@ -61,6 +61,11 @@ class Lead extends Model
         return $this->belongsTo(Client::class, 'client_id', 'userid');
     }
 
+    public function country()
+    {
+        return $this->belongsTo(Country::class, 'country', 'country_id');
+    }
+
     public function countryRel()
     {
         return $this->belongsTo(Country::class, 'country', 'country_id');

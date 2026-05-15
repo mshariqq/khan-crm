@@ -27,6 +27,11 @@ class Invoice extends Model
         return $this->belongsTo(Client::class, 'clientid', 'userid');
     }
 
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class, 'currency', 'id');
+    }
+
     public function currencyRel()
     {
         return $this->belongsTo(Currency::class, 'currency', 'id');
@@ -65,6 +70,26 @@ class Invoice extends Model
     public function credits()
     {
         return $this->hasMany(Credit::class, 'invoice_id', 'id');
+    }
+
+    public function totalCredits()
+    {
+        return $this->credits()->sum('amount');
+    }
+
+    public function totalPaid()
+    {
+        return $this->payments()->sum('amount');
+    }
+
+    public function totalSettled()
+    {
+        return $this->totalPaid() + $this->totalCredits();
+    }
+
+    public function amountDue()
+    {
+        return $this->total - $this->totalSettled();
     }
 
     public function checkoutLogs()

@@ -43,6 +43,9 @@
             <button onclick="switchTab('legal')" id="tab-legal" class="tab-btn px-6 py-4 text-sm font-semibold text-slate-500 hover:text-slate-700 transition-all border-b-2 border-transparent hover:border-slate-300 whitespace-nowrap">
                 <i class="bi bi-shield-check mr-2"></i> Legal
             </button>
+            <button onclick="switchTab('hr')" id="tab-hr" class="tab-btn px-6 py-4 text-sm font-semibold text-slate-500 hover:text-slate-700 transition-all border-b-2 border-transparent hover:border-slate-300 whitespace-nowrap">
+                <i class="bi bi-people mr-2"></i> HR
+            </button>
             <a href="{{ route('admin.settings.ticket_email_integration.index') }}" class="px-6 py-4 text-sm font-semibold text-slate-500 hover:text-slate-700 transition-all border-b-2 border-transparent hover:border-slate-300 whitespace-nowrap flex items-center">
                 <i class="bi bi-envelope-at mr-2"></i> Ticket Email Integration
             </a>
@@ -334,6 +337,37 @@
                     <div class="flex items-center gap-3 py-4">
                         <input type="checkbox" name="two_factor_enabled" value="1" {{ ($settings['two_factor_enabled'] ?? '') == '1' ? 'checked' : '' }} id="two_factor" class="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
                         <label for="two_factor" class="text-sm font-medium text-slate-700">Enable Two-Factor Authentication</label>
+                    </div>
+                </div>
+            </div>
+
+            {{-- HR Tab --}}
+            <div id="content-hr" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-slate-700">Default Working Hours/Day</label>
+                        <input type="number" step="0.5" name="default_working_hours" value="{{ $settings['default_working_hours'] ?? '8' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                        <p class="text-xs text-slate-400">Used for payroll day-rate calculations.</p>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-slate-700">Payroll Cutoff Day</label>
+                        <select name="payroll_cutoff_day" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                            @foreach(range(1, 28) as $day)
+                                @php $suffix = match($day) { 1 => 'st', 2 => 'nd', 3 => 'rd', default => 'th' }; @endphp
+                                <option value="{{ $day }}" {{ ($settings['payroll_cutoff_day'] ?? '1') == $day ? 'selected' : '' }}>{{ $day }}{{ $suffix }} of month</option>
+                            @endforeach
+                        </select>
+                        <p class="text-xs text-slate-400">Payslips are generated up to this day each month.</p>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-slate-700">Overtime Rate Multiplier</label>
+                        <input type="number" step="0.1" min="1" name="overtime_rate_multiplier" value="{{ $settings['overtime_rate_multiplier'] ?? '1.5' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                        <p class="text-xs text-slate-400">e.g. 1.5x = time-and-a-half.</p>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-slate-700">Late Clock-In Grace Period (minutes)</label>
+                        <input type="number" min="0" name="late_grace_period" value="{{ $settings['late_grace_period'] ?? '15' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                        <p class="text-xs text-slate-400">Clock-ins within this window are not marked late.</p>
                     </div>
                 </div>
             </div>

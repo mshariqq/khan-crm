@@ -9,7 +9,6 @@ use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
 
 class StaffController extends Controller
 {
@@ -51,11 +50,7 @@ class StaffController extends Controller
             'departments' => 'nullable|array',
         ]);
 
-        $maxId = DB::table('tblstaff')->max('staffid') ?? 0;
-        $staffId = $maxId + 1;
-
         $staff = Staff::create([
-            'staffid' => $staffId,
             'email' => $request->email,
             'firstname' => $request->firstname,
             'lastname' => $request->lastname,

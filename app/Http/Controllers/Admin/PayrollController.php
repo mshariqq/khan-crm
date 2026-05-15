@@ -140,17 +140,18 @@ class PayrollController extends Controller
             ->with('success', "Generated $generatedCount payslips successfully!");
     }
 
-    public function addAdjustment(Request $request, $payslipId)
+    public function addAdjustment(Request $request)
     {
         if (!Auth::user()->can('hr_payroll_manage')) abort(403);
 
         $request->validate([
+            'payslip_id' => 'required|exists:tblstaff_payslips,id',
             'type' => 'required|in:Addition,Deduction',
             'label' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0',
         ]);
 
-        $payslip = StaffPayslip::findOrFail($payslipId);
+        $payslip = StaffPayslip::findOrFail($request->input('payslip_id'));
         
         PayslipItem::create([
             'payslip_id' => $payslip->id,

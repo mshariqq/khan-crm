@@ -68,8 +68,6 @@ class SubscriptionController extends Controller
             'status' => 'nullable|integer',
             'quantity' => 'nullable|numeric',
             'project_id' => 'nullable|integer',
-            'stripe_plan_id' => 'nullable|string|max:255',
-            'stripe_subscription_id' => 'nullable|string|max:255',
         ]);
 
         Subscription::create([
@@ -82,8 +80,6 @@ class SubscriptionController extends Controller
             'status' => $request->status ?? 1,
             'quantity' => $request->quantity,
             'project_id' => $request->project_id,
-            'stripe_plan_id' => $request->stripe_plan_id,
-            'stripe_subscription_id' => $request->stripe_subscription_id,
             'hash' => Str::random(32),
             'created' => now(),
             'created_from' => Auth::id(),
@@ -116,8 +112,6 @@ class SubscriptionController extends Controller
             'status' => 'nullable|integer',
             'quantity' => 'nullable|numeric',
             'project_id' => 'nullable|integer',
-            'stripe_plan_id' => 'nullable|string|max:255',
-            'stripe_subscription_id' => 'nullable|string|max:255',
         ]);
 
         $subscription = Subscription::findOrFail($id);

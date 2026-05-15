@@ -37,4 +37,19 @@ class CreditNote extends Model
     {
         return $this->hasMany(Itemable::class, 'rel_id', 'id')->where('rel_type', 'creditnote');
     }
+
+    public function credits()
+    {
+        return $this->hasMany(Credit::class, 'credit_id', 'id');
+    }
+
+    public function totalApplied()
+    {
+        return $this->credits()->sum('amount');
+    }
+
+    public function remainingCredit()
+    {
+        return $this->total - $this->totalApplied();
+    }
 }

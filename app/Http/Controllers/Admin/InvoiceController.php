@@ -216,7 +216,7 @@ class InvoiceController extends Controller
 
         $invoice = Invoice::with([
             'client', 'currency', 'creator', 'saleAgent', 'project',
-            'items', 'payments', 'notes.creator', 'reminders.staff'
+            'items', 'payments', 'credits.creditNote', 'notes.creator', 'reminders.staff'
         ])->findOrFail($id);
 
         $staff = Staff::all();

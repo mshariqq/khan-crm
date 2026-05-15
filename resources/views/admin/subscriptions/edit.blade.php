@@ -99,20 +99,6 @@
                             @error('quantity') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
                     </div>
-
-                    <h3 class="text-lg font-semibold text-slate-800 border-b pb-2">Stripe</h3>
-
-                    <div class="space-y-1">
-                        <label class="text-sm font-medium text-slate-600">Stripe Plan ID</label>
-                        <input type="text" name="stripe_plan_id" value="{{ old('stripe_plan_id', $subscription->stripe_plan_id) }}" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all @error('stripe_plan_id') border-red-500 @enderror" placeholder="plan_xxxxx">
-                        @error('stripe_plan_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                    </div>
-
-                    <div class="space-y-1">
-                        <label class="text-sm font-medium text-slate-600">Stripe Subscription ID</label>
-                        <input type="text" name="stripe_subscription_id" value="{{ old('stripe_subscription_id', $subscription->stripe_subscription_id) }}" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all @error('stripe_subscription_id') border-red-500 @enderror" placeholder="sub_xxxxx">
-                        @error('stripe_subscription_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                    </div>
                 </div>
             </div>
         </div>

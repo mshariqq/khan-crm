@@ -29,9 +29,19 @@ class Proposal extends Model
         return $this->belongsTo(Staff::class, 'assigned', 'staffid');
     }
 
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class, 'currency', 'id');
+    }
+
     public function currencyRel()
     {
         return $this->belongsTo(Currency::class, 'currency', 'id');
+    }
+
+    public function country()
+    {
+        return $this->belongsTo(Country::class, 'country', 'country_id');
     }
 
     public function countryRel()

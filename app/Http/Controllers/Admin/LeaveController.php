@@ -68,7 +68,26 @@ class LeaveController extends Controller
     {
         if (!Auth::user()->can('hr_leaves_view')) abort(403);
         $types = LeaveType::all();
-        return view('admin.leaves.create', compact('types'));
+        $staffId = Auth::id();
+        $currentYear = date('Y');
+
+        $balances = [];
+        foreach ($types as $type) {
+            $used = StaffLeave::where('staffid', $staffId)
+                ->where('leave_type_id', $type->id)
+                ->where('status', 'Approved')
+                ->whereYear('start_date', $currentYear)
+                ->get()
+                ->sum(function ($l) {
+                    return max(0, \Carbon\Carbon::parse($l->end_date)->diffInDays(\Carbon\Carbon::parse($l->start_date)) + 1);
+                });
+            $balances[$type->id] = [
+                'used' => $used,
+                'remaining' => max(0, $type->default_quota - $used),
+            ];
+        }
+
+        return view('admin.leaves.create', compact('types', 'balances'));
     }
 
     public function store(Request $request)
@@ -82,8 +101,28 @@ class LeaveController extends Controller
             'reason' => 'required|string|max:1000',
         ]);
 
+        $staffId = Auth::id();
+        $type = LeaveType::findOrFail($request->leave_type_id);
+
+        $requestedDays = \Carbon\Carbon::parse($request->end_date)->diffInDays(\Carbon\Carbon::parse($request->start_date)) + 1;
+
+        $usedDays = StaffLeave::where('staffid', $staffId)
+            ->where('leave_type_id', $type->id)
+            ->where('status', 'Approved')
+            ->whereYear('start_date', date('Y'))
+            ->get()
+            ->sum(function ($l) {
+                return max(0, \Carbon\Carbon::parse($l->end_date)->diffInDays(\Carbon\Carbon::parse($l->start_date)) + 1);
+            });
+
+        $remaining = $type->default_quota - $usedDays;
+
+        if ($requestedDays > $remaining) {
+            return redirect()->back()->withInput()->with('error', "Insufficient leave balance. You have only {$remaining} day(s) remaining for {$type->name}.");
+        }
+
         StaffLeave::create([
-            'staffid' => Auth::id(),
+            'staffid' => $staffId,
             'leave_type_id' => $request->leave_type_id,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,

@@ -133,11 +133,19 @@ class AttendanceController extends Controller
             ->where('date', $today)
             ->first();
 
+        $workedDuration = null;
+        if ($attendance && $attendance->clock_in && $attendance->clock_out) {
+            $clockIn = Carbon::parse($attendance->date . ' ' . $attendance->clock_in);
+            $clockOut = Carbon::parse($attendance->date . ' ' . $attendance->clock_out);
+            $workedDuration = $clockOut->diff($clockIn)->format('%H:%I:%S');
+        }
+
         return response()->json([
             'clocked_in' => $attendance ? true : false,
             'clocked_out' => $attendance && $attendance->clock_out ? true : false,
-            'clock_in_time' => $attendance ? $attendance->clock_in : null,
-            'clock_out_time' => $attendance ? $attendance->clock_out : null,
+            'clock_in_time' => $attendance ? $attendance->date . ' ' . $attendance->clock_in : null,
+            'clock_out_time' => $attendance ? $attendance->date . ' ' . $attendance->clock_out : null,
+            'worked_duration' => $workedDuration,
             'attendance' => $attendance
         ]);
     }

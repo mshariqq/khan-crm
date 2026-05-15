@@ -43,11 +43,11 @@
             <p class="text-xs text-slate-500">Items</p>
         </div>
         <div class="bg-white rounded-lg border border-slate-200 p-3 text-center">
-            <p class="text-2xl font-bold text-slate-800">{{ number_format($invoice->payments()->sum('amount'), 0) }}</p>
+            <p class="text-2xl font-bold text-slate-800">{{ number_format($invoice->totalPaid(), 0) }}</p>
             <p class="text-xs text-slate-500">Paid</p>
         </div>
         <div class="bg-white rounded-lg border border-slate-200 p-3 text-center">
-            <p class="text-2xl font-bold text-red-600">{{ number_format($invoice->total - $invoice->payments()->sum('amount'), 0) }}</p>
+            <p class="text-2xl font-bold text-red-600">{{ number_format($invoice->amountDue(), 0) }}</p>
             <p class="text-xs text-slate-500">Due</p>
         </div>
         <div class="bg-white rounded-lg border border-slate-200 p-3 text-center">
@@ -64,6 +64,7 @@
                     <button class="tab-btn active px-4 py-3 text-sm font-medium border-b-2 border-blue-500 text-blue-600 whitespace-nowrap" data-tab="overview">Overview</button>
                     <button class="tab-btn px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent whitespace-nowrap" data-tab="items">Items ({{ $invoice->items->count() }})</button>
                     <button class="tab-btn px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent whitespace-nowrap" data-tab="payments">Payments ({{ $invoice->payments()->count() }})</button>
+                    <button class="tab-btn px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent whitespace-nowrap" data-tab="credits">Credits</button>
                     <button class="tab-btn px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent whitespace-nowrap" data-tab="notes">Notes ({{ $invoice->notesList()->count() }})</button>
                     <button class="tab-btn px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent whitespace-nowrap" data-tab="reminders">Reminders ({{ $invoice->remindersList()->count() }})</button>
                 </div>
@@ -144,6 +145,18 @@
                                     <div class="flex justify-between border-t pt-2">
                                         <span class="text-slate-500 font-medium">Total</span>
                                         <span class="text-slate-800 font-bold">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->total, 2) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-slate-500">Paid</span>
+                                        <span class="font-bold text-emerald-600">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->totalPaid(), 2) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-slate-500">Credits Applied</span>
+                                        <span class="font-bold text-blue-600">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->totalCredits(), 2) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl mt-4">
+                                        <span class="text-sm font-bold text-slate-700">Amount Due</span>
+                                        <span class="text-lg font-black text-rose-600">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->amountDue(), 2) }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -229,6 +242,34 @@
                         </div>
                         @else
                         <p class="text-sm text-slate-400 text-center py-4">No payments yet</p>
+                        @endif
+                    </div>
+
+                    {{-- Credits Tab --}}
+                    <div id="tab-credits" class="tab-content hidden">
+                        @if($invoice->credits()->count() > 0)
+                        <div class="space-y-4">
+                            @foreach($invoice->credits as $credit)
+                            <div class="bg-blue-50 rounded-xl p-4 flex justify-between items-center border border-blue-100">
+                                <div>
+                                    <p class="text-sm font-bold text-blue-800">
+                                        <a href="{{ route('admin.creditnotes.show', $credit->credit_id) }}" class="hover:underline">
+                                            {{ $credit->creditNote->prefix }}{{ str_pad($credit->creditNote->number, 4, '0', STR_PAD_LEFT) }}
+                                        </a>
+                                    </p>
+                                    <p class="text-xs text-blue-500 font-medium mt-1">Applied on {{ \Carbon\Carbon::parse($credit->date_applied)->format('M d, Y') }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-black text-blue-800">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($credit->amount, 2) }}</p>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                        @else
+                        <div class="py-10 text-center">
+                            <i class="bi bi-receipt-cutoff text-slate-300 text-4xl mb-3 block"></i>
+                            <p class="text-sm text-slate-400 font-medium">No credits applied to this invoice.</p>
+                        </div>
                         @endif
                     </div>
 

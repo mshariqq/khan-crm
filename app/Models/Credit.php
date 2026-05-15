@@ -15,6 +15,11 @@ class Credit extends Model
         return $this->belongsTo(Invoice::class, 'invoice_id', 'id');
     }
 
+    public function creditNote()
+    {
+        return $this->belongsTo(CreditNote::class, 'credit_id', 'id');
+    }
+
     public function staff()
     {
         return $this->belongsTo(Staff::class, 'staff_id', 'staffid');

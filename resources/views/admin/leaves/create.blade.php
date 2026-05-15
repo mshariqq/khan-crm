@@ -23,9 +23,13 @@
                     <select name="leave_type_id" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all @error('leave_type_id') border-red-500 @enderror" required>
                         <option value="">Select Type</option>
                         @foreach($types as $type)
-                            <option value="{{ $type->id }}" {{ old('leave_type_id') == $type->id ? 'selected' : '' }}>{{ $type->name }}</option>
+                            @php $bal = $balances[$type->id] ?? ['used' => 0, 'remaining' => 0]; @endphp
+                            <option value="{{ $type->id }}" {{ old('leave_type_id') == $type->id ? 'selected' : '' }} data-remaining="{{ $bal['remaining'] }}">
+                                {{ $type->name }} ({{ $bal['remaining'] }}/{{ $type->default_quota }} days left)
+                            </option>
                         @endforeach
                     </select>
+                    <p id="balance-hint" class="text-xs text-slate-400 mt-1"></p>
                     @error('leave_type_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
@@ -61,4 +65,26 @@
         </div>
     </form>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const typeSelect = document.querySelector('select[name="leave_type_id"]');
+    const startInput = document.querySelector('input[name="start_date"]');
+    const endInput = document.querySelector('input[name="end_date"]');
+    const hint = document.getElementById('balance-hint');
+
+    function updateHint() {
+        const opt = typeSelect.options[typeSelect.selectedIndex];
+        if (!opt.value) { hint.textContent = ''; return; }
+        const remaining = parseInt(opt.dataset.remaining) || 0;
+        if (remaining <= 0) {
+            hint.innerHTML = '<span class="text-red-500 font-medium">No remaining days for this leave type.</span>';
+        } else {
+            hint.innerHTML = `<span class="text-emerald-600 font-medium">${remaining} day(s)</span> remaining this year.`;
+        }
+    }
+
+    typeSelect.addEventListener('change', updateHint);
+    updateHint();
+});
+</script>
 @endsection

@@ -41,6 +41,11 @@ class Estimate extends Model
         return $this->belongsTo(Staff::class, 'sale_agent', 'staffid');
     }
 
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class, 'currency', 'id');
+    }
+
     public function currencyRel()
     {
         return $this->belongsTo(Currency::class, 'currency', 'id');

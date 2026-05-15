@@ -133,24 +133,6 @@
             </div>
 
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                <h3 class="text-lg font-semibold text-slate-800 border-b pb-2 mb-4">Stripe</h3>
-                <div class="space-y-4 text-sm">
-                    <div class="flex justify-between">
-                        <span class="text-slate-500">Plan ID</span>
-                        <span class="text-slate-800 font-medium font-mono text-xs">{{ $subscription->stripe_plan_id ?? 'N/A' }}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-slate-500">Subscription ID</span>
-                        <span class="text-slate-800 font-medium font-mono text-xs">{{ $subscription->stripe_subscription_id ?? 'N/A' }}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-slate-500">Hash</span>
-                        <span class="text-slate-800 font-medium font-mono text-xs">{{ $subscription->hash ?? 'N/A' }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                 <h3 class="text-lg font-semibold text-slate-800 border-b pb-2 mb-4">Audit</h3>
                 <div class="space-y-4 text-sm">
                     <div class="flex justify-between">

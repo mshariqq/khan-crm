@@ -435,6 +435,7 @@ Route::resource('tickets', \App\Http\Controllers\Admin\TicketController::class)-
         'show' => 'admin.creditnotes.show',
         'destroy' => 'admin.creditnotes.destroy',
     ]);
+    Route::post('credit-notes/{id}/apply', [\App\Http\Controllers\Admin\CreditNoteController::class, 'applyToInvoice'])->name('admin.creditnotes.apply');
 
     Route::resource('knowledge-base', \App\Http\Controllers\Admin\KnowledgeBaseController::class)->names([
         'index' => 'admin.knowledgebase.index',
