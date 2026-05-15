@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\SettingsHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Staff;
 use App\Models\StaffSalaryConfig;
@@ -44,7 +45,8 @@ class PayrollController extends Controller
             return $q->where('net_amount', '<=', $request->max_amount);
         });
 
-        $payslips = $query->paginate(20)->withQueryString();
+        $perPage = SettingsHelper::get('tables_pagination_limit', 25);
+        $payslips = $query->paginate($perPage)->withQueryString();
 
         return view('admin.payroll.index', compact('payslips', 'month', 'year'));
     }
@@ -108,6 +110,7 @@ class PayrollController extends Controller
                 // Basic net calculation
                 $net = $base + $additions - $deductions;
 
+                $defaultStatus = SettingsHelper::get('payroll_default_status', 'Draft');
                 $payslip = StaffPayslip::create([
                     'staffid' => $staff->staffid,
                     'month' => $month,
@@ -116,7 +119,7 @@ class PayrollController extends Controller
                     'total_additions' => $additions,
                     'total_deductions' => $deductions,
                     'net_amount' => $net,
-                    'status' => 'Draft',
+                    'status' => $defaultStatus,
                 ]);
 
                 // Add base items
@@ -178,8 +181,9 @@ class PayrollController extends Controller
     {
         if (!Auth::user()->can('hr_payroll_manage')) abort(403);
         $payslip = StaffPayslip::findOrFail($id);
+        $paidStatus = SettingsHelper::get('payroll_paid_status', 'Paid');
         $payslip->update([
-            'status' => 'Paid',
+            'status' => $paidStatus,
             'payment_date' => now(),
         ]);
         return redirect()->back()->with('success', 'Payslip marked as paid!');

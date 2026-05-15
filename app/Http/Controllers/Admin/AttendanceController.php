@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\SettingsHelper;
 use App\Http\Controllers\Controller;
 use App\Models\StaffAttendance;
 use Illuminate\Http\Request;
@@ -52,7 +53,8 @@ class AttendanceController extends Controller
             $query->where('staffid', $staffId);
         }
 
-        $attendances = $query->orderBy('date', 'desc')->paginate(20)->withQueryString();
+        $perPage = SettingsHelper::get('tables_pagination_limit', 25);
+        $attendances = $query->orderBy('date', 'desc')->paginate($perPage)->withQueryString();
 
         return view('admin.attendance.index', compact('attendances'));
     }
@@ -75,12 +77,15 @@ class AttendanceController extends Controller
             ], 422);
         }
 
+        $defaultStatus = SettingsHelper::get('attendance_default_status', 'Present');
+        $recordIp = SettingsHelper::get('attendance_require_ip', '0') === '1';
+
         $attendance = StaffAttendance::create([
             'staffid' => $staffId,
             'date' => $today,
             'clock_in' => Carbon::now()->toTimeString(),
-            'status' => 'Present',
-            'ip_address' => $request->ip(),
+            'status' => $defaultStatus,
+            'ip_address' => $recordIp ? $request->ip() : null,
         ]);
 
         return response()->json([

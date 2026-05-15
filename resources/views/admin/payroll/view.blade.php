@@ -26,9 +26,9 @@
             <div>
                 <h2 class="text-lg font-bold text-slate-900 mb-4">Company Details</h2>
                 <div class="space-y-1 text-sm text-slate-600">
-                    <p class="font-semibold text-slate-800">Our Company CRM</p>
-                    <p>123 Business Ave, Tech City</p>
-                    <p>contact@company.com</p>
+                    <p class="font-semibold text-slate-800">{{ $global_settings['companyname'] ?? 'Company' }}</p>
+                    <p>{{ $global_settings['companyaddress'] ?? '' }}</p>
+                    <p>{{ $global_settings['company_email'] ?? '' }}</p>
                 </div>
             </div>
             <div class="text-right">
@@ -50,7 +50,7 @@
                         @foreach($payslip->items->where('type', 'Addition') as $item)
                         <div class="flex justify-between text-sm">
                             <span class="text-slate-600">{{ $item->label }}</span>
-                            <span class="font-medium text-slate-900">${{ number_format($item->amount, 2) }}</span>
+                            <span class="font-medium text-slate-900">{{ $global_settings['payroll_currency_symbol'] ?? '$' }}{{ number_format($item->amount, 2) }}</span>
                         </div>
                         @endforeach
                     </div>
@@ -63,7 +63,7 @@
                         @foreach($payslip->items->where('type', 'Deduction') as $item)
                         <div class="flex justify-between text-sm">
                             <span class="text-slate-600">{{ $item->label }}</span>
-                            <span class="font-medium text-rose-600">-${{ number_format($item->amount, 2) }}</span>
+                            <span class="font-medium text-rose-600">-{{ $global_settings['payroll_currency_symbol'] ?? '$' }}{{ number_format($item->amount, 2) }}</span>
                         </div>
                         @endforeach
                     </div>
@@ -74,23 +74,24 @@
                 <div class="w-64 space-y-2">
                     <div class="flex justify-between text-sm text-slate-500">
                         <span>Gross Amount:</span>
-                        <span>${{ number_format($payslip->basic + $payslip->total_additions, 2) }}</span>
+                        <span>{{ $global_settings['payroll_currency_symbol'] ?? '$' }}{{ number_format($payslip->basic + $payslip->total_additions, 2) }}</span>
                     </div>
                     <div class="flex justify-between text-sm text-slate-500">
                         <span>Total Deductions:</span>
-                        <span class="text-rose-600">-${{ number_format($payslip->total_deductions, 2) }}</span>
+                        <span class="text-rose-600">-{{ $global_settings['payroll_currency_symbol'] ?? '$' }}{{ number_format($payslip->total_deductions, 2) }}</span>
                     </div>
                     <div class="flex justify-between text-lg font-bold text-slate-900 border-t border-slate-200 pt-2 mt-2">
                         <span>Net Salary:</span>
-                        <span class="text-blue-600">${{ number_format($payslip->net_amount, 2) }}</span>
+                        <span class="text-blue-600">{{ $global_settings['payroll_currency_symbol'] ?? '$' }}{{ number_format($payslip->net_amount, 2) }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="p-6 bg-slate-50 text-center">
+            @php $paidStatus = $global_settings['payroll_paid_status'] ?? 'Paid'; @endphp
             <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider 
-                {{ $payslip->status == 'Paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                {{ $payslip->status == $paidStatus ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
                 {{ $payslip->status }}
             </span>
         </div>

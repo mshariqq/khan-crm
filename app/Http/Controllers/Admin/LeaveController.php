@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\SettingsHelper;
 use App\Http\Controllers\Controller;
 use App\Models\StaffLeave;
 use App\Models\LeaveType;
@@ -59,7 +60,8 @@ class LeaveController extends Controller
             $query->where('staffid', $staffId);
         }
 
-        $leaves = $query->orderBy('start_date', 'desc')->paginate(20)->withQueryString();
+        $perPage = SettingsHelper::get('tables_pagination_limit', 25);
+        $leaves = $query->orderBy('start_date', 'desc')->paginate($perPage)->withQueryString();
 
         return view('admin.leaves.index', compact('leaves'));
     }
@@ -94,9 +96,14 @@ class LeaveController extends Controller
     {
         if (!Auth::user()->can('hr_leaves_view')) abort(403);
 
+        $backdateDays = (int) SettingsHelper::get('leave_allow_backdate_days', '0');
+        $maxStartDate = $backdateDays > 0
+            ? Carbon::today()->subDays($backdateDays)->toDateString()
+            : Carbon::today()->toDateString();
+
         $request->validate([
             'leave_type_id' => 'required|integer|exists:tblleave_types,id',
-            'start_date' => 'required|date|after_or_equal:today',
+            'start_date' => 'required|date|after_or_equal:' . $maxStartDate,
             'end_date' => 'required|date|after_or_equal:start_date',
             'reason' => 'required|string|max:1000',
         ]);
@@ -121,13 +128,15 @@ class LeaveController extends Controller
             return redirect()->back()->withInput()->with('error', "Insufficient leave balance. You have only {$remaining} day(s) remaining for {$type->name}.");
         }
 
+        $defaultStatus = SettingsHelper::get('leave_default_status', 'Pending');
+
         StaffLeave::create([
             'staffid' => $staffId,
             'leave_type_id' => $request->leave_type_id,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'reason' => $request->reason,
-            'status' => 'Pending',
+            'status' => $defaultStatus,
         ]);
 
         return redirect()->route('admin.leaves.index')->with('success', 'Leave request submitted successfully!');

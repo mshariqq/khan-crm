@@ -42,7 +42,24 @@ class AppServiceProvider extends ServiceProvider
                  'terms_of_service_url',
                  'privacy_policy_url',
                  'copyright_text',
-                 'default_project_tab'
+                 'default_project_tab',
+                 'default_working_hours',
+                 'payroll_cutoff_day',
+                 'overtime_rate_multiplier',
+                 'late_grace_period',
+                 'attendance_default_status',
+                 'attendance_require_ip',
+                 'attendance_absent_threshold',
+                 'leave_default_status',
+                 'leave_allow_backdate_days',
+                 'leave_approval_statuses',
+                 'leave_quota_default',
+                 'payroll_default_status',
+                 'payroll_paid_status',
+                 'payroll_currency_symbol',
+                 'payroll_adjustment_types',
+                 'default_staff_role',
+                 'tables_pagination_limit',
              ]);
             $view->with('global_settings', $settings);
         });

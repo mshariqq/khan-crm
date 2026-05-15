@@ -342,32 +342,135 @@
             </div>
 
             {{-- HR Tab --}}
-            <div id="content-hr" class="tab-content hidden space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="space-y-2">
-                        <label class="text-sm font-medium text-slate-700">Default Working Hours/Day</label>
-                        <input type="number" step="0.5" name="default_working_hours" value="{{ $settings['default_working_hours'] ?? '8' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
-                        <p class="text-xs text-slate-400">Used for payroll day-rate calculations.</p>
+            <div id="content-hr" class="tab-content hidden space-y-8">
+
+                {{-- Section 1: General HR --}}
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800 border-b border-slate-200 pb-2 mb-4 flex items-center gap-2">
+                        <i class="bi bi-gear text-slate-400"></i> General HR Settings
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-700">Default Working Hours/Day</label>
+                            <input type="number" step="0.5" name="default_working_hours" value="{{ $settings['default_working_hours'] ?? '8' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                            <p class="text-xs text-slate-400">Used for payroll day-rate and attendance calculations.</p>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-700">Overtime Rate Multiplier</label>
+                            <input type="number" step="0.1" min="1" name="overtime_rate_multiplier" value="{{ $settings['overtime_rate_multiplier'] ?? '1.5' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                            <p class="text-xs text-slate-400">e.g. 1.5x = time-and-a-half, 2.0x = double-time.</p>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-700">Default Staff Role</label>
+                            <select name="default_staff_role" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                                <option value="">No default</option>
+                                @foreach(\App\Models\Role::all() as $role)
+                                    <option value="{{ $role->roleid }}" {{ ($settings['default_staff_role'] ?? '') == $role->roleid ? 'selected' : '' }}>{{ $role->name }}</option>
+                                @endforeach
+                            </select>
+                            <p class="text-xs text-slate-400">Auto-assigned to new staff members.</p>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-700">Tables Pagination Limit</label>
+                            <input type="number" min="5" max="200" name="tables_pagination_limit" value="{{ $settings['tables_pagination_limit'] ?? '25' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                            <p class="text-xs text-slate-400">Number of records per page across all HRM tables.</p>
+                        </div>
                     </div>
-                    <div class="space-y-2">
-                        <label class="text-sm font-medium text-slate-700">Payroll Cutoff Day</label>
-                        <select name="payroll_cutoff_day" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                            @foreach(range(1, 28) as $day)
-                                @php $suffix = match($day) { 1 => 'st', 2 => 'nd', 3 => 'rd', default => 'th' }; @endphp
-                                <option value="{{ $day }}" {{ ($settings['payroll_cutoff_day'] ?? '1') == $day ? 'selected' : '' }}>{{ $day }}{{ $suffix }} of month</option>
-                            @endforeach
-                        </select>
-                        <p class="text-xs text-slate-400">Payslips are generated up to this day each month.</p>
+                </div>
+
+                {{-- Section 2: Attendance --}}
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800 border-b border-slate-200 pb-2 mb-4 flex items-center gap-2">
+                        <i class="bi bi-clock-history text-indigo-400"></i> Attendance Settings
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-700">Default Clock-In Status</label>
+                            <input type="text" name="attendance_default_status" value="{{ $settings['attendance_default_status'] ?? 'Present' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                            <p class="text-xs text-slate-400">Status label assigned when staff clocks in.</p>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-700">Late Clock-In Grace Period (minutes)</label>
+                            <input type="number" min="0" name="late_grace_period" value="{{ $settings['late_grace_period'] ?? '15' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                            <p class="text-xs text-slate-400">Clock-ins within this window after shift start are not marked late.</p>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-700">Auto Absent Threshold (hours)</label>
+                            <input type="number" min="0" step="0.5" name="attendance_absent_threshold" value="{{ $settings['attendance_absent_threshold'] ?? '24' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                            <p class="text-xs text-slate-400">If no clock-out within this many hours from clock-in, mark as absent. 0 = disabled.</p>
+                        </div>
+                        <div class="flex items-center gap-3 py-4">
+                            <input type="checkbox" name="attendance_require_ip" value="1" {{ ($settings['attendance_require_ip'] ?? '') == '1' ? 'checked' : '' }} id="att_require_ip" class="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
+                            <label for="att_require_ip" class="text-sm font-medium text-slate-700">Record IP Address on Clock-In/Out</label>
+                        </div>
                     </div>
-                    <div class="space-y-2">
-                        <label class="text-sm font-medium text-slate-700">Overtime Rate Multiplier</label>
-                        <input type="number" step="0.1" min="1" name="overtime_rate_multiplier" value="{{ $settings['overtime_rate_multiplier'] ?? '1.5' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
-                        <p class="text-xs text-slate-400">e.g. 1.5x = time-and-a-half.</p>
+                </div>
+
+                {{-- Section 3: Leave --}}
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800 border-b border-slate-200 pb-2 mb-4 flex items-center gap-2">
+                        <i class="bi bi-calendar-event text-amber-400"></i> Leave Settings
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-700">Default Leave Status</label>
+                            <input type="text" name="leave_default_status" value="{{ $settings['leave_default_status'] ?? 'Pending' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                            <p class="text-xs text-slate-400">Default status when a leave request is submitted.</p>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-700">Allow Backdated Leaves (days)</label>
+                            <input type="number" min="0" name="leave_allow_backdate_days" value="{{ $settings['leave_allow_backdate_days'] ?? '0' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                            <p class="text-xs text-slate-400">How many days in the past a leave can be applied. 0 = only future leaves.</p>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-700">Leave Approval Statuses</label>
+                            <input type="text" name="leave_approval_statuses" value="{{ $settings['leave_approval_statuses'] ?? 'Pending,Approved,Rejected' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                            <p class="text-xs text-slate-400">Comma-separated list of valid statuses. Order matters: first = default.</p>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-700">Default Leave Quota for New Types</label>
+                            <input type="number" min="0" name="leave_quota_default" value="{{ $settings['leave_quota_default'] ?? '10' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                            <p class="text-xs text-slate-400">Default number of days per year for new leave types.</p>
+                        </div>
                     </div>
-                    <div class="space-y-2">
-                        <label class="text-sm font-medium text-slate-700">Late Clock-In Grace Period (minutes)</label>
-                        <input type="number" min="0" name="late_grace_period" value="{{ $settings['late_grace_period'] ?? '15' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
-                        <p class="text-xs text-slate-400">Clock-ins within this window are not marked late.</p>
+                </div>
+
+                {{-- Section 4: Payroll --}}
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800 border-b border-slate-200 pb-2 mb-4 flex items-center gap-2">
+                        <i class="bi bi-cash-stack text-emerald-400"></i> Payroll Settings
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-700">Payroll Cutoff Day</label>
+                            <select name="payroll_cutoff_day" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                                @foreach(range(1, 28) as $day)
+                                    @php $suffix = match($day) { 1 => 'st', 2 => 'nd', 3 => 'rd', default => 'th' }; @endphp
+                                    <option value="{{ $day }}" {{ ($settings['payroll_cutoff_day'] ?? '1') == $day ? 'selected' : '' }}>{{ $day }}{{ $suffix }} of month</option>
+                                @endforeach
+                            </select>
+                            <p class="text-xs text-slate-400">Payslips are generated up to this day each month.</p>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-700">Default Payslip Status</label>
+                            <input type="text" name="payroll_default_status" value="{{ $settings['payroll_default_status'] ?? 'Draft' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                            <p class="text-xs text-slate-400">Status label when a payslip is first generated.</p>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-700">Paid Status Label</label>
+                            <input type="text" name="payroll_paid_status" value="{{ $settings['payroll_paid_status'] ?? 'Paid' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                            <p class="text-xs text-slate-400">Status label when a payslip is marked as paid.</p>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-700">Currency Symbol (Payroll)</label>
+                            <input type="text" name="payroll_currency_symbol" value="{{ $settings['payroll_currency_symbol'] ?? '$' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" maxlength="10">
+                            <p class="text-xs text-slate-400">Currency symbol displayed on payslips (e.g., $, €, £).</p>
+                        </div>
+                        <div class="space-y-2 md:col-span-2">
+                            <label class="text-sm font-medium text-slate-700">Adjustment Allowed Types</label>
+                            <input type="text" name="payroll_adjustment_types" value="{{ $settings['payroll_adjustment_types'] ?? 'Addition,Deduction' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                            <p class="text-xs text-slate-400">Comma-separated list of allowed payslip adjustment types.</p>
+                        </div>
                     </div>
                 </div>
             </div>

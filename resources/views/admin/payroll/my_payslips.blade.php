@@ -31,11 +31,12 @@
                         {{ date('F Y', mktime(0,0,0,$payslip->month, 1)) }}
                     </td>
                     <td class="px-6 py-4 text-sm font-bold text-slate-900">
-                        ${{ number_format($payslip->net_amount, 2) }}
+                        {{ $global_settings['payroll_currency_symbol'] ?? '$' }}{{ number_format($payslip->net_amount, 2) }}
                     </td>
                     <td class="px-6 py-4">
                         <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider 
-                            {{ $payslip->status == 'Paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                            @php $paidStatus = $global_settings['payroll_paid_status'] ?? 'Paid'; @endphp
+                            {{ $payslip->status == $paidStatus ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
                             {{ $payslip->status }}
                         </span>
                     </td>

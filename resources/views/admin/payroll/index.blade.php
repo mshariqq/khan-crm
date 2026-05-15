@@ -100,13 +100,14 @@
                             <span class="text-sm font-medium text-slate-800">{{ $payslip->staff->fullname }}</span>
                         </div>
                     </td>
-                    <td class="px-6 py-4 text-sm text-slate-600">${{ number_format($payslip->basic, 2) }}</td>
-                    <td class="px-6 py-4 text-sm text-emerald-600 font-medium">+{{ number_format($payslip->total_additions, 2) }}</td>
-                    <td class="px-6 py-4 text-sm text-rose-600 font-medium">-{{ number_format($payslip->total_deductions, 2) }}</td>
-                    <td class="px-6 py-4 text-sm font-bold text-slate-900">${{ number_format($payslip->net_amount, 2) }}</td>
+                    <td class="px-6 py-4 text-sm text-slate-600">{{ $global_settings['payroll_currency_symbol'] ?? '$' }}{{ number_format($payslip->basic, 2) }}</td>
+                    <td class="px-6 py-4 text-sm text-emerald-600 font-medium">+{{ $global_settings['payroll_currency_symbol'] ?? '$' }}{{ number_format($payslip->total_additions, 2) }}</td>
+                    <td class="px-6 py-4 text-sm text-rose-600 font-medium">-{{ $global_settings['payroll_currency_symbol'] ?? '$' }}{{ number_format($payslip->total_deductions, 2) }}</td>
+                    <td class="px-6 py-4 text-sm font-bold text-slate-900">{{ $global_settings['payroll_currency_symbol'] ?? '$' }}{{ number_format($payslip->net_amount, 2) }}</td>
                     <td class="px-6 py-4">
                         <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider 
-                            {{ $payslip->status == 'Paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                            @php $paidStatus = $global_settings['payroll_paid_status'] ?? 'Paid'; @endphp
+                            {{ $payslip->status == $paidStatus ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
                             {{ $payslip->status }}
                         </span>
                     </td>
@@ -117,7 +118,8 @@
                         <button onclick="openAdjustmentModal({{ $payslip->id }})" class="p-2 text-slate-400 hover:text-indigo-600 transition-colors" title="Add Adjustment">
                             <i class="bi bi-plus-circle"></i>
                         </button>
-                        @if($payslip->status == 'Draft')
+                        @php $draftStatus = $global_settings['payroll_default_status'] ?? 'Draft'; @endphp
+                        @if($payslip->status == $draftStatus)
                         <form action="{{ route('admin.payroll.mark-paid', $payslip->id) }}" method="POST" class="inline-block">
                             @csrf
                             <button type="submit" class="p-2 text-slate-400 hover:text-emerald-600 transition-colors" title="Mark as Paid">
