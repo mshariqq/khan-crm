@@ -18,6 +18,7 @@ use App\Models\Reminder;
 use App\Models\SalesActivity;
 use App\Models\InvoicePaymentRecord;
 use App\Services\EmailService;
+use App\Services\InvoiceNotificationService;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -26,10 +27,12 @@ use Illuminate\Support\Str;
 class InvoiceController extends Controller
 {
     protected $emailService;
+    protected $invoiceNotification;
 
-    public function __construct(EmailService $emailService)
+    public function __construct(EmailService $emailService, InvoiceNotificationService $invoiceNotification)
     {
         $this->emailService = $emailService;
+        $this->invoiceNotification = $invoiceNotification;
     }
 
     public function index(Request $request)
@@ -141,7 +144,6 @@ class InvoiceController extends Controller
             'allowed_payment_modes' => 'nullable|string',
         ]);
 
-        // Set defaults for nullable numeric fields to avoid NULL errors
         $validated['subtotal'] = $validated['subtotal'] ?? 0;
         $validated['total_tax'] = $validated['total_tax'] ?? 0;
         $validated['adjustment'] = $validated['adjustment'] ?? 0;
@@ -159,7 +161,6 @@ class InvoiceController extends Controller
         $invoiceData['hash'] = Str::random(32);
         $invoiceData['sent'] = 0;
         
-        // Required NOT NULL fields with defaults from migration
         $invoiceData['discount_type'] = $request->discount_type ?? 'percent';
         $invoiceData['show_quantity_as'] = $request->show_quantity_as ?? 1;
         $invoiceData['sale_agent'] = $request->sale_agent ?? 0;
@@ -170,14 +171,12 @@ class InvoiceController extends Controller
         $invoiceData['prefix'] = $request->prefix ?? '';
         $invoiceData['number_format'] = $request->number_format ?? 0;
         
-        // Only add nullable fields if they have values
         if (!empty($request->duedate)) $invoiceData['duedate'] = $request->duedate;
         
         $invoice = Invoice::create($invoiceData);
 
         $this->logActivity($invoice->id, 'Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b> created');
 
-        // Save items
         if ($request->has('item_description')) {
             $descriptions = $request->item_description;
             $qtys = $request->item_qty ?? [];
@@ -207,6 +206,10 @@ class InvoiceController extends Controller
                     ]);
                 }
             }
+        }
+
+        if ($invoice->total >= ($request->high_value_threshold ?? 100000)) {
+            $this->invoiceNotification->send('high-value-invoice-created', $invoice->id);
         }
 
         if ($request->filled('referer')) {
@@ -364,6 +367,8 @@ class InvoiceController extends Controller
 
         $invoice = Invoice::findOrFail($id);
         
+        $paymentMode = PaymentMode::find($request->paymentmode);
+        
         InvoicePaymentRecord::create([
             'invoiceid' => $invoice->id,
             'amount' => $request->amount,
@@ -375,24 +380,25 @@ class InvoiceController extends Controller
         ]);
 
         $totalPaid = $invoice->payments()->sum('amount');
+        $wasJustPaid = false;
         if ($totalPaid >= $invoice->total) {
             $invoice->update(['status' => 3]);
+            $wasJustPaid = true;
         } elseif ($totalPaid > 0) {
             $invoice->update(['status' => 2]);
         }
 
-        // Send payment recorded email
-        if ($invoice->client && $invoice->client->email) {
-            $data = [
-                'contact_firstname' => $invoice->client->company,
-                'contact_lastname' => '',
-                'payment_total' => ($invoice->currency->symbol ?? '$') . number_format($request->amount, 2),
-                'payment_date' => \Carbon\Carbon::parse($request->date)->format('d M, Y'),
-                'invoice_number' => ($invoice->prefix ?? '') . $invoice->number,
-                'invoice_link' => config('app.url') . '/invoices/' . $invoice->id . '/' . $invoice->hash,
-            ];
+        $paymentOptions = [
+            'payment_total' => ($invoice->currency->symbol ?? '$') . number_format($request->amount, 2),
+            'payment_date' => \Carbon\Carbon::parse($request->date)->format('d M, Y'),
+            'payment_method' => $paymentMode->name ?? '',
+        ];
 
-            $this->emailService->send($invoice->client->email, 'invoice-payment-recorded', $data);
+        $this->invoiceNotification->send('invoice-payment-recorded', $invoice->id, $paymentOptions);
+        $this->invoiceNotification->send('invoice-payment-received-staff', $invoice->id, $paymentOptions);
+
+        if ($wasJustPaid) {
+            $this->invoiceNotification->send('invoice-paid', $invoice->id, $paymentOptions);
         }
 
         $this->logActivity($invoice->id, 'Payment of <b>' . ($invoice->currency->symbol ?? '$') . number_format($request->amount, 2) . '</b> recorded for Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b>');
@@ -409,6 +415,8 @@ class InvoiceController extends Controller
         $invoice = Invoice::findOrFail($id);
         $invoice->update(['status' => 3]);
 
+        $this->invoiceNotification->send('invoice-paid', $invoice->id);
+
         $this->logActivity($invoice->id, 'Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b> marked as paid');
 
         return redirect()->route('admin.invoices.show', $invoice->id)->with('success', 'Invoice marked as paid!');
@@ -423,6 +431,8 @@ class InvoiceController extends Controller
         $invoice = Invoice::findOrFail($id);
         $invoice->update(['status' => 4]);
 
+        $this->invoiceNotification->send('invoice-cancelled', $invoice->id);
+
         $this->logActivity($invoice->id, 'Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b> cancelled');
 
         return redirect()->route('admin.invoices.show', $invoice->id)->with('success', 'Invoice cancelled!');
@@ -434,25 +444,29 @@ class InvoiceController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $invoice = Invoice::with(['client', 'currency'])->findOrFail($id);
-        
-        if ($invoice->client && $invoice->client->email) {
-            $data = [
-                'contact_firstname' => $invoice->client->company, // Using company as fallback
-                'contact_lastname' => '',
-                'invoice_number' => ($invoice->prefix ?? '') . $invoice->number,
-                'invoice_status' => $invoice->status == 3 ? 'Paid' : 'Unpaid',
-                'invoice_link' => config('app.url') . '/invoices/' . $invoice->id . '/' . $invoice->hash,
-            ];
+        $invoice = Invoice::findOrFail($id);
 
-            $this->emailService->send($invoice->client->email, 'invoice-send-to-client', $data);
-        }
+        $this->invoiceNotification->send('invoice-send-to-client', $invoice->id);
 
         $invoice->update(['sent' => 1, 'datesend' => now()]);
 
         $this->logActivity($invoice->id, 'Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b> sent to client');
 
         return redirect()->back()->with('success', 'Invoice sent to client!');
+    }
+
+    public function sendNotification(Request $request, $id)
+    {
+        if (!Auth::user()->can('invoices_edit')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate(['slug' => 'required|string']);
+
+        $options = $request->except('slug');
+        $result = $this->invoiceNotification->send($request->slug, $id, $options);
+
+        return response()->json($result);
     }
 
     public function print($id)

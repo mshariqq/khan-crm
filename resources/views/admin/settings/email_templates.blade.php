@@ -6,6 +6,9 @@
 <div class="p-4 space-y-4">
     <div class="flex items-center justify-between bg-white rounded-xl border border-slate-200 p-4">
         <div class="flex items-center gap-4">
+            <a href="{{ route('admin.settings.index') }}" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition">
+                <i class="bi bi-arrow-left"></i>
+            </a>
             <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
                 <i class="bi bi-envelope"></i>
             </div>
@@ -14,6 +17,17 @@
                 <p class="text-sm text-slate-500">Manage automated system notifications</p>
             </div>
         </div>
+    </div>
+
+    <div class="flex items-center gap-2 flex-wrap">
+        <a href="{{ route('admin.settings.email_templates.index') }}" class="px-3 py-1.5 rounded-lg text-xs font-semibold {{ !request('type') ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }} transition-all">
+            All
+        </a>
+        @foreach($types as $t)
+            <a href="{{ route('admin.settings.email_templates.index', ['type' => $t]) }}" class="px-3 py-1.5 rounded-lg text-xs font-semibold {{ request('type') == $t ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }} transition-all">
+                {{ ucfirst($t) }}
+            </a>
+        @endforeach
     </div>
 
     <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
@@ -28,7 +42,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                    @foreach($templates->groupBy('type') as $type => $group)
+                    @forelse($templates->groupBy('type') as $type => $group)
                         <tr class="bg-slate-50/50">
                             <td colspan="4" class="px-6 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                                 {{ $type }}
@@ -63,14 +77,23 @@
                             </td>
                         </tr>
                         @endforeach
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="4" class="px-6 py-12 text-center text-slate-400">
+                                <i class="bi bi-envelope text-4xl block mb-2"></i>
+                                <p class="text-sm font-medium">No templates found</p>
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
 
+        @if($templates->hasPages())
         <div class="px-6 py-4 bg-slate-50 border-t border-slate-200">
             {{ $templates->links() }}
         </div>
+        @endif
     </div>
 </div>
 @endsection

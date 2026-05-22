@@ -72,13 +72,123 @@
                     </div>
                     
                     @if($template->type == 'invoice')
-                    <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
-                        <code class="text-blue-400 text-xs">{invoice_number}</code>
-                        <p class="text-[10px] text-slate-400 mt-1">Full invoice number with prefix</p>
-                    </div>
-                    <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
-                        <code class="text-blue-400 text-xs">{invoice_link}</code>
-                        <p class="text-[10px] text-slate-400 mt-1">Direct link to view invoice</p>
+                    <div class="space-y-2">
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{invoice_number}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Full invoice number with prefix</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{invoice_link}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Direct link to view invoice (public)</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{staff_link}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Internal CRM link to view invoice</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{payment_link}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Secure payment link for online payment</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{client_name}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Client company name</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{contact_firstname}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Primary contact first name</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{contact_lastname}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Primary contact last name</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{invoice_date}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Invoice issue date</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{due_date}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Invoice due date</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{invoice_total}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Total invoice amount with currency</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{subtotal}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Invoice subtotal</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{total_tax}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Total tax amount</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{amount_due}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Outstanding balance due</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{amount_paid}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Total amount paid so far</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{balance_due}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Remaining balance</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{currency}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Currency symbol ($, €, etc.)</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{currency_code}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Currency code (USD, EUR, etc.)</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{rep_name}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Sales representative name</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{invoice_status}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Status text (Paid, Unpaid, etc.)</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{payment_total}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Payment amount (for payment notifications)</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{payment_date}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Payment date</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{payment_method}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Payment method name</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{line_items}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">HTML table of invoice line items</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{gstin}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Client GST/VAT number</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{notes}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Invoice client notes</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{terms}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Invoice terms & conditions</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{last_payment_amount}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Most recent payment amount</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{last_payment_date}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Most recent payment date</p>
+                        </div>
+                        <div class="p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                            <code class="text-blue-400 text-xs">{last_payment_method}</code>
+                            <p class="text-[10px] text-slate-400 mt-1">Most recent payment method</p>
+                        </div>
                     </div>
                     @endif
 

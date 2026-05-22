@@ -11,16 +11,19 @@ use App\Models\Note;
 use App\Models\ProjectDiscussion;
 use App\Models\ProjectDiscussionComment;
 use App\Services\EmailService;
+use App\Services\ProjectNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ProjectController extends Controller
 {
     protected $emailService;
+    protected $projectNotification;
 
-    public function __construct(EmailService $emailService)
+    public function __construct(EmailService $emailService, ProjectNotificationService $projectNotification)
     {
         $this->emailService = $emailService;
+        $this->projectNotification = $projectNotification;
     }
 
     public function index(Request $request)
@@ -88,31 +91,9 @@ class ProjectController extends Controller
 
         if ($request->filled('staff_ids')) {
             $project->staff()->sync($request->staff_ids);
-
-            // Notify assigned staff members
-            foreach ($request->staff_ids as $staffId) {
-                $staffMember = Staff::find($staffId);
-                if ($staffMember && $staffMember->email) {
-                    $this->emailService->send($staffMember->email, 'staff-added-as-project-member', [
-                        'staff_firstname' => $staffMember->firstname,
-                        'project_name' => $project->name,
-                        'project_link' => config('app.url') . '/admin/projects/' . $project->id,
-                    ]);
-                }
-            }
         }
 
-        // Notify Customer Contact
-        $client = Client::find($request->clientid);
-        if ($client && $client->email) {
-            $this->emailService->send($client->email, 'assigned-to-project', [
-                'contact_firstname' => $client->company, // Using company as fallback
-                'contact_lastname' => '',
-                'project_name' => $project->name,
-                'project_start_date' => \Carbon\Carbon::parse($project->start_date)->format('d M, Y'),
-                'project_link' => config('app.url') . '/client/projects/' . $project->id,
-            ]);
-        }
+        $this->projectNotification->send('project-created', $project->id);
 
         return redirect()->route('admin.projects.index')->with('success', 'Project created successfully!');
     }
@@ -161,15 +142,15 @@ class ProjectController extends Controller
             
             $project->staff()->sync($newStaff);
 
-            // Notify newly assigned staff members
+            // Notify newly assigned staff members via ProjectNotificationService
             $addedStaff = array_diff($newStaff, $oldStaff);
             foreach ($addedStaff as $staffId) {
                 $staffMember = Staff::find($staffId);
-                if ($staffMember && $staffMember->email) {
-                    $this->emailService->send($staffMember->email, 'staff-added-as-project-member', [
-                        'staff_firstname' => $staffMember->firstname,
-                        'project_name' => $project->name,
-                        'project_link' => config('app.url') . '/admin/projects/' . $project->id,
+                if ($staffMember) {
+                    $this->projectNotification->sendToOneStaff('project-member-added', $project->id, $staffMember, [
+                        'member_name' => $staffMember->firstname . ' ' . $staffMember->lastname,
+                        'member_email' => $staffMember->email,
+                        'added_by' => (Auth::user()->firstname ?? '') . ' ' . (Auth::user()->lastname ?? ''),
                     ]);
                 }
             }
@@ -189,9 +170,35 @@ class ProjectController extends Controller
             }
         }
 
+        $oldStatus = (int)($oldAttributes['status'] ?? $project->status);
+        $notified = !empty($addedStaff);
+
+        if ($oldStatus !== (int)$project->status) {
+            $statusSlugs = [2 => 'project-completed', 3 => 'project-on-hold', 4 => 'project-cancelled'];
+            if (isset($statusSlugs[(int)$project->status])) {
+                $this->projectNotification->send($statusSlugs[(int)$project->status], $project->id);
+                $notified = true;
+            } elseif ((int)$project->status === 1 && in_array($oldStatus, [3, 4])) {
+                $this->projectNotification->send('project-resumed', $project->id);
+                $notified = true;
+            }
+        }
+
+        if (!$notified) {
+            $oldDeadline = $oldAttributes['deadline'] ?? null;
+            if ($oldDeadline !== $project->deadline) {
+                $this->projectNotification->send('project-deadline-changed', $project->id);
+                $notified = true;
+            }
+        }
+
+        if (!$notified) {
+            $this->projectNotification->send('project-updated', $project->id);
+        }
+
         // Log activity for project update
         $changedAttributes = $project->getChanges();
-        unset($changedAttributes['updated_at']); // Don't log updated_at as a change
+        unset($changedAttributes['updated_at']);
 
         if (!empty($changedAttributes)) {
             ProjectActivity::create([
@@ -445,6 +452,33 @@ class ProjectController extends Controller
         $project = Project::with(['tasks', 'milestones'])->findOrFail($projectId);
         
         return view('admin.projects.gantt', compact('project'));
+    }
+
+    public function sendNotification(Request $request, $id)
+    {
+        if (!Auth::user()->can('projects_edit')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate(['slug' => 'required|string']);
+
+        $options = $request->except('slug');
+        $result = $this->projectNotification->send($request->slug, $id, $options);
+
+        return response()->json($result);
+    }
+
+    public function sendProject($id)
+    {
+        if (!Auth::user()->can('projects_edit')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $project = Project::findOrFail($id);
+
+        $this->projectNotification->send('project-kickoff', $project->id);
+
+        return redirect()->back()->with('success', 'Project sent to client!');
     }
 
     public function tabContent(Request $request, $id, $tab)

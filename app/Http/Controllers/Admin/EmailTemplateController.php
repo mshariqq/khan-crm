@@ -9,14 +9,22 @@ use Illuminate\Support\Facades\Auth;
 
 class EmailTemplateController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         if (!Auth::user()->can('settings_view')) {
             abort(403);
         }
 
-        $templates = EmailTemplate::orderBy('type')->paginate(20);
-        return view('admin.settings.email_templates', compact('templates'));
+        $query = EmailTemplate::orderBy('type');
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        $templates = $query->paginate(50);
+        $types = EmailTemplate::select('type')->distinct()->pluck('type');
+
+        return view('admin.settings.email_templates', compact('templates', 'types'));
     }
 
     public function edit($id)

@@ -31,6 +31,11 @@ class Expense extends Model
         return $this->belongsTo(ExpenseCategory::class, 'category', 'id');
     }
 
+    public function currencyRel()
+    {
+        return $this->belongsTo(Currency::class, 'currency', 'id');
+    }
+
     public function invoice()
     {
         return $this->belongsTo(Invoice::class, 'invoiceid', 'id');

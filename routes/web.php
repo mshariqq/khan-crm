@@ -290,6 +290,8 @@ Route::post('projects/{project}/discussions/{discussion}/comment', [\App\Http\Co
 Route::get('projects/{project}/timesheets', [\App\Http\Controllers\Admin\ProjectController::class, 'timesheets'])->name('admin.projects.timesheets');
 Route::get('projects/{project}/gantt', [\App\Http\Controllers\Admin\ProjectController::class, 'gantt'])->name('admin.projects.gantt');
 Route::get('projects/{project}/tab/{tab}', [\App\Http\Controllers\Admin\ProjectController::class, 'tabContent'])->name('admin.projects.tab');
+Route::post('projects/{project}/send-notification', [\App\Http\Controllers\Admin\ProjectController::class, 'sendNotification'])->name('admin.projects.send_notification');
+Route::post('projects/{project}/send', [\App\Http\Controllers\Admin\ProjectController::class, 'sendProject'])->name('admin.projects.send');
 
 Route::get('tasks/kanban', [\App\Http\Controllers\Admin\TaskController::class, 'kanban'])->name('admin.tasks.kanban');
 
@@ -420,6 +422,7 @@ Route::resource('tickets', \App\Http\Controllers\Admin\TicketController::class)-
     Route::get('invoices/{invoice}/print', [\App\Http\Controllers\Admin\InvoiceController::class, 'print'])->name('admin.invoices.print');
     Route::post('invoices/{invoice}/reminders', [\App\Http\Controllers\Admin\InvoiceController::class, 'storeReminder'])->name('admin.invoices.reminders.store');
     Route::delete('reminders/{reminder}', [\App\Http\Controllers\Admin\InvoiceController::class, 'deleteReminder'])->name('admin.reminders.destroy');
+    Route::post('invoices/{invoice}/send-notification', [\App\Http\Controllers\Admin\InvoiceController::class, 'sendNotification'])->name('admin.invoices.send_notification');
 
     Route::resource('estimates', \App\Http\Controllers\Admin\EstimateController::class)->names([
         'index' => 'admin.estimates.index',

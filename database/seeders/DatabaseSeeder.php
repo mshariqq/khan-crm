@@ -23,6 +23,8 @@ class DatabaseSeeder extends Seeder
             LeadSourcesSeeder::class,
             OptionsSeeder::class,
             EmailTemplatesSeeder::class,
+            InvoiceEmailTemplatesSeeder::class,
+            ProjectEmailTemplatesSeeder::class,
             StaffSeeder::class,
         ]);
     }

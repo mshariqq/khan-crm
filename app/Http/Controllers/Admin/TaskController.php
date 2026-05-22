@@ -14,16 +14,19 @@ use App\Models\Proposal;
 use App\Models\File;
 use App\Services\EmailService;
 use App\Services\FileService;
+use App\Services\ProjectNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class TaskController extends Controller
 {
     protected $emailService;
+    protected $projectNotification;
 
-    public function __construct(EmailService $emailService)
+    public function __construct(EmailService $emailService, ProjectNotificationService $projectNotification)
     {
         $this->emailService = $emailService;
+        $this->projectNotification = $projectNotification;
     }
 
     public function storeAttachment(Request $request, $id)
@@ -233,17 +236,33 @@ class TaskController extends Controller
             $staffIds = array_map('trim', $staffIds);
             $task->assignedStaff()->sync($staffIds);
 
-            foreach ($staffIds as $staffId) {
-                $staffMember = Staff::find($staffId);
-                if ($staffMember && $staffMember->email) {
-                    $this->emailService->send($staffMember->email, 'task-assigned', [
-                        'staff_firstname' => $staffMember->firstname,
-                        'task_name' => $task->name,
-                        'task_startdate' => \Carbon\Carbon::parse($task->startdate)->format('d M, Y'),
-                        'task_duedate' => $task->duedate ? \Carbon\Carbon::parse($task->duedate)->format('d M, Y') : 'N/A',
-                        'task_priority' => $task->priority == 4 ? 'Urgent' : ($task->priority == 3 ? 'High' : ($task->priority == 2 ? 'Medium' : 'Low')),
-                        'task_link' => route('admin.tasks.show', $task->id),
-                    ]);
+            $taskPriority = $task->priority == 4 ? 'Urgent' : ($task->priority == 3 ? 'High' : ($task->priority == 2 ? 'Medium' : 'Low'));
+
+            if ($task->rel_type === 'project' && $task->rel_id) {
+                foreach ($staffIds as $staffId) {
+                    $staffMember = Staff::find($staffId);
+                    if ($staffMember) {
+                        $this->projectNotification->sendToOneStaff('task-assigned', $task->rel_id, $staffMember, [
+                            'task_name' => $task->name,
+                            'task_priority' => $taskPriority,
+                            'task_duedate' => $task->duedate ? \Carbon\Carbon::parse($task->duedate)->format('d M, Y') : '',
+                            'task_link' => route('admin.tasks.show', $task->id),
+                        ]);
+                    }
+                }
+            } else {
+                foreach ($staffIds as $staffId) {
+                    $staffMember = Staff::find($staffId);
+                    if ($staffMember && $staffMember->email) {
+                        $this->emailService->send($staffMember->email, 'task-assigned', [
+                            'staff_firstname' => $staffMember->firstname,
+                            'task_name' => $task->name,
+                            'task_startdate' => \Carbon\Carbon::parse($task->startdate)->format('d M, Y'),
+                            'task_duedate' => $task->duedate ? \Carbon\Carbon::parse($task->duedate)->format('d M, Y') : 'N/A',
+                            'task_priority' => $taskPriority,
+                            'task_link' => route('admin.tasks.show', $task->id),
+                        ]);
+                    }
                 }
             }
         }
@@ -325,6 +344,14 @@ class TaskController extends Controller
 
         $staffIds = $request->filled('assigned_staff') ? (is_array($request->assigned_staff) ? $request->assigned_staff : explode(',', $request->assigned_staff)) : [];
         $task->assignedStaff()->sync(array_map('trim', $staffIds));
+
+        // Send task-completed notification
+        if ($task->rel_type === 'project' && $task->rel_id && (int)$oldTaskStatus !== 3 && (int)$task->status === 3) {
+            $this->projectNotification->send('task-completed', $task->rel_id, [
+                'task_name' => $task->name,
+                'task_link' => route('admin.tasks.show', $task->id),
+            ]);
+        }
 
         // Log activity for task update
         if ($task->rel_type === 'project' && $task->rel_id) {

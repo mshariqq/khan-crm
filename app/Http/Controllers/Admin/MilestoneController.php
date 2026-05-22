@@ -5,10 +5,18 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Milestone;
 use App\Models\Project;
+use App\Services\ProjectNotificationService;
 use Illuminate\Http\Request;
 
 class MilestoneController extends Controller
 {
+    protected $projectNotification;
+
+    public function __construct(ProjectNotificationService $projectNotification)
+    {
+        $this->projectNotification = $projectNotification;
+    }
+
     public function index()
     {
         if (!auth()->user()->can('milestones_view')) {
@@ -41,6 +49,11 @@ $validated = $request->validate([
             ]);
             
             $milestone = Milestone::create($validated);
+
+            $this->projectNotification->send('milestone-created', $milestone->project_id, [
+                'milestone_name' => $milestone->name,
+                'milestone_duedate' => $milestone->due_date ? \Carbon\Carbon::parse($milestone->due_date)->format('d M, Y') : '',
+            ]);
 
             if ($request->wantsJson()) {
                 return response()->json(['success' => true, 'message' => 'Milestone created successfully!', 'reload' => true, 'pane_refresh_url' => route('admin.milestones.pane.show', $milestone->id)]);

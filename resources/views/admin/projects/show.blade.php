@@ -290,6 +290,15 @@
                                 <a href="{{ route('admin.invoices.create') }}?project_id={{ $project->id }}" class="px-3 py-2 bg-emerald-600 text-white text-xs rounded-lg text-center hover:bg-emerald-700">New Invoice</a>
                                 <a href="{{ route('admin.expenses.create') }}?project_id={{ $project->id }}" class="px-3 py-2 bg-amber-600 text-white text-xs rounded-lg text-center hover:bg-amber-700">Add Expense</a>
                                 <a href="{{ route('admin.projects.edit', $project->id) }}" class="px-3 py-2 bg-slate-600 text-white text-xs rounded-lg text-center hover:bg-slate-700">Edit Project</a>
+                                <form action="{{ route('admin.projects.send', $project->id) }}" method="POST" class="col-span-1">
+                                    @csrf
+                                    <button type="submit" class="w-full px-3 py-2 bg-blue-100 text-blue-700 text-xs rounded-lg text-center hover:bg-blue-200 flex items-center justify-center gap-1">
+                                        <i class="bi bi-send"></i> Send to Client
+                                    </button>
+                                </form>
+                                <button onclick="openNotificationModal()" class="px-3 py-2 bg-purple-600 text-white text-xs rounded-lg text-center hover:bg-purple-700 col-span-1">
+                                    <i class="bi bi-gear"></i> All Notifications
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -367,6 +376,37 @@ function loadTab(tabName) {
 }
 </script>
 
+{{-- Send Notification Modal --}}
+<div id="sendNotificationModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+        <div class="flex items-center justify-between p-4 border-b border-slate-200">
+            <h3 class="text-sm font-semibold text-slate-800">Send Notification</h3>
+            <button onclick="closeNotificationModal()" class="p-1 text-slate-400 hover:text-slate-600 rounded">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <div class="p-4">
+            <div class="mb-3">
+                <label class="block text-xs font-medium text-slate-600 mb-1">Notification Type</label>
+                <select id="notificationSlug" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Select type...</option>
+                    @foreach(\App\Services\ProjectNotificationService::types() as $slug => $type)
+                    <option value="{{ $slug }}" data-recipients="{{ $type['recipients'] }}">{{ $type['name'] }} ({{ $type['recipients'] }})</option>
+                    @endforeach
+                </select>
+            </div>
+            <div id="notificationTypeDesc" class="text-xs text-slate-500 mb-3 hidden"></div>
+            <div id="notificationResult" class="text-xs hidden"></div>
+        </div>
+
+        <div class="flex justify-end gap-2 p-4 border-t border-slate-200">
+            <button onclick="closeNotificationModal()" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Cancel</button>
+            <button id="sendNotifBtn" onclick="sendNotification()" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50" disabled>Send</button>
+        </div>
+    </div>
+</div>
+
 <div id="noteModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4">
         <div class="flex items-center justify-between p-4 border-b border-slate-200">
@@ -406,6 +446,82 @@ function loadTab(tabName) {
         </div>
     </div>
 </div>
+
+<script>
+function openNotificationModal() {
+    document.getElementById('sendNotificationModal').classList.remove('hidden');
+    document.getElementById('notificationResult').classList.add('hidden');
+}
+
+function closeNotificationModal() {
+    document.getElementById('sendNotificationModal').classList.add('hidden');
+    document.getElementById('notificationSlug').value = '';
+    document.getElementById('notificationTypeDesc').classList.add('hidden');
+    document.getElementById('notificationResult').classList.add('hidden');
+    document.getElementById('sendNotifBtn').disabled = true;
+    document.getElementById('sendNotifBtn').textContent = 'Send';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const slugSelect = document.getElementById('notificationSlug');
+    if (slugSelect) {
+        slugSelect.addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            const sendBtn = document.getElementById('sendNotifBtn');
+            if (selected.value) {
+                sendBtn.disabled = false;
+                const recipients = selected.dataset.recipients === 'both' ? 'Client & Staff' : selected.dataset.recipients.charAt(0).toUpperCase() + selected.dataset.recipients.slice(1);
+                document.getElementById('notificationTypeDesc').textContent = 'Recipients: ' + recipients;
+                document.getElementById('notificationTypeDesc').classList.remove('hidden');
+            } else {
+                sendBtn.disabled = true;
+                document.getElementById('notificationTypeDesc').classList.add('hidden');
+            }
+        });
+    }
+});
+
+function sendNotification() {
+    const slug = document.getElementById('notificationSlug').value;
+    if (!slug) return;
+
+    const btn = document.getElementById('sendNotifBtn');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    const resultDiv = document.getElementById('notificationResult');
+    resultDiv.className = 'text-xs mb-3';
+
+    fetch('/admin/projects/{{ $project->id }}/send-notification', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ slug: slug })
+    })
+    .then(res => res.json())
+    .then(data => {
+        resultDiv.classList.remove('hidden');
+        if (data.success) {
+            resultDiv.className = 'text-xs mb-3 text-emerald-600';
+            resultDiv.textContent = 'Notification sent successfully!';
+            setTimeout(closeNotificationModal, 2000);
+        } else {
+            resultDiv.className = 'text-xs mb-3 text-red-600';
+            resultDiv.textContent = data.message || 'Failed to send notification';
+        }
+    })
+    .catch(err => {
+        resultDiv.classList.remove('hidden');
+        resultDiv.className = 'text-xs mb-3 text-red-600';
+        resultDiv.textContent = 'Error: ' + err.message;
+    })
+    .finally(function() {
+        btn.disabled = false;
+        btn.textContent = 'Send';
+    });
+}
+</script>
 
 <script>
 let noteMode = 'create';
