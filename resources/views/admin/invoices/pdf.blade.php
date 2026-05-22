@@ -103,7 +103,7 @@
                     @foreach($invoice->items as $item)
                     <tr>
                         <td class="px-8 py-6">
-                            <p class="font-bold text-slate-800">{{ $item->description }}</p>
+                            <p class="font-bold text-slate-800">{!! $item->description !!}</p>
                             @if($item->long_description)
                                 <p class="text-sm text-slate-400 mt-1">{{ $item->long_description }}</p>
                             @endif
@@ -123,13 +123,13 @@
                 @if($invoice->terms)
                 <div>
                     <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Terms & Conditions</h3>
-                    <p class="text-sm text-slate-500 leading-relaxed">{!! nl2br(e($invoice->terms)) !!}</p>
+                    <div class="text-sm text-slate-500 leading-relaxed prose prose-slate max-w-none">{!! $invoice->terms !!}</div>
                 </div>
                 @endif
                 @if($invoice->clientnote)
                 <div>
                     <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Client Note</h3>
-                    <p class="text-sm text-slate-500 leading-relaxed">{!! nl2br(e($invoice->clientnote)) !!}</p>
+                    <div class="text-sm text-slate-500 leading-relaxed prose prose-slate max-w-none">{!! $invoice->clientnote !!}</div>
                 </div>
                 @endif
             </div>

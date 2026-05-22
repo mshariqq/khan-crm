@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Milestone;
 use App\Models\Project;
+use App\Models\Task;
 use Illuminate\Http\Request;
 
 class MilestonePaneController extends Controller
@@ -40,7 +41,8 @@ class MilestonePaneController extends Controller
         }
 
         $milestone = Milestone::with('project')->findOrFail($id);
+        $tasks = Task::with(['assignedStaff', 'project', 'checklistItems'])->where('milestone', $id)->get();
 
-        return view('admin.milestones.pane.show', compact('milestone'));
+        return view('admin.milestones.pane.show', compact('milestone', 'tasks'));
     }
 }

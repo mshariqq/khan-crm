@@ -533,7 +533,14 @@ class ProjectController extends Controller
 
     private function renderTimesheets($project)
     {
-        return view('admin.projects.partials.timesheets', compact('project'))->render();
+        $project->load(['tasks.timers.staff']);
+        $allTimers = $project->tasks->flatMap(function($task) {
+            return $task->timers->map(function($timer) use ($task) {
+                $timer->task_name = $task->name;
+                return $timer;
+            });
+        })->sortByDesc('start_time');
+        return view('admin.projects.partials.timesheets', compact('project', 'allTimers'))->render();
     }
 
     private function renderGantt($project)

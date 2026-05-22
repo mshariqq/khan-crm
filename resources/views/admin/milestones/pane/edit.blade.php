@@ -5,7 +5,7 @@
     </div>
 </div>
 
-<form action="{{ route('admin.milestones.update', $milestone->id) }}" method="POST" data-pane-submit="1" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+<form action="{{ route('admin.milestones.update', $milestone->id) }}" method="POST" data-pane-submit="1" data-pane-refresh="{{ route('admin.milestones.pane.show', $milestone->id) }}" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
     @csrf @method('PUT')
     <div class="p-6 space-y-6">
         <div class="space-y-1">

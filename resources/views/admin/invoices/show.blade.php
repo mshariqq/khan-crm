@@ -213,35 +213,137 @@
 
                     {{-- Payments Tab --}}
                     <div id="tab-payments" class="tab-content hidden">
-                        <form action="{{ route('admin.invoices.payments.store', $invoice->id) }}" method="POST" class="mb-4 p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                        @php
+                            $allPayments = $invoice->payments()->orderBy('date', 'desc')->get();
+                            $totalPaid = $allPayments->sum('amount');
+                            $paymentCount = $allPayments->count();
+                            $lastPayment = $allPayments->first();
+                            $modeNames = $paymentModes->pluck('name', 'id');
+                        @endphp
+
+                        {{-- Summary Cards --}}
+                        <div class="grid grid-cols-3 gap-3 mb-4">
+                            <div class="bg-emerald-50 rounded-xl border border-emerald-200 p-4 text-center">
+                                <p class="text-2xl font-black text-emerald-700">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($totalPaid, 2) }}</p>
+                                <p class="text-xs font-medium text-emerald-600 mt-1">Total Paid</p>
+                            </div>
+                            <div class="bg-blue-50 rounded-xl border border-blue-200 p-4 text-center">
+                                <p class="text-2xl font-black text-blue-700">{{ $paymentCount }}</p>
+                                <p class="text-xs font-medium text-blue-600 mt-1">Payments</p>
+                            </div>
+                            <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 text-center">
+                                <p class="text-2xl font-black text-slate-700">{{ $lastPayment ? \Carbon\Carbon::parse($lastPayment->date)->format('M d, Y') : '-' }}</p>
+                                <p class="text-xs font-medium text-slate-600 mt-1">Last Payment</p>
+                            </div>
+                        </div>
+
+                        {{-- Add Payment Form --}}
+                        <form action="{{ route('admin.invoices.payments.store', $invoice->id) }}" method="POST" class="mb-4 p-4 bg-gradient-to-r from-emerald-50 to-emerald-100/50 rounded-xl border border-emerald-200">
                             @csrf
-                            <div class="flex gap-2 flex-wrap">
-                                <input type="number" step="0.01" name="amount" class="px-3 py-2 border rounded-lg text-sm w-24" placeholder="Amount" required>
-                                <select name="paymentmode" class="px-3 py-2 border rounded-lg text-sm" required>
-                                    <option value="">Mode</option>
-                                    <option value="1">Bank Transfer</option>
-                                    <option value="2">Cash</option>
-                                    <option value="3">Card</option>
-                                </select>
-                                <input type="date" name="date" class="px-3 py-2 border rounded-lg text-sm" value="{{ date('Y-m-d') }}" required>
-                                <input type="text" name="note" class="flex-1 px-3 py-2 border rounded-lg text-sm" placeholder="Note...">
-                                <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">Add Payment</button>
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center text-white">
+                                    <i class="bi bi-plus-lg text-xs"></i>
+                                </div>
+                                <h4 class="text-sm font-bold text-emerald-800">Record Payment</h4>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                <div>
+                                    <label class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block mb-1">Amount</label>
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-emerald-500 text-sm font-medium">{{ $invoice->currencyRel->symbol ?? '$' }}</span>
+                                        <input type="number" step="0.01" name="amount" class="w-full pl-8 pr-3 py-2 rounded-lg border border-emerald-300 text-sm font-bold focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0.00" required>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block mb-1">Mode</label>
+                                    <select name="paymentmode" class="w-full px-3 py-2 rounded-lg border border-emerald-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" required>
+                                        <option value="">Select...</option>
+                                        @foreach($paymentModes as $mode)
+                                            <option value="{{ $mode->id }}">{{ $mode->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block mb-1">Date</label>
+                                    <input type="date" name="date" value="{{ date('Y-m-d') }}" class="w-full px-3 py-2 rounded-lg border border-emerald-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" required>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block mb-1">Transaction ID</label>
+                                    <input type="text" name="transactionid" class="w-full px-3 py-2 rounded-lg border border-emerald-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Optional">
+                                </div>
+                                <div class="flex items-end">
+                                    <button type="submit" class="w-full px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg text-sm hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 flex items-center justify-center gap-1.5">
+                                        <i class="bi bi-check2-circle"></i> Add
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <input type="text" name="note" class="w-full px-3 py-2 rounded-lg border border-emerald-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Note (optional)...">
                             </div>
                         </form>
-                        @if($invoice->payments()->count() > 0)
-                        <div class="space-y-2">
-                            @foreach($invoice->payments()->orderBy('date', 'desc')->get() as $payment)
-                            <div class="bg-slate-50 rounded-lg p-3 flex justify-between items-center">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-700">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($payment->amount, 2) }}</p>
-                                    <p class="text-xs text-slate-400">{{ \Carbon\Carbon::parse($payment->date)->format('M d, Y') }}</p>
-                                </div>
-                                <span class="text-xs text-slate-500">Payment #{{ $payment->id }}</span>
-                            </div>
-                            @endforeach
+
+                        {{-- Payments List --}}
+                        @if($paymentCount > 0)
+                        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200">
+                                        <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date</th>
+                                        <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Amount</th>
+                                        <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mode</th>
+                                        <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Transaction ID</th>
+                                        <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Note</th>
+                                        <th class="px-4 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider">Recorded</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    @foreach($allPayments as $payment)
+                                    @php
+                                        $modeName = $modeNames[$payment->paymentmode] ?? $payment->paymentmode;
+                                    @endphp
+                                    <tr class="hover:bg-slate-50/50 transition-colors">
+                                        <td class="px-4 py-3 whitespace-nowrap">
+                                            <span class="font-medium text-slate-700">{{ \Carbon\Carbon::parse($payment->date)->format('M d, Y') }}</span>
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap">
+                                            <span class="font-bold text-emerald-700">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($payment->amount, 2) }}</span>
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap">
+                                            @if($modeName)
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-medium">
+                                                <i class="bi bi-credit-card text-slate-400"></i>
+                                                {{ $modeName }}
+                                            </span>
+                                            @else
+                                            <span class="text-xs text-slate-400">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <span class="text-xs text-slate-600 font-mono">{{ $payment->transactionid ?: '-' }}</span>
+                                        </td>
+                                        <td class="px-4 py-3 max-w-[200px]">
+                                            @if($payment->note)
+                                            <span class="text-xs text-slate-500 truncate block" title="{{ $payment->note }}">{{ $payment->note }}</span>
+                                            @else
+                                            <span class="text-xs text-slate-300 italic">No note</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-3 text-right whitespace-nowrap">
+                                            <span class="text-xs text-slate-400">{{ $payment->daterecorded ? \Carbon\Carbon::parse($payment->daterecorded)->format('M d, Y H:i') : '-' }}</span>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
                         </div>
                         @else
-                        <p class="text-sm text-slate-400 text-center py-4">No payments yet</p>
+                        <div class="py-12 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                            <div class="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="bi bi-cash-coin text-emerald-300 text-2xl"></i>
+                            </div>
+                            <p class="text-sm font-medium text-slate-500 mb-1">No payments recorded yet</p>
+                            <p class="text-xs text-slate-400">Use the form above to record a payment for this invoice</p>
+                        </div>
                         @endif
                     </div>
 

@@ -63,15 +63,9 @@ class TicketPaneController extends Controller
         }
 
         $ticket = Ticket::with([
-            'departmentRel',
-            'priorityRel',
-            'statusRel',
-            'assignedStaff',
-            'client',
-            'contact',
-            'project',
-            'replies',
-            'attachments'
+            'departmentRel', 'priorityRel', 'statusRel',
+            'assignedStaff', 'replyingStaff', 'client', 'contact', 'project',
+            'replies', 'attachments'
         ])->findOrFail($id);
 
         $statuses = TicketStatus::all();

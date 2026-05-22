@@ -266,6 +266,7 @@
         </div>
     </form>
 </div>
+@endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
@@ -450,4 +451,4 @@ document.addEventListener('DOMContentLoaded', function() {
     recalculateAll();
 });
 </script>
-@endsection
+@endpush

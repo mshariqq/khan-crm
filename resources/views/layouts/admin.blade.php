@@ -147,7 +147,7 @@
         const paneTitle = document.getElementById('taskPaneTitle');
         if (title) paneTitle.textContent = title;
         const content = document.getElementById('taskPaneContent');
-        content.innerHTML = '<div class="flex items-center justify-center h-full"><div class="text-slate-400"><i class="bi bi-arrow-repeat text-4xl animate-spin block mb-2"></i><p class="text-sm">Loading...</p></div></div>';
+        content.innerHTML = '<div class="flex items-center justify-center h-full"><div class="text-slate-400 animate-pulse"><p class="text-sm font-medium tracking-wide">Loading...</p></div></div>';
         pane.classList.remove('hidden');
         pane.querySelector('div:last-child').style.transform = 'translateX(0)';
 
@@ -198,7 +198,7 @@
                     if (data.success) {
                         showToast(data.message || 'Saved successfully!', 'success');
                         closeTaskPane();
-                        const refreshUrl = form.getAttribute('data-pane-refresh');
+                        const refreshUrl = form.getAttribute('data-pane-refresh') || data.pane_refresh_url;
                         if (refreshUrl) {
                             setTimeout(() => openTaskPane(refreshUrl, 'Task'), 350);
                         }

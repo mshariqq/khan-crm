@@ -366,6 +366,9 @@ Route::get('pane/milestones/{id}', [\App\Http\Controllers\Admin\MilestonePaneCon
 // Task Timer Routes
 Route::post('timers/start', [\App\Http\Controllers\Admin\TaskTimerController::class, 'start'])->name('admin.timers.start');
 Route::post('timers/{timer}/stop', [\App\Http\Controllers\Admin\TaskTimerController::class, 'stop'])->name('admin.timers.stop');
+Route::post('timers', [\App\Http\Controllers\Admin\TaskTimerController::class, 'store'])->name('admin.timers.store');
+Route::put('timers/{timer}', [\App\Http\Controllers\Admin\TaskTimerController::class, 'update'])->name('admin.timers.update');
+Route::delete('timers/{timer}', [\App\Http\Controllers\Admin\TaskTimerController::class, 'destroy'])->name('admin.timers.destroy');
 Route::get('timers/task/{taskId}', [\App\Http\Controllers\Admin\TaskTimerController::class, 'getByTask'])->name('admin.timers.task.timers');
 
 // File Routes

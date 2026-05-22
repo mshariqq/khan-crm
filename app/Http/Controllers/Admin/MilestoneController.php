@@ -40,10 +40,10 @@ $validated = $request->validate([
                 'description' => 'nullable|string',
             ]);
             
-            Milestone::create($validated);
+            $milestone = Milestone::create($validated);
 
             if ($request->wantsJson()) {
-                return response()->json(['success' => true, 'message' => 'Milestone created successfully!', 'reload' => true]);
+                return response()->json(['success' => true, 'message' => 'Milestone created successfully!', 'reload' => true, 'pane_refresh_url' => route('admin.milestones.pane.show', $milestone->id)]);
             }
 
             if ($request->filled('referer')) {

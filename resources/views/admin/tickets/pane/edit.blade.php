@@ -5,7 +5,7 @@
     </div>
 </div>
 
-<form action="{{ route('admin.tickets.update', $ticket->ticketid) }}" method="POST" data-pane-submit="1" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+<form action="{{ route('admin.tickets.update', $ticket->ticketid) }}" method="POST" data-pane-submit="1" data-pane-refresh="{{ route('admin.tickets.pane.show', $ticket->ticketid) }}" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
     @csrf @method('PUT')
     <div class="p-6 space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

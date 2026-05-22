@@ -13,7 +13,6 @@ use App\Models\Item;
 use App\Models\Tax;
 use App\Models\PaymentMode;
 use App\Models\Note;
-use App\Models\InvoicePaymentRecord;
 use App\Models\Itemable;
 use App\Models\Reminder;
 use App\Services\EmailService;
@@ -152,6 +151,7 @@ class InvoiceController extends Controller
         $validated['cancel_overdue_reminders'] = $validated['cancel_overdue_reminders'] ?? 0;
         
         $invoiceData = $validated;
+        $invoiceData['number'] = (int)preg_replace('/[^0-9]/', '', $validated['number']);
         $invoiceData['datecreated'] = now();
         $invoiceData['addedfrom'] = Auth::id();
         $invoiceData['hash'] = Str::random(32);
@@ -224,8 +224,9 @@ class InvoiceController extends Controller
         ])->findOrFail($id);
 
         $staff = Staff::all();
+        $paymentModes = PaymentMode::where('active', 1)->get();
 
-        return view('admin.invoices.show', compact('invoice', 'staff'));
+        return view('admin.invoices.show', compact('invoice', 'staff', 'paymentModes'));
     }
 
     public function edit($id)
@@ -296,6 +297,7 @@ class InvoiceController extends Controller
         ]);
 
         $invoice = Invoice::findOrFail($id);
+        $validated['number'] = (int)preg_replace('/[^0-9]/', '', $validated['number']);
         $invoice->update($validated);
 
         return redirect()->route('admin.invoices.index')->with('success', 'Invoice updated successfully!');

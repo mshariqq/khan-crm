@@ -125,7 +125,7 @@ class TicketController extends Controller
         }
 
         if ($request->wantsJson()) {
-            return response()->json(['success' => true, 'message' => 'Ticket created successfully!', 'reload' => true]);
+            return response()->json(['success' => true, 'message' => 'Ticket created successfully!', 'reload' => true, 'pane_refresh_url' => route('admin.tickets.pane.show', $ticket->ticketid)]);
         }
 
         if ($request->filled('referer')) {
