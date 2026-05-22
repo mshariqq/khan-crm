@@ -62,6 +62,11 @@ class Task extends Model
         return $this->hasMany(TaskChecklistItem::class, 'taskid', 'id');
     }
 
+    public function attachments()
+    {
+        return $this->hasMany(File::class, 'rel_id', 'id')->where('rel_type', 'task');
+    }
+
     public function relatable()
     {
         if (!$this->rel_type || !$this->rel_id) {

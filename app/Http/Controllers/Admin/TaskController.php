@@ -11,7 +11,9 @@ use App\Models\Project;
 use App\Models\ProjectActivity;
 use App\Models\Estimate;
 use App\Models\Proposal;
+use App\Models\File;
 use App\Services\EmailService;
+use App\Services\FileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -22,6 +24,63 @@ class TaskController extends Controller
     public function __construct(EmailService $emailService)
     {
         $this->emailService = $emailService;
+    }
+
+    public function storeAttachment(Request $request, $id)
+    {
+        $task = Task::findOrFail($id);
+        if (!Auth::user()->can('tasks_edit')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'file' => 'required|file|max:25600',
+        ]);
+
+        try {
+            $fileService = app(FileService::class);
+            $uploaded = $fileService->upload($request->file('file'), 'task');
+
+            File::create([
+                'rel_id' => $task->id,
+                'rel_type' => 'task',
+                'file_name' => $uploaded['file_name'],
+                'original_file_name' => $uploaded['original_file_name'],
+                'filetype' => $uploaded['filetype'],
+                'staffid' => Auth::id(),
+                'dateadded' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'File uploaded successfully',
+                'reload' => true,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function destroyAttachment($fileId)
+    {
+        $file = File::where('rel_type', 'task')->findOrFail($fileId);
+        if (!Auth::user()->can('tasks_edit')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $fileService = app(FileService::class);
+            $fileService->delete($file->file_name);
+            $file->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'File deleted successfully',
+                'reload' => true,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 
     public function index(Request $request)
@@ -75,7 +134,7 @@ class TaskController extends Controller
             $milestones = Milestone::where('project_id', $projectId)->get();
             
             // Get tasks for this project grouped by status column
-            $tasks = Task::with(['creator', 'relatable', 'assignedStaff', 'timers', 'checklistItems', 'comments'])
+            $tasks = Task::with(['creator', 'relatable', 'assignedStaff', 'timers', 'checklistItems', 'comments', 'attachments'])
                 ->withCount('comments')
                 ->where('rel_type', 'project')
                 ->where('rel_id', $projectId)
@@ -111,7 +170,7 @@ class TaskController extends Controller
                     ->filter(fn($t) => $t->start_time && $t->start_time->isToday())
                     ->sum(fn($t) => $t->end_time ? $t->start_time->diffInHours($t->end_time) : 0);
                 
-                $task->attachments_count = 0;
+                $task->attachments_count = $task->attachments->count();
             });
         });
         
@@ -169,7 +228,7 @@ class TaskController extends Controller
             'addedfrom' => Auth::id(),
         ]));
 
-        $staffIds = $request->filled('assigned_staff') ? explode(',', $request->assigned_staff) : [];
+        $staffIds = $request->filled('assigned_staff') ? (is_array($request->assigned_staff) ? $request->assigned_staff : explode(',', $request->assigned_staff)) : [];
         if (!empty($staffIds)) {
             $staffIds = array_map('trim', $staffIds);
             $task->assignedStaff()->sync($staffIds);
@@ -264,7 +323,7 @@ class TaskController extends Controller
             'total_cycles' => $request->total_cycles ?? 0,
         ]));
 
-        $staffIds = $request->filled('assigned_staff') ? explode(',', $request->assigned_staff) : [];
+        $staffIds = $request->filled('assigned_staff') ? (is_array($request->assigned_staff) ? $request->assigned_staff : explode(',', $request->assigned_staff)) : [];
         $task->assignedStaff()->sync(array_map('trim', $staffIds));
 
         // Log activity for task update
@@ -314,8 +373,14 @@ class TaskController extends Controller
             'followers',
             'comments.addedFrom',
             'timers.staff',
-            'checklistItems'
+            'checklistItems',
+            'attachments.staff',
         ])->findOrFail($id);
+
+        $fileService = app(FileService::class);
+        foreach ($task->attachments as $att) {
+            $att->fileurl = $fileService->url($att->file_name);
+        }
 
         \Log::info('Task comments count: ' . $task->comments->count());
 

@@ -13,6 +13,7 @@ use App\Models\Proposal;
 use App\Models\Lead;
 use App\Models\Ticket;
 use App\Models\Client;
+use App\Services\FileService;
 use Illuminate\Http\Request;
 
 class TaskPaneController extends Controller
@@ -75,7 +76,13 @@ class TaskPaneController extends Controller
             'comments.addedFrom',
             'timers.staff',
             'checklistItems',
+            'attachments.staff',
         ])->findOrFail($id);
+
+        $fileService = app(FileService::class);
+        foreach ($task->attachments as $att) {
+            $att->fileurl = $fileService->url($att->file_name);
+        }
 
         return view('admin.tasks.pane.show', compact('task'));
     }

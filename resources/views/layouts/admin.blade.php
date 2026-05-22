@@ -198,7 +198,10 @@
                     if (data.success) {
                         showToast(data.message || 'Saved successfully!', 'success');
                         closeTaskPane();
-                        if (data.reload) { setTimeout(() => location.reload(), 500); }
+                        const refreshUrl = form.getAttribute('data-pane-refresh');
+                        if (refreshUrl) {
+                            setTimeout(() => openTaskPane(refreshUrl, 'Task'), 350);
+                        }
                     } else {
                         const msg = data.message || data.error || 'An error occurred';
                         showToast(msg, 'error');

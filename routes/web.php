@@ -339,7 +339,11 @@ Route::post('tasks/{id}/assign-staff', [\App\Http\Controllers\Admin\TaskControll
     Route::get('pane/tasks/{id}/edit', [\App\Http\Controllers\Admin\TaskPaneController::class, 'edit'])->name('admin.tasks.pane.edit');
     Route::get('pane/tasks/{id}', [\App\Http\Controllers\Admin\TaskPaneController::class, 'show'])->name('admin.tasks.pane.show');
 
-    // Task Comments Routes
+    // Task Attachment Routes
+    Route::post('tasks/{task}/attachments', [\App\Http\Controllers\Admin\TaskController::class, 'storeAttachment'])->name('admin.tasks.attachments.store');
+    Route::delete('tasks/attachments/{file}', [\App\Http\Controllers\Admin\TaskController::class, 'destroyAttachment'])->name('admin.tasks.attachments.destroy');
+
+// Task Comments Routes
     Route::post('comments', [\App\Http\Controllers\Admin\CommentController::class, 'store'])->name('admin.comments.store');
     Route::put('comments/{comment}', [\App\Http\Controllers\Admin\CommentController::class, 'update'])->name('admin.comments.update');
     Route::delete('comments/{comment}', [\App\Http\Controllers\Admin\CommentController::class, 'destroy'])->name('admin.comments.destroy');

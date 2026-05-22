@@ -272,6 +272,88 @@ $totalMinutes = $task->timers->reduce(function($carry, $t) {
             </div>
         </div>
 
+        {{-- Attachments --}}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="bi bi-paperclip text-slate-400"></i>
+                    <h3 class="text-sm font-semibold text-slate-800">Attachments</h3>
+                </div>
+                <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-[10px] font-bold">{{ $task->attachments->count() }}</span>
+            </div>
+            <div class="p-4 space-y-3">
+                @if($task->attachments->count() > 0)
+                <div class="space-y-1.5 max-h-56 overflow-y-auto">
+                    @foreach($task->attachments as $att)
+                    @php
+                        $ext = strtolower(pathinfo($att->original_file_name ?: $att->file_name, PATHINFO_EXTENSION));
+                        $isImage = $att->filetype && str_starts_with($att->filetype, 'image/');
+                        $iconMap = [
+                            'pdf' => 'bi-filetype-pdf',
+                            'doc' => 'bi-filetype-docx', 'docx' => 'bi-filetype-docx',
+                            'xls' => 'bi-filetype-xlsx', 'xlsx' => 'bi-filetype-xlsx', 'csv' => 'bi-filetype-csv',
+                            'zip' => 'bi-file-zip', 'rar' => 'bi-file-zip', '7z' => 'bi-file-zip',
+                            'txt' => 'bi-filetype-txt',
+                            'ppt' => 'bi-filetype-pptx', 'pptx' => 'bi-filetype-pptx',
+                            'mp4' => 'bi-film', 'avi' => 'bi-film', 'mov' => 'bi-film',
+                            'mp3' => 'bi-music-note', 'wav' => 'bi-music-note',
+                            'json' => 'bi-filetype-json', 'xml' => 'bi-filetype-xml',
+                            'html' => 'bi-filetype-html', 'css' => 'bi-filetype-css', 'js' => 'bi-filetype-js',
+                        ];
+                        $icon = $iconMap[$ext] ?? 'bi-file-earmark';
+                    @endphp
+                    <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 group transition-colors border border-transparent hover:border-slate-200">
+                        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                            @if($isImage)
+                            <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200 bg-slate-50">
+                                <img src="{{ $att->fileurl }}" alt="{{ $att->original_file_name ?: $att->file_name }}" class="w-full h-full object-cover" loading="lazy">
+                            </div>
+                            @else
+                            <div class="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 flex-shrink-0">
+                                <i class="bi {{ $icon }} text-base"></i>
+                            </div>
+                            @endif
+                            <div class="min-w-0">
+                                <a href="{{ $att->fileurl }}" target="_blank" class="text-sm font-medium text-slate-700 hover:text-blue-600 truncate block">{{ $att->original_file_name ?: $att->file_name }}</a>
+                                <span class="text-[10px] text-slate-400">{{ $att->staff ? $att->staff->firstname . ' ' . $att->staff->lastname : 'Unknown' }} · {{ \Carbon\Carbon::parse($att->dateadded)->format('M j, Y') }}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <a href="{{ $att->fileurl }}" target="_blank" class="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all" title="Download">
+                                <i class="bi bi-download text-xs"></i>
+                            </a>
+                            <button onclick="deleteTaskAttachment({{ $att->id }}, this)" class="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all" title="Delete">
+                                <i class="bi bi-trash3 text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                @else
+                <div class="text-center py-4">
+                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-2">
+                        <i class="bi bi-paperclip text-slate-300"></i>
+                    </div>
+                    <p class="text-sm text-slate-400">No attachments yet</p>
+                </div>
+                @endif
+
+                <form action="{{ route('admin.tasks.attachments.store', $task->id) }}" method="POST" data-pane-submit="1" data-pane-refresh="{{ route('admin.tasks.pane.show', $task->id) }}" enctype="multipart/form-data" class="pt-3 border-t border-slate-100">
+                    @csrf
+                    <div class="flex items-center gap-2">
+                        <label class="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all text-sm text-slate-500">
+                            <i class="bi bi-upload text-blue-500"></i>
+                            <span class="truncate" id="attachment-file-label">Choose file...</span>
+                            <input type="file" name="file" class="hidden" onchange="document.getElementById('attachment-file-label').textContent = this.files[0]?.name || 'Choose file...'">
+                        </label>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center gap-1.5">
+                            <i class="bi bi-upload"></i> Upload
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         {{-- Related --}}
         @if($task->relatedEntity || $task->milestoneRelation)
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -419,21 +501,24 @@ $totalMinutes = $task->timers->reduce(function($carry, $t) {
 </style>
 
 <script>
-if (window.paneCommentQuill) window.paneCommentQuill.destroy();
-window.paneCommentQuill = new Quill('#paneCommentEditor', {
-    theme: 'snow',
-    placeholder: 'Write a comment...',
-    modules: {
-        toolbar: [
-            ['bold', 'italic', 'underline'],
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            ['link', 'clean']
-        ]
-    }
-});
+try {
+    if (window.paneCommentQuill) window.paneCommentQuill.destroy();
+    window.paneCommentQuill = new Quill('#paneCommentEditor', {
+        theme: 'snow',
+        placeholder: 'Write a comment...',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['link', 'clean']
+            ]
+        }
+    });
+} catch(e) {}
 
 document.getElementById('paneCommentForm').addEventListener('submit', function(e) {
     e.preventDefault();
+    if (!window.paneCommentQuill) { parent.showToast('Editor not available', 'error'); return; }
     var content = window.paneCommentQuill.root.innerHTML;
     if (window.paneCommentQuill.getText().trim() === '') {
         parent.showToast('Please enter a comment', 'error');
@@ -471,6 +556,28 @@ function paneUpdateTaskStatus(id, status) {
             parent.showToast('Task marked as done', 'success');
             parent.closeTaskPane();
         }
+    });
+}
+
+function deleteTaskAttachment(id, btn) {
+    if (!confirm('Delete this attachment?')) return;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-arrow-repeat animate-spin text-xs"></i>';
+    fetch('/admin/tasks/attachments/' + id, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            parent.showToast(data.message, 'success');
+            parent.openTaskPane('{{ route('admin.tasks.pane.show', $task->id) }}', 'Task');
+        } else {
+            parent.showToast(data.message || 'Delete failed', 'error');
+        }
+    })
+    .catch(() => {
+        parent.showToast('Network error', 'error');
     });
 }
 </script>

@@ -123,18 +123,9 @@
 
                 <div class="space-y-1">
                     <label class="text-sm font-medium text-slate-600">Assigned To</label>
-                    <div class="relative">
-                        <button type="button" onclick="toggleAssigneeDropdown()" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-left text-sm text-slate-600 flex items-center justify-between gap-2 hover:border-blue-400 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                            <span id="assignee-label">Select team members...</span>
-                            <i class="bi bi-chevron-down text-slate-400 text-xs"></i>
-                        </button>
-                        <input type="hidden" name="assigned_staff" id="assigned_staff_input" value="">
-                        <div id="assignee-dropdown" class="hidden absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                            <div id="assignee-options" class="p-2">
-                                <p class="text-xs text-slate-400 p-2">Select a project first to see team members</p>
-                            </div>
-                        </div>
-                    </div>
+                    <select multiple name="assigned_staff[]" id="assignee-select" class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[100px] text-sm">
+                    </select>
+                    <p class="text-xs text-slate-400">Ctrl+click to select multiple</p>
                 </div>
             </div>
 
@@ -231,26 +222,29 @@ const proposalList = @json($proposals->map(fn($p) => ['id' => $p->id, 'label' =>
 const leadList = @json($leads->map(fn($l) => ['id' => $l->id, 'name' => $l->name]));
 const ticketList = @json($tickets->map(fn($t) => ['id' => $t->ticketid, 'label' => $t->subject]));
 const clientList = @json($clients->map(fn($c) => ['id' => $c->userid, 'name' => $c->company]));
+const allStaff = @json($staff->map(fn($s) => ['id' => $s->staffid, 'name' => $s->firstname . ' ' . $s->lastname]));
 const projectStaff = @json($projects->mapWithKeys(function($p) { return [$p->id => $p->staff->map(fn($s) => ['id' => $s->staffid, 'name' => $s->firstname . ' ' . $s->lastname])]; }));
 
 var paneCreateQuill = null;
-if (document.getElementById('editor')) {
-    if (paneCreateQuill) paneCreateQuill.destroy();
-    paneCreateQuill = new Quill('#editor', {
-        theme: 'snow',
-        placeholder: 'Task details and requirements...',
-        modules: {
-            toolbar: [
-                ['bold', 'italic', 'underline'],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                ['link', 'clean']
-            ]
-        }
-    });
-}
+try {
+    if (document.getElementById('editor')) {
+        if (paneCreateQuill) paneCreateQuill.destroy();
+        paneCreateQuill = new Quill('#editor', {
+            theme: 'snow',
+            placeholder: 'Task details and requirements...',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link', 'clean']
+                ]
+            }
+        });
+    }
+} catch(e) {}
 
 document.querySelector('form[data-pane-submit]')?.addEventListener('submit', function(e) {
-    document.getElementById('description').value = paneCreateQuill.root.innerHTML;
+    if (paneCreateQuill) document.getElementById('description').value = paneCreateQuill.root.innerHTML;
 });
 
 function updateRelTypeSelection(type) {
@@ -318,57 +312,39 @@ function filterMilestones() {
 function loadProjectStaff() {
     const relType = document.getElementById('rel_type_input').value;
     const relId = document.getElementById('rel_id_input').value;
-    const container = document.getElementById('assignee-options');
-    const label = document.getElementById('assignee-label');
-    const input = document.getElementById('assigned_staff_input');
+    const select = document.getElementById('assignee-select');
+    let staffList = allStaff;
     if (relType === 'project' && relId && projectStaff[relId]) {
-        const staff = projectStaff[relId];
-        container.innerHTML = staff.map(s => `
-            <label class="flex items-center gap-2 p-2 rounded hover:bg-slate-50 cursor-pointer">
-                <input type="checkbox" value="${s.id}" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" onchange="updateAssigneeSelection()">
-                <div class="w-6 h-6 rounded-full bg-slate-400 flex items-center justify-center text-white text-xs font-semibold">${s.name.charAt(0)}</div>
-                <span class="text-sm text-slate-700">${s.name}</span>
-            </label>`).join('');
-        if (staff.length === 0) container.innerHTML = '<p class="text-xs text-slate-400 p-2">No staff members in this project</p>';
-    } else {
-        container.innerHTML = '<p class="text-xs text-slate-400 p-2">Select a project first to see team members</p>';
+        staffList = projectStaff[relId];
     }
-    label.textContent = 'Select team members...';
-    input.value = '';
+    select.innerHTML = staffList.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    if (!staffList.length) select.innerHTML = '<option disabled>No staff available</option>';
 }
-
-function updateAssigneeSelection() {
-    const checkboxes = document.querySelectorAll('#assignee-options input[type="checkbox"]:checked');
-    const selected = Array.from(checkboxes).map(cb => cb.value);
-    const label = document.getElementById('assignee-label');
-    document.getElementById('assigned_staff_input').value = selected.join(',');
-    label.textContent = !selected.length ? 'Select team members...'
-        : selected.length === 1
-            ? (document.querySelector('#assignee-options input[type="checkbox"]:checked ~ span')?.textContent.trim() || '1 selected')
-            : selected.length + ' selected';
-}
-
-function toggleAssigneeDropdown() { document.getElementById('assignee-dropdown').classList.toggle('hidden'); }
-
-document.addEventListener('click', function(e) {
-    ['assignee-dropdown', 'rel-type-dropdown', 'rel-entity-dropdown'].forEach(id => {
-        const dd = document.getElementById(id);
-        if (dd && !dd.contains(e.target)) {
-            const btn = document.querySelector(`button[onclick="toggle${id.charAt(0).toUpperCase() + id.slice(1).replace('-','')}()"]`);
-            if (!btn?.contains(e.target)) dd.classList.add('hidden');
-        }
-    });
-});
 
 function toggleRecurring(value) {
     document.getElementById('recurring-options').classList.toggle('hidden', value !== '1');
 }
 
 (function() {
+    loadProjectStaff();
     const relType = '{{ request('rel_type') }}';
     if (relType) {
         loadRelEntityOptions(relType);
-        loadProjectStaff();
     }
+})();
+
+(function() {
+    const pane = document.getElementById('taskPaneContent');
+    if (!pane) return;
+    pane.addEventListener('click', function(e) {
+        ['rel-type-dropdown', 'rel-entity-dropdown'].forEach(id => {
+            const dd = document.getElementById(id);
+            if (!dd || dd.classList.contains('hidden')) return;
+            const btn = dd.previousElementSibling;
+            if (!dd.contains(e.target) && (!btn || !btn.contains(e.target))) {
+                dd.classList.add('hidden');
+            }
+        });
+    });
 })();
 </script>
