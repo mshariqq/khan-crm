@@ -116,4 +116,9 @@ class Invoice extends Model
     {
         return $this->hasMany(Note::class, 'rel_id', 'id')->where('rel_type', 'invoice');
     }
+
+    public function salesActivities()
+    {
+        return $this->hasMany(SalesActivity::class, 'rel_id', 'id')->where('rel_type', 'invoice');
+    }
 }

@@ -67,6 +67,9 @@
                     <button class="tab-btn px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent whitespace-nowrap" data-tab="credits">Credits</button>
                     <button class="tab-btn px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent whitespace-nowrap" data-tab="notes">Notes ({{ $invoice->notesList()->count() }})</button>
                     <button class="tab-btn px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent whitespace-nowrap" data-tab="reminders">Reminders ({{ $invoice->remindersList()->count() }})</button>
+                    <button class="tab-btn px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent whitespace-nowrap" data-tab="shipping">Shipping</button>
+                    <button class="tab-btn px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent whitespace-nowrap" data-tab="recurring">Recurring</button>
+                    <button class="tab-btn px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent whitespace-nowrap" data-tab="activity">Activity</button>
                 </div>
 
                 <div class="p-4">
@@ -478,6 +481,244 @@
                         </div>
                         @endif
                     </div>
+
+                    {{-- Shipping Tab --}}
+                    <div id="tab-shipping" class="tab-content hidden">
+                        @if($invoice->billing_street || $invoice->shipping_street)
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-slate-50 rounded-xl border border-slate-200 p-5">
+                                <div class="flex items-center gap-2 mb-4">
+                                    <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                                        <i class="bi bi-geo-alt text-blue-600"></i>
+                                    </div>
+                                    <h3 class="font-semibold text-slate-800">Billing Address</h3>
+                                </div>
+                                <div class="space-y-1 text-sm text-slate-600">
+                                    @if($invoice->billing_street)<p>{{ $invoice->billing_street }}</p>@endif
+                                    <p>{{ $invoice->billing_city ?? '' }}{{ $invoice->billing_city && $invoice->billing_state ? ', ' : '' }}{{ $invoice->billing_state ?? '' }} {{ $invoice->billing_zip ?? '' }}</p>
+                                    @if($invoice->billing_country)<p class="text-xs text-slate-400 mt-2">Country: {{ $invoice->billing_country }}</p>@endif
+                                    @if(!$invoice->billing_street && !$invoice->billing_city)
+                                    <p class="text-slate-400 italic">No billing address on file</p>
+                                    @endif
+                                </div>
+                                @if($invoice->client && ($invoice->client->address || $invoice->client->city))
+                                <div class="mt-4 pt-4 border-t border-slate-200">
+                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">From Client Profile</p>
+                                    <div class="text-sm text-slate-600">
+                                        <p>{{ $invoice->client->address ?? '' }}</p>
+                                        <p>{{ $invoice->client->city ?? '' }}{{ $invoice->client->city && $invoice->client->state ? ', ' : '' }}{{ $invoice->client->state ?? '' }} {{ $invoice->client->zip ?? '' }}</p>
+                                    </div>
+                                </div>
+                                @endif
+                            </div>
+                            <div class="bg-slate-50 rounded-xl border border-slate-200 p-5">
+                                <div class="flex items-center gap-2 mb-4">
+                                    <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                                        <i class="bi bi-truck text-amber-600"></i>
+                                    </div>
+                                    <h3 class="font-semibold text-slate-800">Shipping Address</h3>
+                                </div>
+                                <div class="space-y-1 text-sm text-slate-600">
+                                    @if($invoice->shipping_street)<p>{{ $invoice->shipping_street }}</p>@endif
+                                    <p>{{ $invoice->shipping_city ?? '' }}{{ $invoice->shipping_city && $invoice->shipping_state ? ', ' : '' }}{{ $invoice->shipping_state ?? '' }} {{ $invoice->shipping_zip ?? '' }}</p>
+                                    @if($invoice->shipping_country)<p class="text-xs text-slate-400 mt-2">Country: {{ $invoice->shipping_country }}</p>@endif
+                                    @if(!$invoice->shipping_street && !$invoice->shipping_city)
+                                    <p class="text-slate-400 italic">No shipping address</p>
+                                    @endif
+                                </div>
+                                <div class="mt-4 pt-4 border-t border-slate-200 space-y-2">
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-slate-500">Include Shipping</span>
+                                        <span class="font-medium {{ $invoice->include_shipping ? 'text-emerald-600' : 'text-slate-400' }}">{{ $invoice->include_shipping ? 'Yes' : 'No' }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-slate-500">Show on Invoice</span>
+                                        <span class="font-medium {{ $invoice->show_shipping_on_invoice ? 'text-emerald-600' : 'text-slate-400' }}">{{ $invoice->show_shipping_on_invoice ? 'Yes' : 'No' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @else
+                        <div class="py-12 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                            <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="bi bi-geo-alt text-slate-300 text-2xl"></i>
+                            </div>
+                            <p class="text-sm font-medium text-slate-500">No address information</p>
+                            <p class="text-xs text-slate-400 mt-1">Billing and shipping addresses are not set for this invoice</p>
+                        </div>
+                        @endif
+                    </div>
+
+                    {{-- Recurring Tab --}}
+                    <div id="tab-recurring" class="tab-content hidden">
+                        @if($invoice->recurring)
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-slate-50 rounded-xl border border-slate-200 p-5">
+                                <div class="flex items-center gap-2 mb-4">
+                                    <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                                        <i class="bi bi-arrow-repeat text-purple-600"></i>
+                                    </div>
+                                    <h3 class="font-semibold text-slate-800">Recurring Settings</h3>
+                                </div>
+                                <div class="space-y-3 text-sm">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-slate-500">Recurring</span>
+                                        <span class="px-2.5 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-bold">Active</span>
+                                    </div>
+                                    <div class="border-t border-slate-200"></div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-slate-500">Type</span>
+                                        <span class="font-medium text-slate-700 capitalize">{{ $invoice->recurring_type ?: 'N/A' }}</span>
+                                    </div>
+                                    <div class="border-t border-slate-200"></div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-slate-500">Custom Recurring</span>
+                                        <span class="font-medium text-slate-700">{{ $invoice->custom_recurring ?: '-' }}</span>
+                                    </div>
+                                    <div class="border-t border-slate-200"></div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-slate-500">Cycles</span>
+                                        <span class="font-medium text-slate-700">{{ $invoice->cycles ?? 0 }} {{ $invoice->cycles == 0 ? '(Infinite)' : '' }}</span>
+                                    </div>
+                                    <div class="border-t border-slate-200"></div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-slate-500">Total Cycles</span>
+                                        <span class="font-medium text-slate-700">{{ $invoice->total_cycles ?? 0 }}</span>
+                                    </div>
+                                    @if($invoice->last_recurring_date)
+                                    <div class="border-t border-slate-200"></div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-slate-500">Last Recurring</span>
+                                        <span class="font-medium text-slate-700">{{ \Carbon\Carbon::parse($invoice->last_recurring_date)->format('M d, Y') }}</span>
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                @if($invoice->subscription)
+                                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-5">
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <div class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white">
+                                            <i class="bi bi-link-45deg text-sm"></i>
+                                        </div>
+                                        <h3 class="font-semibold text-slate-800">Subscription</h3>
+                                    </div>
+                                    <a href="{{ route('admin.subscriptions.show', $invoice->subscription->id) }}" class="text-sm font-medium text-blue-600 hover:underline flex items-center gap-1.5">
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                        {{ $invoice->subscription->name ?? 'Subscription #'.$invoice->subscription->id }}
+                                    </a>
+                                    @if($invoice->subscription->stripe_subscription_id)
+                                    <p class="text-xs text-slate-500 mt-1 font-mono">{{ $invoice->subscription->stripe_subscription_id }}</p>
+                                    @endif
+                                </div>
+                                @endif
+                                @if($invoice->project)
+                                <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border border-emerald-200 p-5">
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <div class="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white">
+                                            <i class="bi bi-folder text-sm"></i>
+                                        </div>
+                                        <h3 class="font-semibold text-slate-800">Project</h3>
+                                    </div>
+                                    <a href="{{ route('admin.projects.show', $invoice->project->id) }}" class="text-sm font-medium text-emerald-600 hover:underline flex items-center gap-1.5">
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                        {{ $invoice->project->name }}
+                                    </a>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                        @else
+                        <div class="py-12 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                            <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="bi bi-arrow-repeat text-slate-300 text-2xl"></i>
+                            </div>
+                            <p class="text-sm font-medium text-slate-500">Not a recurring invoice</p>
+                            <p class="text-xs text-slate-400 mt-1">This invoice is a one-time billing with no recurring schedule</p>
+                        </div>
+                        @endif
+                    </div>
+
+                    {{-- Activity Log Tab --}}
+                    <div id="tab-activity" class="tab-content hidden">
+                        @php
+                            $activities = collect();
+
+                            foreach ($invoice->salesActivities as $sa) {
+                                $activities->push([
+                                    'date' => $sa->date,
+                                    'type' => 'activity',
+                                    'description' => $sa->description,
+                                    'staff_name' => $sa->staff ? $sa->staff->firstname . ' ' . $sa->staff->lastname : ($sa->full_name ?: 'System'),
+                                    'icon' => 'bi-clock-history',
+                                    'icon_bg' => 'bg-blue-100',
+                                    'icon_color' => 'text-blue-600',
+                                ]);
+                            }
+
+                            foreach ($invoice->checkoutLogs as $cl) {
+                                $activities->push([
+                                    'date' => $cl->created_at,
+                                    'type' => 'checkout',
+                                    'description' => 'Checkout transaction' . ($cl->reference ? ' (Ref: ' . $cl->reference . ')' : ''),
+                                    'amount' => $cl->amount,
+                                    'attempt_reference' => $cl->attempt_reference,
+                                    'staff_name' => 'Payment Gateway',
+                                    'icon' => 'bi-credit-card-2-front',
+                                    'icon_bg' => 'bg-purple-100',
+                                    'icon_color' => 'text-purple-600',
+                                ]);
+                            }
+
+                            $activities = $activities->sortByDesc('date')->values();
+                        @endphp
+
+                        @if($activities->count() > 0)
+                        <div class="relative">
+                            <div class="absolute left-5 top-0 bottom-0 w-0.5 bg-slate-200"></div>
+                            <div class="space-y-0">
+                                @foreach($activities as $activity)
+                                <div class="relative pl-14 pb-6">
+                                    <div class="absolute left-3.5 top-1 w-4 h-4 rounded-full border-2 border-white {{ $activity['icon_bg'] }} flex items-center justify-center z-10 shadow-sm">
+                                        <i class="bi {{ $activity['icon'] }} {{ $activity['icon_color'] }} text-[7px]"></i>
+                                    </div>
+                                    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                                        <div class="flex items-start justify-between gap-4">
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm text-slate-700 leading-relaxed">{!! $activity['description'] !!}</p>
+                                                @if($activity['type'] === 'checkout' && isset($activity['amount']))
+                                                <p class="text-sm font-bold text-slate-800 mt-1">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($activity['amount'], 2) }}</p>
+                                                @endif
+                                                @if($activity['type'] === 'checkout' && !empty($activity['attempt_reference']))
+                                                <p class="text-xs text-slate-400 font-mono mt-1">Attempt: {{ $activity['attempt_reference'] }}</p>
+                                                @endif
+                                            </div>
+                                            <div class="text-right flex-shrink-0">
+                                                <p class="text-xs text-slate-400">{{ \Carbon\Carbon::parse($activity['date'])->format('M d, Y') }}</p>
+                                                <p class="text-[10px] text-slate-400">{{ \Carbon\Carbon::parse($activity['date'])->format('g:i A') }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2 flex items-center gap-1.5">
+                                            <span class="w-5 h-5 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-600 text-[7px] font-bold">
+                                                {{ strtoupper(substr($activity['staff_name'], 0, 1)) }}
+                                            </span>
+                                            <span class="text-[10px] text-slate-500">{{ $activity['staff_name'] }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @else
+                        <div class="py-12 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                            <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="bi bi-activity text-slate-300 text-2xl"></i>
+                            </div>
+                            <p class="text-sm font-medium text-slate-500">No activity recorded yet</p>
+                            <p class="text-xs text-slate-400 mt-1">All invoice actions — creation, updates, payments, reminders — will appear here as a timeline</p>
+                        </div>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
@@ -530,6 +771,49 @@
                 @else
                 <p class="text-sm text-slate-400">No client</p>
                 @endif
+            </div>
+
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+                <h3 class="text-sm font-semibold text-slate-700 mb-3">Details</h3>
+                <div class="space-y-3 text-sm">
+                    @if($invoice->project)
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Project</span>
+                        <a href="{{ route('admin.projects.show', $invoice->project->id) }}" class="font-medium text-blue-600 hover:underline flex items-center gap-1.5">
+                            <i class="bi bi-folder"></i> {{ $invoice->project->name }}
+                        </a>
+                    </div>
+                    @endif
+                    @if($invoice->subscription)
+                    <div class="border-t border-slate-100 pt-3">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Subscription</span>
+                        <a href="{{ route('admin.subscriptions.show', $invoice->subscription->id) }}" class="font-medium text-blue-600 hover:underline flex items-center gap-1.5">
+                            <i class="bi bi-link-45deg"></i> {{ $invoice->subscription->name ?? '#' . $invoice->subscription->id }}
+                        </a>
+                    </div>
+                    @endif
+                    @if($invoice->saleAgent)
+                    <div class="border-t border-slate-100 pt-3">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Sale Agent</span>
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-600 text-[9px] font-bold">
+                                {{ strtoupper(substr($invoice->saleAgent->firstname, 0, 1)) }}{{ strtoupper(substr($invoice->saleAgent->lastname ?? '', 0, 1)) }}
+                            </span>
+                            <span class="font-medium text-slate-700">{{ $invoice->saleAgent->firstname }} {{ $invoice->saleAgent->lastname }}</span>
+                        </div>
+                    </div>
+                    @endif
+                    @if($invoice->creator)
+                    <div class="border-t border-slate-100 pt-3">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Created By</span>
+                        <span class="font-medium text-slate-700">{{ $invoice->creator->firstname }} {{ $invoice->creator->lastname }}</span>
+                    </div>
+                    @endif
+                    <div class="border-t border-slate-100 pt-3">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Recurring</span>
+                        <span class="font-medium {{ $invoice->recurring ? 'text-purple-600' : 'text-slate-400' }}">{{ $invoice->recurring ? 'Yes' : 'No' }}</span>
+                    </div>
+                </div>
             </div>
 
             <a href="{{ route('admin.invoices.index') }}" class="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm hover:bg-slate-200">

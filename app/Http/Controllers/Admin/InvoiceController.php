@@ -15,8 +15,10 @@ use App\Models\PaymentMode;
 use App\Models\Note;
 use App\Models\Itemable;
 use App\Models\Reminder;
+use App\Models\SalesActivity;
+use App\Models\InvoicePaymentRecord;
 use App\Services\EmailService;
-use App\Services\LeadActivityLogService;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -173,6 +175,8 @@ class InvoiceController extends Controller
         
         $invoice = Invoice::create($invoiceData);
 
+        $this->logActivity($invoice->id, 'Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b> created');
+
         // Save items
         if ($request->has('item_description')) {
             $descriptions = $request->item_description;
@@ -219,8 +223,9 @@ class InvoiceController extends Controller
         }
 
         $invoice = Invoice::with([
-            'client', 'currency', 'creator', 'saleAgent', 'project',
-            'items', 'payments', 'credits.creditNote', 'notes.creator', 'reminders.staff'
+            'client', 'currency', 'creator', 'saleAgent', 'project', 'subscription',
+            'items', 'payments', 'credits.creditNote', 'notes.creator', 'reminders.staff',
+            'checkoutLogs', 'salesActivities.staff'
         ])->findOrFail($id);
 
         $staff = Staff::all();
@@ -300,6 +305,8 @@ class InvoiceController extends Controller
         $validated['number'] = (int)preg_replace('/[^0-9]/', '', $validated['number']);
         $invoice->update($validated);
 
+        $this->logActivity($invoice->id, 'Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b> updated');
+
         return redirect()->route('admin.invoices.index')->with('success', 'Invoice updated successfully!');
     }
 
@@ -310,7 +317,12 @@ class InvoiceController extends Controller
         }
 
         $invoice = Invoice::findOrFail($id);
+        $invId = $invoice->id;
+        $num = $invoice->number;
+        $prefix = $invoice->prefix;
         $invoice->delete();
+
+        $this->logActivity($invId, 'Invoice <b>#' . ($prefix ?? '') . $num . '</b> deleted');
 
         return redirect()->route('admin.invoices.index')->with('success', 'Invoice deleted successfully!');
     }
@@ -331,6 +343,8 @@ class InvoiceController extends Controller
             'dateadded' => now(),
             'addedfrom' => Auth::id(),
         ]);
+
+        $this->logActivity($invoice->id, 'Note added to Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b>');
 
         return redirect()->route('admin.invoices.show', $invoice->id)->with('success', 'Note added!');
     }
@@ -381,6 +395,8 @@ class InvoiceController extends Controller
             $this->emailService->send($invoice->client->email, 'invoice-payment-recorded', $data);
         }
 
+        $this->logActivity($invoice->id, 'Payment of <b>' . ($invoice->currency->symbol ?? '$') . number_format($request->amount, 2) . '</b> recorded for Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b>');
+
         return redirect()->route('admin.invoices.show', $invoice->id)->with('success', 'Payment recorded!');
     }
 
@@ -393,6 +409,8 @@ class InvoiceController extends Controller
         $invoice = Invoice::findOrFail($id);
         $invoice->update(['status' => 3]);
 
+        $this->logActivity($invoice->id, 'Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b> marked as paid');
+
         return redirect()->route('admin.invoices.show', $invoice->id)->with('success', 'Invoice marked as paid!');
     }
 
@@ -404,6 +422,8 @@ class InvoiceController extends Controller
 
         $invoice = Invoice::findOrFail($id);
         $invoice->update(['status' => 4]);
+
+        $this->logActivity($invoice->id, 'Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b> cancelled');
 
         return redirect()->route('admin.invoices.show', $invoice->id)->with('success', 'Invoice cancelled!');
     }
@@ -430,6 +450,8 @@ class InvoiceController extends Controller
 
         $invoice->update(['sent' => 1, 'datesend' => now()]);
 
+        $this->logActivity($invoice->id, 'Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b> sent to client');
+
         return redirect()->back()->with('success', 'Invoice sent to client!');
     }
 
@@ -451,6 +473,8 @@ class InvoiceController extends Controller
             'description' => 'required|string',
             'notify_by_email' => 'nullable|boolean'
         ]);
+
+        $invoice = Invoice::findOrFail($id);
 
         $reminder = Reminder::create([
             'description' => $request->description,
@@ -479,6 +503,8 @@ class InvoiceController extends Controller
             }
         }
 
+        $this->logActivity($id, 'Reminder set for Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b>');
+
         return redirect()->back()->with('success', 'Reminder added successfully!');
     }
 
@@ -489,8 +515,27 @@ class InvoiceController extends Controller
         }
 
         $reminder = Reminder::findOrFail($id);
+        $invoiceId = $reminder->rel_id;
         $reminder->delete();
 
+        $invoice = Invoice::find($invoiceId);
+        if ($invoice) {
+            $this->logActivity($invoiceId, 'Reminder removed from Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b>');
+        }
+
         return redirect()->back()->with('success', 'Reminder deleted!');
+    }
+
+    private function logActivity($invoiceId, $description)
+    {
+        $staff = Auth::user();
+        SalesActivity::create([
+            'rel_type' => 'invoice',
+            'rel_id' => $invoiceId,
+            'description' => $description,
+            'staffid' => $staff->staffid ?? 0,
+            'full_name' => ($staff->firstname ?? '') . ' ' . ($staff->lastname ?? ''),
+            'date' => now(),
+        ]);
     }
 }

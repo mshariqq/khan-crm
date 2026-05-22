@@ -9,4 +9,14 @@ class InvoicePaymentRecord extends Model
     protected $table = 'tblinvoicepaymentrecords';
     public $timestamps = true;
     protected $fillable = ['id', 'invoiceid', 'amount', 'paymentmode', 'paymentmethod', 'date', 'daterecorded', 'note', 'transactionid'];
+
+    public function invoice()
+    {
+        return $this->belongsTo(Invoice::class, 'invoiceid', 'id');
+    }
+
+    public function paymentMode()
+    {
+        return $this->belongsTo(PaymentMode::class, 'paymentmode', 'id');
+    }
 }
