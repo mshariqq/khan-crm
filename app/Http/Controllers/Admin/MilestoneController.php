@@ -42,6 +42,10 @@ $validated = $request->validate([
             
             Milestone::create($validated);
 
+            if ($request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Milestone created successfully!', 'reload' => true]);
+            }
+
             if ($request->filled('referer')) {
                 return redirect($request->referer)->with('success', 'Milestone created');
             }
@@ -79,6 +83,11 @@ $validated = $request->validate([
             ]);
             
             $milestone->update($validated);
+
+            if ($request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Milestone updated successfully!', 'reload' => true]);
+            }
+
             return redirect()->route('admin.milestones.show', $milestone)->with('success', 'Milestone updated');
     }
 

@@ -1,6 +1,6 @@
 <div class="flex items-center justify-between mb-4">
     <h3 class="text-sm font-semibold text-slate-800">Tickets ({{ $ticketCount }})</h3>
-    <a href="{{ route('admin.tickets.create') }}?project_id={{ $project->id }}" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 flex items-center gap-1">
+    <a href="{{ route('admin.tickets.create') }}?project_id={{ $project->id }}" data-pane="create" data-pane-type="ticket" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 flex items-center gap-1">
         <i class="bi bi-plus"></i> Add Ticket
     </a>
 </div>
@@ -39,7 +39,7 @@ $order = [4, 3, 2, 1];
                         </div>
                         <div class="min-w-0">
                             <div class="flex items-center gap-2 mb-1">
-                                <a href="{{ route('admin.tickets.show', $ticket->ticketid) }}" class="text-sm font-medium text-slate-700 hover:text-blue-600 truncate">
+                                <a href="{{ route('admin.tickets.show', $ticket->ticketid) }}" data-pane="show" data-pane-type="ticket" data-pane-id="{{ $ticket->ticketid }}" class="text-sm font-medium text-slate-700 hover:text-blue-600 truncate">
                                     #{{ $ticket->ticketkey }} - {{ $ticket->subject }}
                                 </a>
                                 @php
@@ -79,10 +79,10 @@ $order = [4, 3, 2, 1];
                         </div>
                     </div>
                     <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <a href="{{ route('admin.tickets.show', $ticket->ticketid) }}" class="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-200" title="View">
+                        <a href="{{ route('admin.tickets.show', $ticket->ticketid) }}" data-pane="show" data-pane-type="ticket" data-pane-id="{{ $ticket->ticketid }}" class="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-200" title="View">
                             <i class="bi bi-eye text-xs"></i>
                         </a>
-                        <a href="{{ route('admin.tickets.edit', $ticket->ticketid) }}" class="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-200" title="Edit">
+                        <a href="{{ route('admin.tickets.edit', $ticket->ticketid) }}" data-pane="edit" data-pane-type="ticket" data-pane-id="{{ $ticket->ticketid }}" class="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-200" title="Edit">
                             <i class="bi bi-pencil text-xs"></i>
                         </a>
                         <form action="{{ route('admin.tickets.destroy', $ticket->ticketid) }}" method="POST" class="inline" onsubmit="return confirm('Delete this ticket?');">
@@ -106,6 +106,6 @@ $order = [4, 3, 2, 1];
         <i class="bi bi-headset text-slate-400 text-xl"></i>
     </div>
     <p class="text-sm text-slate-500">No tickets yet</p>
-    <a href="{{ route('admin.tickets.create') }}?project_id={{ $project->id }}" class="mt-3 inline-block px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">Add Ticket</a>
+    <a href="{{ route('admin.tickets.create') }}?project_id={{ $project->id }}" data-pane="create" data-pane-type="ticket" class="mt-3 inline-block px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">Add Ticket</a>
 </div>
 @endif

@@ -354,6 +354,11 @@ Route::resource('milestones', \App\Http\Controllers\Admin\MilestoneController::c
         'destroy' => 'admin.milestones.destroy',
 ]);
 
+// Milestone Pane Routes
+Route::get('pane/milestones/create', [\App\Http\Controllers\Admin\MilestonePaneController::class, 'create'])->name('admin.milestones.pane.create');
+Route::get('pane/milestones/{id}/edit', [\App\Http\Controllers\Admin\MilestonePaneController::class, 'edit'])->name('admin.milestones.pane.edit');
+Route::get('pane/milestones/{id}', [\App\Http\Controllers\Admin\MilestonePaneController::class, 'show'])->name('admin.milestones.pane.show');
+
 // Task Timer Routes
 Route::post('timers/start', [\App\Http\Controllers\Admin\TaskTimerController::class, 'start'])->name('admin.timers.start');
 Route::post('timers/{timer}/stop', [\App\Http\Controllers\Admin\TaskTimerController::class, 'stop'])->name('admin.timers.stop');
@@ -383,6 +388,11 @@ Route::resource('tickets', \App\Http\Controllers\Admin\TicketController::class)-
     Route::post('ticket-replies', [\App\Http\Controllers\Admin\TicketController::class, 'storeReply'])->name('admin.tickets.reply.store');
     Route::post('tickets/{id}/change-status', [\App\Http\Controllers\Admin\TicketController::class, 'changeStatus'])->name('admin.tickets.change_status');
     Route::post('tickets/{id}/change-assigned', [\App\Http\Controllers\Admin\TicketController::class, 'changeAssigned'])->name('admin.tickets.change_assigned');
+
+    // Ticket Pane Routes
+    Route::get('pane/tickets/create', [\App\Http\Controllers\Admin\TicketPaneController::class, 'create'])->name('admin.tickets.pane.create');
+    Route::get('pane/tickets/{id}/edit', [\App\Http\Controllers\Admin\TicketPaneController::class, 'edit'])->name('admin.tickets.pane.edit');
+    Route::get('pane/tickets/{id}', [\App\Http\Controllers\Admin\TicketPaneController::class, 'show'])->name('admin.tickets.pane.show');
 
     Route::resource('invoices', \App\Http\Controllers\Admin\InvoiceController::class)->names([
         'index' => 'admin.invoices.index',

@@ -391,7 +391,7 @@
                             <div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center"><i class="bi bi-cash-stack text-red-600"></i></div>
                             <span class="text-sm font-medium text-slate-700">Add Expense</span>
                         </a>
-                        <a href="{{ route('admin.milestones.create') }}?project_id={{ $project->id }}&referer={{ url()->current() }}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200">
+                        <a href="{{ route('admin.milestones.create') }}?project_id={{ $project->id }}" data-pane="create" data-pane-type="milestone" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200">
                             <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center"><i class="bi bi-flag text-purple-600"></i></div>
                             <span class="text-sm font-medium text-slate-700">Add Milestone</span>
                         </a>
@@ -514,7 +514,7 @@
     <div id="section-milestones" class="dashboard-section hidden space-y-6">
         <div class="flex items-center justify-between">
             <h2 class="text-xl font-bold text-slate-800">Milestones & Timeline</h2>
-            <a href="{{ route('admin.milestones.create') }}?project_id={{ $project->id }}&referer={{ url()->current() }}" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all flex items-center gap-2">
+            <a href="{{ route('admin.milestones.create') }}?project_id={{ $project->id }}" data-pane="create" data-pane-type="milestone" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all flex items-center gap-2">
                 <i class="bi bi-plus-lg"></i> Add Milestone
             </a>
         </div>
@@ -535,7 +535,7 @@
                         <div class="flex flex-col md:flex-row md:items-center gap-4">
                             <div class="flex-1">
                                 <div class="flex items-center gap-3">
-                                    <h3 class="text-base font-bold text-slate-800">{{ $milestone->name }}</h3>
+                                    <a href="{{ route('admin.milestones.show', $milestone->id) }}" data-pane="show" data-pane-type="milestone" data-pane-id="{{ $milestone->id }}" class="text-base font-bold text-slate-800 hover:text-blue-600">{{ $milestone->name }}</a>
                                     @if($isPast && $mProgress < 100)
                                         <span class="px-2 py-0.5 bg-red-50 text-red-700 text-xs font-bold rounded-full border border-red-200">Overdue</span>
                                     @elseif($isNear)
@@ -568,7 +568,7 @@
                 </div>
                 <h3 class="text-lg font-semibold text-slate-800 mb-2">No milestones yet</h3>
                 <p class="text-slate-500 mb-6">Break your project into milestones to track progress.</p>
-                <a href="{{ route('admin.milestones.create') }}?project_id={{ $project->id }}&referer={{ url()->current() }}" class="px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all inline-flex items-center gap-2">
+                <a href="{{ route('admin.milestones.create') }}?project_id={{ $project->id }}" data-pane="create" data-pane-type="milestone" class="px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all inline-flex items-center gap-2">
                     <i class="bi bi-plus-lg"></i> Add Milestone
                 </a>
             </div>

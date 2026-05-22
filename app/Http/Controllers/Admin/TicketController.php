@@ -124,6 +124,10 @@ class TicketController extends Controller
             ]);
         }
 
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Ticket created successfully!', 'reload' => true]);
+        }
+
         if ($request->filled('referer')) {
             return redirect($request->referer)->with('success', 'Ticket created successfully!');
         }
@@ -176,6 +180,10 @@ class TicketController extends Controller
             'project_id' => $request->project_id ?: 0,
             'email' => $request->email ?? '',
         ]));
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Ticket updated successfully!', 'reload' => true]);
+        }
 
         return redirect()->route('admin.tickets.index')->with('success', 'Ticket updated successfully!');
     }

@@ -7,7 +7,7 @@
     <div class="flex items-center justify-between">
         <h1 class="text-2xl font-bold text-slate-800">{{ $milestone->name }}</h1>
         <div class="flex items-center gap-2">
-            <a href="{{ route('admin.milestones.edit', $milestone) }}" class="px-4 py-2 bg-amber-500 text-white text-sm font-semibold rounded-lg hover:bg-amber-600">Edit</a>
+            <a href="{{ route('admin.milestones.edit', $milestone) }}" data-pane="edit" data-pane-type="milestone" data-pane-id="{{ $milestone->id }}" class="px-4 py-2 bg-amber-500 text-white text-sm font-semibold rounded-lg hover:bg-amber-600">Edit</a>
             <form action="{{ route('admin.milestones.destroy', $milestone) }}" method="POST" onsubmit="return confirm('Delete milestone?');" class="inline">
                 @csrf @method('DELETE')
                 <button type="submit" class="px-4 py-2 bg-red-500 text-white text-sm font-semibold rounded-lg hover:bg-red-600">Delete</button>

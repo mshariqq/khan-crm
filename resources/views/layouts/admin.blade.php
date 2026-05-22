@@ -70,7 +70,7 @@
     {{-- Task Pane --}}
     <div id="taskPane" class="fixed inset-0 z-[70] hidden" role="dialog" aria-modal="true">
         <div class="absolute inset-0 bg-black/40" onclick="closeTaskPane()"></div>
-        <div class="absolute right-0 top-0 h-full w-full max-w-[70%] bg-white shadow-2xl transform transition-transform duration-300 flex flex-col">
+        <div class="absolute right-0 top-0 h-full w-full max-w-[78%] bg-white shadow-2xl transform transition-transform duration-300 flex flex-col">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 flex-shrink-0">
                 <h3 class="text-lg font-semibold text-slate-800" id="taskPaneTitle">Task</h3>
                 <button onclick="closeTaskPane()" class="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all">
@@ -142,8 +142,10 @@
         @if(session('info')) showToast('{{ session('info') }}', 'info'); @endif
 });
 
-    function openTaskPane(url) {
+    function openTaskPane(url, title) {
         const pane = document.getElementById('taskPane');
+        const paneTitle = document.getElementById('taskPaneTitle');
+        if (title) paneTitle.textContent = title;
         const content = document.getElementById('taskPaneContent');
         content.innerHTML = '<div class="flex items-center justify-center h-full"><div class="text-slate-400"><i class="bi bi-arrow-repeat text-4xl animate-spin block mb-2"></i><p class="text-sm">Loading...</p></div></div>';
         pane.classList.remove('hidden');
@@ -165,6 +167,9 @@
                 content.innerHTML = '<div class="flex items-center justify-center h-full text-red-500"><p>Failed to load content. Please try again.</p></div>';
             });
     }
+
+    function openTicketPane(url) { openTaskPane(url, 'Ticket'); }
+    function openMilestonePane(url) { openTaskPane(url, 'Milestone'); }
 
     function closeTaskPane() {
         const pane = document.getElementById('taskPane');
@@ -213,17 +218,37 @@
         if (!link) return;
         e.preventDefault();
         const action = link.getAttribute('data-pane');
-        const taskId = link.getAttribute('data-pane-id');
+        const type = link.getAttribute('data-pane-type') || 'task';
+        const id = link.getAttribute('data-pane-id');
         let url = '';
         if (action === 'create') {
             const params = new URLSearchParams(link.search);
-            url = '{{ route('admin.tasks.pane.create') }}' + (params.toString() ? '?' + params.toString() : '');
-        } else if (action === 'edit' && taskId) {
-            url = '{{ route('admin.tasks.pane.edit', '__ID__') }}'.replace('__ID__', taskId);
-        } else if (action === 'show' && taskId) {
-            url = '{{ route('admin.tasks.pane.show', '__ID__') }}'.replace('__ID__', taskId);
+            if (type === 'task') {
+                url = '{{ route('admin.tasks.pane.create') }}' + (params.toString() ? '?' + params.toString() : '');
+            } else if (type === 'ticket') {
+                url = '{{ route('admin.tickets.pane.create') }}' + (params.toString() ? '?' + params.toString() : '');
+            } else if (type === 'milestone') {
+                url = '{{ route('admin.milestones.pane.create') }}' + (params.toString() ? '?' + params.toString() : '');
+            }
+        } else if (action === 'edit' && id) {
+            if (type === 'task') {
+                url = '{{ route('admin.tasks.pane.edit', '__ID__') }}'.replace('__ID__', id);
+            } else if (type === 'ticket') {
+                url = '{{ route('admin.tickets.pane.edit', '__ID__') }}'.replace('__ID__', id);
+            } else if (type === 'milestone') {
+                url = '{{ route('admin.milestones.pane.edit', '__ID__') }}'.replace('__ID__', id);
+            }
+        } else if (action === 'show' && id) {
+            if (type === 'task') {
+                url = '{{ route('admin.tasks.pane.show', '__ID__') }}'.replace('__ID__', id);
+            } else if (type === 'ticket') {
+                url = '{{ route('admin.tickets.pane.show', '__ID__') }}'.replace('__ID__', id);
+            } else if (type === 'milestone') {
+                url = '{{ route('admin.milestones.pane.show', '__ID__') }}'.replace('__ID__', id);
+            }
         }
-        if (url) openTaskPane(url);
+        const titles = { task: 'Task', ticket: 'Ticket', milestone: 'Milestone' };
+        if (url) openTaskPane(url, titles[type] || 'Task');
     });
     </script>
 

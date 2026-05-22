@@ -9,7 +9,7 @@
             <h1 class="text-xl font-bold text-slate-800">Tickets</h1>
             <p class="text-xs text-slate-400">Manage support tickets</p>
         </div>
-        <a href="{{ route('admin.tickets.create') }}" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-all flex items-center gap-1">
+        <a href="{{ route('admin.tickets.create') }}" data-pane="create" data-pane-type="ticket" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-all flex items-center gap-1">
             <i class="bi bi-plus"></i> New Ticket
         </a>
     </div>
@@ -58,7 +58,7 @@
                 <tr class="hover:bg-slate-50">
                     <td class="px-4 py-3">
                         <div>
-                            <a href="{{ route('admin.tickets.show', $ticket->ticketid) }}" class="text-sm font-medium text-slate-800 hover:text-blue-600">{{ $ticket->subject }}</a>
+                            <a href="{{ route('admin.tickets.show', $ticket->ticketid) }}" data-pane="show" data-pane-type="ticket" data-pane-id="{{ $ticket->ticketid }}" class="text-sm font-medium text-slate-800 hover:text-blue-600">{{ $ticket->subject }}</a>
                             <p class="text-[10px] text-slate-400">#{{ $ticket->ticketid }}</p>
                         </div>
                     </td>
@@ -103,10 +103,10 @@
                     </td>
                     <td class="px-4 py-3 text-right">
                         <div class="flex items-center justify-end gap-1">
-                            <a href="{{ route('admin.tickets.show', $ticket->ticketid) }}" class="p-1.5 text-slate-400 hover:text-blue-600" title="View">
+                            <a href="{{ route('admin.tickets.show', $ticket->ticketid) }}" data-pane="show" data-pane-type="ticket" data-pane-id="{{ $ticket->ticketid }}" class="p-1.5 text-slate-400 hover:text-blue-600" title="View">
                                 <i class="bi bi-eye"></i>
                             </a>
-                            <a href="{{ route('admin.tickets.edit', $ticket->ticketid) }}" class="p-1.5 text-slate-400 hover:text-amber-600" title="Edit">
+                            <a href="{{ route('admin.tickets.edit', $ticket->ticketid) }}" data-pane="edit" data-pane-type="ticket" data-pane-id="{{ $ticket->ticketid }}" class="p-1.5 text-slate-400 hover:text-amber-600" title="Edit">
                                 <i class="bi bi-pencil"></i>
                             </a>
                             <form action="{{ route('admin.tickets.destroy', $ticket->ticketid) }}" method="POST" class="inline" onsubmit="return confirm('Delete?');">
