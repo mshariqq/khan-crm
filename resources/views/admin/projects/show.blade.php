@@ -26,7 +26,11 @@
             </a>
             <div>
                 <h1 class="text-lg font-bold text-slate-800">{{ $project->name }}</h1>
-                <p class="text-xs text-slate-400">{{ $project->client->company ?? 'No Client' }}</p>
+                @if($project->client)
+                <a href="{{ route('admin.clients.show', $project->client->userid) }}" class="text-xs text-slate-400 hover:text-blue-600">{{ $project->client->company }}</a>
+                @else
+                <p class="text-xs text-slate-400">No Client</p>
+                @endif
             </div>
         </div>
         <div class="flex items-center gap-2">

@@ -411,7 +411,8 @@ function updateAssigneeSelection() {
     if (selected.length === 0) {
         label.textContent = 'Select team members...';
     } else if (selected.length === 1) {
-        label.textContent = selected.length + ' selected';
+        const checked = document.querySelector('#assignee-options input[type="checkbox"]:checked ~ span');
+        label.textContent = checked ? checked.textContent.trim() : '1 selected';
     } else {
         label.textContent = selected.length + ' selected';
     }

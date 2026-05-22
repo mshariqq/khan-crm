@@ -30,7 +30,7 @@ class TaskController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $query = Task::query()->with(['creator', 'milestoneRelation', 'project', 'assignedStaff']);
+        $query = Task::query()->with(['creator', 'milestoneRelation', 'relatable', 'assignedStaff']);
 
         if ($request->filled('priority')) {
             $query->where('priority', $request->priority);
@@ -74,40 +74,44 @@ class TaskController extends Controller
             $project = Project::findOrFail($projectId);
             $milestones = Milestone::where('project_id', $projectId)->get();
             
-            // Get tasks for this project grouped by milestone
-            $tasks = Task::with(['creator', 'assignedStaff', 'timers', 'checklistItems', 'comments'])
+            // Get tasks for this project grouped by status column
+            $tasks = Task::with(['creator', 'relatable', 'assignedStaff', 'timers', 'checklistItems', 'comments'])
                 ->withCount('comments')
                 ->where('rel_type', 'project')
                 ->where('rel_id', $projectId)
-                ->orderByRaw("CASE WHEN milestone IS NULL OR milestone = '' THEN 1 ELSE 0 END")
-                ->orderBy('milestone')
+                ->orderByRaw("CASE WHEN status IS NULL OR status = '' THEN 1 ELSE 0 END")
+                ->orderBy('status')
                 ->get()
                 ->groupBy(function($task) {
-                    if ($task->milestone) {
-                        return 'milestone_' . $task->milestone;
-                    }
-                    return 'unassigned';
+                    $statusMap = [0 => 'backlog', 1 => 'pending', 2 => 'in_progress', 3 => 'completed'];
+                    return $statusMap[(int)$task->status] ?? 'backlog';
                 });
         }
         
-        // Also get available projects for the project selector
         $projects = Project::orderBy('name')->get();
+        
+        // Ensure all column keys exist even if empty
+        $tasks = collect([
+            'backlog' => collect($tasks->get('backlog', [])),
+            'pending' => collect($tasks->get('pending', [])),
+            'in_progress' => collect($tasks->get('in_progress', [])),
+            'completed' => collect($tasks->get('completed', [])),
+        ]);
         
         // Calculate progress and timers for each task
         $tasks->each(function ($taskGroup) {
             $taskGroup->each(function ($task) {
-                // Simple progress calculation based on checklist completion
-                $completedChecklists = $task->checklistItems()->where('finished', 1)->count();
-                $totalChecklists = $task->checklistItems()->count();
+                $completedChecklists = $task->checklistItems->where('finished', 1)->count();
+                $totalChecklists = $task->checklistItems->count();
                 $task->progress = $totalChecklists > 0 ? round(($completedChecklists / $totalChecklists) * 100) : 0;
                 
-                // Check if timer is active
-                $activeTimer = $task->timers()->where('end_time', null)->first();
+                $activeTimer = $task->timers->whereNull('end_time')->first();
                 $task->timer_active = !is_null($activeTimer);
-                $task->total_hours_today = $task->timers()->whereDate('start_time', today())->sum('total_time_hours');
+                $task->total_hours_today = $task->timers
+                    ->filter(fn($t) => $t->start_time && $t->start_time->isToday())
+                    ->sum(fn($t) => $t->end_time ? $t->start_time->diffInHours($t->end_time) : 0);
                 
-                // Count attachments (if attachment model exists)
-                $task->attachments_count = 0; // Placeholder - update if attachment model exists
+                $task->attachments_count = 0;
             });
         });
         
@@ -160,16 +164,17 @@ class TaskController extends Controller
             'repeat_every' => $request->repeat_every,
             'cycles' => $request->cycles ?? 0,
             'total_cycles' => $request->total_cycles ?? 0,
-            'custom_recurring' => $request->custom_recurring,
+            'custom_recurring' => $request->custom_recurring ?? 0,
             'dateadded' => now(),
             'addedfrom' => Auth::id(),
         ]));
 
-        if ($request->has('assigned_staff')) {
-            $task->assignedStaff()->sync($request->assigned_staff);
+        $staffIds = $request->filled('assigned_staff') ? explode(',', $request->assigned_staff) : [];
+        if (!empty($staffIds)) {
+            $staffIds = array_map('trim', $staffIds);
+            $task->assignedStaff()->sync($staffIds);
 
-            // Notify assigned staff
-            foreach ($request->assigned_staff as $staffId) {
+            foreach ($staffIds as $staffId) {
                 $staffMember = Staff::find($staffId);
                 if ($staffMember && $staffMember->email) {
                     $this->emailService->send($staffMember->email, 'task-assigned', [
@@ -178,7 +183,7 @@ class TaskController extends Controller
                         'task_startdate' => \Carbon\Carbon::parse($task->startdate)->format('d M, Y'),
                         'task_duedate' => $task->duedate ? \Carbon\Carbon::parse($task->duedate)->format('d M, Y') : 'N/A',
                         'task_priority' => $task->priority == 4 ? 'Urgent' : ($task->priority == 3 ? 'High' : ($task->priority == 2 ? 'Medium' : 'Low')),
-                        'task_link' => config('app.url') . '/admin/tasks/' . $task->id,
+                        'task_link' => route('admin.tasks.show', $task->id),
                     ]);
                 }
             }
@@ -192,6 +197,10 @@ class TaskController extends Controller
                 'additional_data' => json_encode(['task_name' => $task->name]),
                 'dateadded' => now(),
             ]);
+        }
+
+        if ($request->filled('referer')) {
+            return redirect($request->referer)->with('success', 'Task created successfully!');
         }
 
         return redirect()->route('admin.tasks.index')->with('success', 'Task created successfully!');
@@ -251,9 +260,8 @@ class TaskController extends Controller
             'total_cycles' => $request->total_cycles ?? 0,
         ]));
 
-        if ($request->has('assigned_staff')) {
-            $task->assignedStaff()->sync($request->assigned_staff);
-        }
+        $staffIds = $request->filled('assigned_staff') ? explode(',', $request->assigned_staff) : [];
+        $task->assignedStaff()->sync(array_map('trim', $staffIds));
 
         // Log activity for task update
         if ($task->rel_type === 'project' && $task->rel_id) {
@@ -293,6 +301,7 @@ class TaskController extends Controller
         $task = Task::with([
             'creator',
             'milestoneRelation',
+            'relatable',
             'assignedStaff',
             'followers',
             'comments.addedFrom',
@@ -326,7 +335,7 @@ class TaskController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $task = Task::with(['creator', 'milestoneRelation', 'assignedStaff', 'comments', 'timers'])->findOrFail($id);
+        $task = Task::with(['creator', 'milestoneRelation', 'relatable', 'assignedStaff', 'comments', 'timers'])->findOrFail($id);
         
         $html = view('admin.tasks.partials.quick-view', compact('task'))->render();
         
@@ -426,7 +435,7 @@ class TaskController extends Controller
             'success' => true,
             'message' => 'Task created successfully',
             'task_id' => $task->id,
-            'task' => $task->load('assignedStaff', 'project')
+            'task' => $task->load('assignedStaff', 'relatable')
         ]);
     }
 

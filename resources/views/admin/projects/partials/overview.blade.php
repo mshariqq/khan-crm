@@ -44,7 +44,7 @@
                     <i class="bi bi-building text-slate-500"></i>
                 </div>
                 <div>
-                    <p class="text-sm font-medium text-slate-800">{{ $project->client->company }}</p>
+                    <a href="{{ route('admin.clients.show', $project->client->userid) }}" class="text-sm font-medium text-slate-800 hover:text-blue-600">{{ $project->client->company }}</a>
                     <p class="text-xs text-slate-500">{{ $project->client->email }}</p>
                 </div>
             </div>

@@ -46,7 +46,7 @@
 @endif
 
 <div class="mt-4 pt-4 border-t border-slate-200">
-    <a href="{{ route('admin.milestones.create') }}?project_id={{ $project->id }}" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+    <a href="{{ route('admin.milestones.create') }}?project_id={{ $project->id }}&referer={{ url()->current() }}" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
         <i class="bi bi-plus-lg"></i> Add Milestone
     </a>
 </div>

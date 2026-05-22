@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KhanCRM — Open Source Enterprise CRM & ERP</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: #f8fafc; color: #0f172a; line-height: 1.6; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+    /* --- Nav --- */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
+      border-bottom: 1px solid #e2e8f0;
+    }
+    nav .container { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+    nav .logo { font-size: 1.35rem; font-weight: 800; color: #0f172a; text-decoration: none; }
+    nav .logo span { color: #6366f1; }
+    nav .nav-links { display: flex; gap: 28px; align-items: center; }
+    nav .nav-links a { text-decoration: none; font-size: 0.875rem; font-weight: 500; color: #475569; transition: color .2s; }
+    nav .nav-links a:hover { color: #6366f1; }
+    nav .nav-btn {
+      padding: 8px 20px; background: #6366f1; color: #fff !important; border-radius: 8px;
+      font-weight: 600; font-size: 0.8125rem; transition: background .2s;
+    }
+    nav .nav-btn:hover { background: #4f46e5; }
+
+    /* --- Hero --- */
+    .hero {
+      padding: 140px 0 80px; text-align: center;
+      background: linear-gradient(180deg, #eef2ff 0%, #f8fafc 100%);
+    }
+    .hero .badge {
+      display: inline-block; padding: 6px 16px; border-radius: 100px;
+      background: #e0e7ff; color: #4338ca; font-size: 0.8125rem; font-weight: 600;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: 3.25rem; font-weight: 900; line-height: 1.15; letter-spacing: -0.03em;
+      max-width: 780px; margin: 0 auto 20px;
+    }
+    .hero h1 span { background: linear-gradient(135deg, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p {
+      font-size: 1.125rem; color: #64748b; max-width: 600px; margin: 0 auto 36px;
+    }
+    .hero .btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .hero .btn-primary {
+      padding: 14px 32px; background: #0f172a; color: #fff; border-radius: 10px;
+      font-weight: 600; font-size: 0.9375rem; text-decoration: none; transition: background .2s;
+    }
+    .hero .btn-primary:hover { background: #1e293b; }
+    .hero .btn-secondary {
+      padding: 14px 32px; background: #fff; color: #0f172a; border-radius: 10px;
+      font-weight: 600; font-size: 0.9375rem; text-decoration: none; border: 1px solid #e2e8f0;
+      transition: border-color .2s;
+    }
+    .hero .btn-secondary:hover { border-color: #6366f1; }
+
+    /* --- Section common --- */
+    section { padding: 80px 0; }
+    .section-label {
+      font-size: 0.8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+      color: #6366f1; margin-bottom: 8px;
+    }
+    .section-title { font-size: 2.25rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 12px; }
+    .section-sub { font-size: 1.0625rem; color: #64748b; max-width: 580px; }
+
+    /* --- Features Grid --- */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px;
+      margin-top: 48px;
+    }
+    .feature-card {
+      background: #fff; border-radius: 14px; padding: 28px;
+      border: 1px solid #e2e8f0; transition: box-shadow .25s, transform .25s;
+    }
+    .feature-card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.05); transform: translateY(-2px); }
+    .feature-card .icon {
+      width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem; margin-bottom: 16px; color: #fff;
+    }
+    .feature-card h3 { font-size: 1.0625rem; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p { font-size: 0.875rem; color: #64748b; }
+    .feature-card ul { list-style: none; margin-top: 12px; }
+    .feature-card ul li { font-size: 0.8125rem; color: #475569; padding: 3px 0; }
+    .feature-card ul li::before { content: "✓ "; color: #6366f1; font-weight: 700; }
+
+    /* --- Stats --- */
+    .stats {
+      background: #0f172a; color: #fff; text-align: center;
+    }
+    .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 32px; }
+    .stat h2 { font-size: 2.5rem; font-weight: 800; color: #a5b4fc; }
+    .stat p { font-size: 0.875rem; color: #94a3b8; margin-top: 4px; }
+
+    /* --- Modules --- */
+    .module-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 16px; margin-top: 40px; }
+    .module-item {
+      display: flex; align-items: center; gap: 14px; padding: 16px 20px;
+      background: #fff; border-radius: 10px; border: 1px solid #e2e8f0;
+    }
+    .module-item .mi-icon {
+      width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; color: #fff; flex-shrink: 0;
+    }
+    .module-item span { font-size: 0.9rem; font-weight: 600; }
+
+    /* --- Tech --- */
+    .tech-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 16px; margin-top: 40px; }
+    .tech-item {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 20px; text-align: center;
+    }
+    .tech-item h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; }
+    .tech-item p { font-size: 0.8rem; color: #64748b; }
+
+    /* --- CTA --- */
+    .cta {
+      text-align: center;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      color: #fff; padding: 80px 0;
+    }
+    .cta h2 { font-size: 2.25rem; font-weight: 800; margin-bottom: 12px; }
+    .cta p { font-size: 1.0625rem; opacity: 0.9; margin-bottom: 32px; }
+    .cta .btn-cta {
+      display: inline-block; padding: 16px 40px; background: #fff; color: #4338ca;
+      border-radius: 10px; font-weight: 700; font-size: 1rem; text-decoration: none;
+      transition: transform .2s;
+    }
+    .cta .btn-cta:hover { transform: translateY(-2px); }
+
+    /* --- Footer --- */
+    footer { background: #0f172a; color: #94a3b8; text-align: center; padding: 32px 0; font-size: 0.8125rem; }
+    footer a { color: #a5b4fc; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* --- Responsive --- */
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 2rem; }
+      .stats-grid { grid-template-columns: repeat(2,1fr); }
+      .features-grid { grid-template-columns: 1fr; }
+      nav .nav-links a:not(.nav-btn) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <div class="container">
+      <a href="#" class="logo">Khan<span>CRM</span></a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#modules">Modules</a>
+        <a href="#tech">Tech Stack</a>
+        <a href="https://github.com/your-org/khncrm" target="_blank" class="nav-btn"><i class="bi bi-github"></i> GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <div class="badge"><i class="bi bi-code-slash"></i> Open Source &mdash; AGPLv3</div>
+      <h1>All-in-One <span>CRM & ERP</span><br>Built for Growing Businesses</h1>
+      <p>17 integrated modules. Client portal. Kanban tasks. Invoicing. Payroll. Knowledge base. Role-based access. All in one open-source platform.</p>
+      <div class="btns">
+        <a href="#quickstart" class="btn-primary"><i class="bi bi-terminal"></i> Quick Start</a>
+        <a href="#features" class="btn-secondary">Explore Features <i class="bi bi-arrow-down"></i></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="stats">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat"><h2>17</h2><p>Modules</p></div>
+        <div class="stat"><h2>110+</h2><p>Database Tables</p></div>
+        <div class="stat"><h2>30+</h2><p>Admin Controllers</p></div>
+        <div class="stat"><h2>0</h2><p>Monthly Cost</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features">
+    <div class="container">
+      <div class="section-label">Everything you need</div>
+      <h2 class="section-title">Features</h2>
+      <p class="section-sub">From lead to invoice to payroll — manage your entire business in one place.</p>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="icon" style="background:#6366f1;"><i class="bi bi-people"></i></div>
+          <h3>Client Management</h3>
+          <p>Full client profiles, contacts, groups, and a dedicated client portal with login.</p>
+          <ul>
+            <li>Client portal with project, invoice & ticket views</li>
+            <li>CSV export & advanced search</li>
+            <li>Notes, reminders & GDPR requests</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon" style="background:#a855f7;"><i class="bi bi-megaphone"></i></div>
+          <h3>Lead Management</h3>
+          <p>Source, track, score, and convert leads with email integration and web forms.</p>
+          <ul>
+            <li>Web-to-lead forms & IMAP email import</li>
+            <li>One-click lead-to-client conversion</li>
+            <li>Pipeline tracking (lost / junk / converted)</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon" style="background:#0891b2;"><i class="bi bi-kanban"></i></div>
+          <h3>Project Management</h3>
+          <p>Gantt charts, milestones, discussions, timesheets, and automatic progress tracking.</p>
+          <ul>
+            <li>Gantt chart view & milestone tracking</li>
+            <li>Team discussions with threaded comments</li>
+            <li>File uploads & timesheets per project</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon" style="background:#059669;"><i class="bi bi-check-square"></i></div>
+          <h3>Task Management</h3>
+          <p>Kanban board with checklists, timers, assignments, and quick-create modals.</p>
+          <ul>
+            <li>Drag-and-drop Kanban board</li>
+            <li>Checklists with reusable templates</li>
+            <li>Built-in start/stop timer</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon" style="background:#d97706;"><i class="bi bi-receipt"></i></div>
+          <h3>Invoicing</h3>
+          <p>Custom numbering, recurring invoices, partial payments, credit notes, and PDF export.</p>
+          <ul>
+            <li>Recurring invoices with configurable cycles</li>
+            <li>Partial payments & multiple payment modes</li>
+            <li>Dual tax per item & credit notes</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon" style="background:#dc2626;"><i class="bi bi-file-earmark-text"></i></div>
+          <h3>Estimates & Proposals</h3>
+          <p>Convert estimates to invoices, digital signatures, and public request forms.</p>
+          <ul>
+            <li>One-click estimate-to-invoice conversion</li>
+            <li>Digital signature acceptance workflow</li>
+            <li>Public estimate request forms</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon" style="background:#7c3aed;"><i class="bi bi-ticket-detailed"></i></div>
+          <h3>Support Tickets</h3>
+          <p>Multi-department ticket system with email piping, predefined replies, and client portal.</p>
+          <ul>
+            <li>IMAP email piping (auto-import)</li>
+            <li>Predefined replies & spam filtering</li>
+            <li>Client portal submission & replies</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon" style="background:#0d9488;"><i class="bi bi-book"></i></div>
+          <h3>Knowledge Base</h3>
+          <p>Public-facing articles with groups, feedback, and staff-only internal documentation.</p>
+          <ul>
+            <li>Categorized articles with color groups</li>
+            <li>Visitor feedback (helpful / not)</li>
+            <li>Staff-only internal articles</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon" style="background:#e11d48;"><i class="bi bi-people"></i></div>
+          <h3>HR & Payroll</h3>
+          <p>Attendance tracking, leave management with approvals, and payslip generation.</p>
+          <ul>
+            <li>Clock in/out with IP logging & grace periods</li>
+            <li>Leave types with quotas & approval workflow</li>
+            <li>Auto-generate payslips with adjustments</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon" style="background:#ca8a04;"><i class="bi bi-cash"></i></div>
+          <h3>Expense Tracking</h3>
+          <p>Category-based expenses, billable to invoices, with recurring and tax support.</p>
+          <ul>
+            <li>Expense categories & tax tracking</li>
+            <li>Mark expenses as billable</li>
+            <li>Recurring expense support</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon" style="background:#1d4ed8;"><i class="bi bi-shield-lock"></i></div>
+          <h3>Role-Based Access Control</h3>
+          <p>Granular per-feature permissions, departments, two-factor authentication.</p>
+          <ul>
+            <li>Per-feature view/create/edit/delete permissions</li>
+            <li>Department-based staff organization</li>
+            <li>Two-factor authentication support</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon" style="background:#9333ea;"><i class="bi bi-palette"></i></div>
+          <h3>Custom Branding</h3>
+          <p>Brand colors, logo, favicon, custom CSS injection, and configurable footer.</p>
+          <ul>
+            <li>Custom primary & secondary brand colors</li>
+            <li>Logo & favicon upload</li>
+            <li>Custom CSS & login background</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- All Modules -->
+  <section id="modules" style="background:#fff;">
+    <div class="container">
+      <div class="section-label">Full Module List</div>
+      <h2 class="section-title">17 Integrated Modules</h2>
+      <p class="section-sub">Every module is built to work together — share data, relationships, and a unified UI.</p>
+      <div class="module-list">
+        <div class="module-item"><div class="mi-icon" style="background:#6366f1;"><i class="bi bi-people"></i></div><span>Client Management</span></div>
+        <div class="module-item"><div class="mi-icon" style="background:#a855f7;"><i class="bi bi-megaphone"></i></div><span>Lead Management</span></div>
+        <div class="module-item"><div class="mi-icon" style="background:#0891b2;"><i class="bi bi-kanban"></i></div><span>Project Management</span></div>
+        <div class="module-item"><div class="mi-icon" style="background:#059669;"><i class="bi bi-check-square"></i></div><span>Task Management</span></div>
+        <div class="module-item"><div class="mi-icon" style="background:#d97706;"><i class="bi bi-receipt"></i></div><span>Invoicing</span></div>
+        <div class="module-item"><div class="mi-icon" style="background:#dc2626;"><i class="bi bi-file-earmark-text"></i></div><span>Estimates</span></div>
+        <div class="module-item"><div class="mi-icon" style="background:#7c3aed;"><i class="bi bi-ticket-detailed"></i></div><span>Support Tickets</span></div>
+        <div class="module-item"><div class="mi-icon" style="background:#0d9488;"><i class="bi bi-book"></i></div><span>Knowledge Base</span></div>
+        <div class="module-item"><div class="mi-icon" style="background:#e11d48;"><i class="bi bi-clock-history"></i></div><span>Attendance</span></div>
+        <div class="module-item"><div class="mi-icon" style="background:#ca8a04;"><i class="bi bi-calendar-event"></i></div><span>Leave Management</span></div>
+        <div class="module-item"><div class="mi-icon" style="background:#1d4ed8;"><i class="bi bi-cash-stack"></i></div><span>Payroll</span></div>
+        <div class="module-item"><div class="mi-icon" style="background:#9333ea;"><i class="bi bi-cash"></i></div><span>Expense Tracking</span></div>
+        <div class="module-item"><div class="mi-icon" style="background:#059669;"><i class="bi bi-credit-card"></i></div><span>Subscriptions</span></div>
+        <div class="module-item"><div class="mi-icon" style="background:#d97706;"><i class="bi bi-shield-lock"></i></div><span>Access Control</span></div>
+        <div class="module-item"><div class="mi-icon" style="background:#0891b2;"><i class="bi bi-envelope"></i></div><span>Email Templates</span></div>
+        <div class="module-item"><div class="mi-icon" style="background:#a855f7;"><i class="bi bi-newspaper"></i></div><span>Newsfeed</span></div>
+        <div class="module-item"><div class="mi-icon" style="background:#6366f1;"><i class="bi bi-shield-check"></i></div><span>GDPR & Compliance</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tech Stack -->
+  <section id="tech" style="background:#f1f5f9;">
+    <div class="container">
+      <div class="section-label">Built With</div>
+      <h2 class="section-title">Tech Stack</h2>
+      <p class="section-sub">Modern, battle-tested technologies powering the platform.</p>
+      <div class="tech-grid">
+        <div class="tech-item"><h4>PHP 8.3</h4><p>Backend runtime</p></div>
+        <div class="tech-item"><h4>Laravel 13</h4><p>MVC framework</p></div>
+        <div class="tech-item"><h4>Tailwind CSS 4</h4><p>Utility-first styling</p></div>
+        <div class="tech-item"><h4>Alpine.js</h4><p>Reactive UI</p></div>
+        <div class="tech-item"><h4>Vite 8</h4><p>Build tool & HMR</p></div>
+        <div class="tech-item"><h4>SQLite / MySQL</h4><p>Database</p></div>
+        <div class="tech-item"><h4>Blade</h4><p>Templating engine</p></div>
+        <div class="tech-item"><h4>Bootstrap Icons</h4><p>Icon library</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section id="quickstart" style="background:#fff;">
+    <div class="container">
+      <div class="section-label">Get started in minutes</div>
+      <h2 class="section-title">Quick Start</h2>
+      <p class="section-sub">Clone, install, and run.</p>
+      <div style="background:#0f172a; color:#e2e8f0; border-radius:12px; padding:28px; margin-top:32px; font-size:0.875rem; font-family:ui-monospace,monospace; overflow-x:auto;">
+        <div style="color:#6366f1; margin-bottom:12px;"># Clone &amp; enter</div>
+        <div>git clone https://github.com/your-org/khncrm.git</div>
+        <div style="margin-top:8px;">cd khncrm</div>
+
+        <div style="color:#6366f1; margin-top:20px; margin-bottom:12px;"># Install dependencies</div>
+        <div>composer install</div>
+        <div style="margin-top:4px;">npm install</div>
+        <div style="color:#6366f1; margin-top:20px; margin-bottom:12px;"># Environment</div>
+        <div>cp .env.example .env</div>
+        <div style="margin-top:4px;">php artisan key:generate</div>
+        <div style="color:#6366f1; margin-top:20px; margin-bottom:12px;"># Database &amp; seed</div>
+        <div>php artisan migrate</div>
+        <div style="margin-top:4px;">php artisan db:seed</div>
+        <div style="color:#6366f1; margin-top:20px; margin-bottom:12px;"># Build &amp; serve</div>
+        <div>npm run build</div>
+        <div style="margin-top:4px;">npm run dev</div>
+
+        <div style="color:#94a3b8; margin-top:16px; border-top:1px solid #1e293b; padding-top:16px;">
+          <i class="bi bi-rocket-takeoff"></i> Or all-in-one: <span style="color:#a5b4fc;">composer run setup</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <div class="container">
+      <h2>Ready to take control?</h2>
+      <p>Free. Open Source. No vendor lock-in. Self-hosted.</p>
+      <a href="https://github.com/your-org/khncrm" target="_blank" class="btn-cta">
+        <i class="bi bi-github"></i> Get Started on GitHub
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 <a href="#">KhanCRM</a>. Released under the <a href="#">AGPLv3 License</a>.</p>
+      <p style="margin-top:4px;">Built with Laravel, Tailwind CSS, and a lot of ☕.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

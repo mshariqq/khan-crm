@@ -423,9 +423,8 @@
             <div class="bg-white rounded-xl border border-slate-200 p-4">
                 <h3 class="text-sm font-semibold text-slate-700 mb-3">Client</h3>
                 @if($invoice->client)
-                <p class="font-medium text-slate-800">{{ $invoice->client->company }}</p>
+                <a href="{{ route('admin.clients.show', $invoice->client->userid) }}" class="font-medium text-slate-800 hover:text-blue-600">{{ $invoice->client->company }}</a>
                 <p class="text-sm text-slate-500">{{ $invoice->client->email }}</p>
-                <a href="{{ route('admin.clients.show', $invoice->client->userid) }}" class="text-blue-600 text-sm hover:underline">View Client</a>
                 @else
                 <p class="text-sm text-slate-400">No client</p>
                 @endif

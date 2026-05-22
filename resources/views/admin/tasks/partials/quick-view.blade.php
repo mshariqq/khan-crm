@@ -74,17 +74,17 @@
     </div>
 
     <!-- Project & Milestone -->
-    @if($task->project || $task->milestoneRelation)
+    @if($task->relatedEntity || $task->milestoneRelation)
     <div class="space-y-4">
         <h4 class="text-lg font-semibold text-slate-900 flex items-center gap-2">
             <i class="bi bi-folder2 text-slate-400"></i>
             Project & Milestone
         </h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            @if($task->project)
+            @if($task->relatedEntity && $task->rel_type === 'project')
             <div class="bg-white/70 rounded-xl p-4 border border-slate-100">
                 <p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Project</p>
-                <p class="text-sm font-semibold text-slate-900">{{ $task->project->name }}</p>
+                <a href="{{ route('admin.projects.show', $task->rel_id) }}" class="text-sm font-semibold text-slate-900 hover:text-blue-600">{{ $task->relatedEntity->name }}</a>
             </div>
             @endif
             @if($task->milestoneRelation)
@@ -150,11 +150,11 @@
                 <div class="bg-white/70 rounded-xl p-4 border border-slate-100">
                     <div class="flex items-start gap-3 mb-2">
                         <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
-                            {{ substr($comment->creator->firstname ?? 'U', 0, 1) }}
+                            {{ substr($comment->addedFrom->firstname ?? 'U', 0, 1) }}
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-semibold text-slate-900">
-                                {{ $comment->creator->firstname ?? 'Unknown' }} {{ $comment->creator->lastname ?? '' }}
+                                {{ $comment->addedFrom->firstname ?? 'Unknown' }} {{ $comment->addedFrom->lastname ?? '' }}
                             </p>
                             <p class="text-xs text-slate-500">
                                 {{ \Carbon\Carbon::parse($comment->dateadded)->diffForHumans() }}
@@ -190,8 +190,15 @@
             Time Tracking
         </h4>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            @php
+                $totalMinutes = $task->timers->reduce(function($carry, $t) {
+                    if ($t->end_time) return $carry + $t->start_time->diffInMinutes($t->end_time);
+                    return $carry;
+                }, 0);
+                $avgMinutes = $task->timers->count() > 0 ? $totalMinutes / $task->timers->count() : 0;
+            @endphp
             <div class="text-center p-4 bg-white/70 rounded-xl border border-slate-100">
-                <p class="text-lg font-bold text-slate-900">{{ number_format($task->timers->sum('total_time_hours'), 1) }}h</p>
+                <p class="text-lg font-bold text-slate-900">{{ number_format($totalMinutes / 60, 1) }}h</p>
                 <p class="text-xs text-slate-500">Total Time</p>
             </div>
             <div class="text-center p-4 bg-white/70 rounded-xl border border-slate-100">
@@ -199,7 +206,7 @@
                 <p class="text-xs text-slate-500">Sessions</p>
             </div>
             <div class="text-center p-4 bg-white/70 rounded-xl border border-slate-100">
-                <p class="text-lg font-bold text-slate-900">{{ number_format($task->timers->avg('total_time_hours'), 1) }}h</p>
+                <p class="text-lg font-bold text-slate-900">{{ number_format($avgMinutes / 60, 1) }}h</p>
                 <p class="text-xs text-slate-500">Avg Session</p>
             </div>
             <div class="text-center p-4 bg-white/70 rounded-xl border border-slate-100">

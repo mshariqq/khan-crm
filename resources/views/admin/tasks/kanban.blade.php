@@ -181,10 +181,10 @@
         </div>
 
         {{-- Project Info --}}
-        @if($task->project)
+        @if($task->relatedEntity && $task->rel_type === 'project')
         <div class="flex items-center gap-2 mb-3 text-xs">
             <i class="bi bi-folder text-slate-400"></i>
-            <span class="text-slate-600 font-medium truncate">{{ $task->project->name }}</span>
+            <span class="text-slate-600 font-medium truncate">{{ $task->relatedEntity->name }}</span>
         </div>
         @endif
 

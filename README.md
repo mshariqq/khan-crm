@@ -357,5 +357,5 @@ KhanCRM is open-sourced software licensed under the [AGPLv3 license](LICENSE). S
 ---
 
 <div align="center">
-Made with ❤️ by the KhanCRM Team
+Made with ❤️ by the CK Softwares
 </div>

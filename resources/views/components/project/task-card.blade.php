@@ -32,9 +32,9 @@
                     {{ $task->name }}
                 </h3>
                 @if($showProject && $task->project)
-                    <p class="text-xs text-slate-600 font-medium">
+                    <a href="{{ route('admin.projects.show', $task->project->id) }}" class="text-xs text-slate-600 font-medium hover:text-blue-600">
                         <i class="bi bi-folder2 text-slate-400 mr-1"></i> {{ $task->project->name }}
-                    </p>
+                    </a>
                 @endif
             </div>
             <div class="flex items-center gap-1 ml-2">

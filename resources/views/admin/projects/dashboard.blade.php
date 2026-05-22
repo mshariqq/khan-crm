@@ -130,7 +130,7 @@
                     @endif
                 </div>
                 <p class="text-slate-500 text-sm mt-0.5 flex items-center gap-2">
-                    <i class="bi bi-building"></i> {{ $project->client->company ?? 'No Client' }}
+                    <i class="bi bi-building"></i> @if($project->client)<a href="{{ route('admin.clients.show', $project->client->userid) }}" class="hover:text-blue-600">{{ $project->client->company }}</a>@else No Client @endif
                 </p>
             </div>
         </div>
@@ -138,7 +138,7 @@
             <a href="{{ route('admin.projects.edit', $project->id) }}" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2">
                 <i class="bi bi-pencil"></i> Edit
             </a>
-            <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
+            <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}&referer={{ url()->current() }}" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
                 <i class="bi bi-plus-lg"></i> Add Task
             </a>
         </div>
@@ -346,7 +346,7 @@
                         </div>
                         @empty
                         <div class="p-8 text-center">
-                            <p class="text-slate-500 text-sm">No tasks yet. <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}" class="text-blue-600 font-medium">Create one</a></p>
+                            <p class="text-slate-500 text-sm">No tasks yet. <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}&referer={{ url()->current() }}" class="text-blue-600 font-medium">Create one</a></p>
                         </div>
                         @endforelse
                     </div>
@@ -383,15 +383,15 @@
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                     <h2 class="text-lg font-bold text-slate-800 mb-4">Quick Actions</h2>
                     <div class="space-y-2">
-                        <a href="{{ route('admin.invoices.create') }}?project_id={{ $project->id }}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200">
+                        <a href="{{ route('admin.invoices.create') }}?project_id={{ $project->id }}&referer={{ url()->current() }}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200">
                             <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center"><i class="bi bi-receipt text-blue-600"></i></div>
                             <span class="text-sm font-medium text-slate-700">Create Invoice</span>
                         </a>
-                        <a href="{{ route('admin.expenses.create') }}?project_id={{ $project->id }}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200">
+                        <a href="{{ route('admin.expenses.create') }}?project_id={{ $project->id }}&referer={{ url()->current() }}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200">
                             <div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center"><i class="bi bi-cash-stack text-red-600"></i></div>
                             <span class="text-sm font-medium text-slate-700">Add Expense</span>
                         </a>
-                        <a href="{{ route('admin.milestones.create') }}?project_id={{ $project->id }}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200">
+                        <a href="{{ route('admin.milestones.create') }}?project_id={{ $project->id }}&referer={{ url()->current() }}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200">
                             <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center"><i class="bi bi-flag text-purple-600"></i></div>
                             <span class="text-sm font-medium text-slate-700">Add Milestone</span>
                         </a>
@@ -439,7 +439,7 @@
     <div id="section-kanban" class="dashboard-section hidden space-y-6">
         <div class="flex items-center justify-between">
             <h2 class="text-xl font-bold text-slate-800">Task Board</h2>
-            <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all flex items-center gap-2">
+            <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}&referer={{ url()->current() }}" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all flex items-center gap-2">
                 <i class="bi bi-plus-lg"></i> Add Task
             </a>
         </div>
@@ -514,7 +514,7 @@
     <div id="section-milestones" class="dashboard-section hidden space-y-6">
         <div class="flex items-center justify-between">
             <h2 class="text-xl font-bold text-slate-800">Milestones & Timeline</h2>
-            <a href="{{ route('admin.milestones.create') }}?project_id={{ $project->id }}" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all flex items-center gap-2">
+            <a href="{{ route('admin.milestones.create') }}?project_id={{ $project->id }}&referer={{ url()->current() }}" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all flex items-center gap-2">
                 <i class="bi bi-plus-lg"></i> Add Milestone
             </a>
         </div>
@@ -568,7 +568,7 @@
                 </div>
                 <h3 class="text-lg font-semibold text-slate-800 mb-2">No milestones yet</h3>
                 <p class="text-slate-500 mb-6">Break your project into milestones to track progress.</p>
-                <a href="{{ route('admin.milestones.create') }}?project_id={{ $project->id }}" class="px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all inline-flex items-center gap-2">
+                <a href="{{ route('admin.milestones.create') }}?project_id={{ $project->id }}&referer={{ url()->current() }}" class="px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all inline-flex items-center gap-2">
                     <i class="bi bi-plus-lg"></i> Add Milestone
                 </a>
             </div>

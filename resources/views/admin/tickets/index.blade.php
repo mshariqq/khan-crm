@@ -64,7 +64,7 @@
                     </td>
                     <td class="px-4 py-3">
                         @if($ticket->client)
-                        <span class="text-xs text-slate-600">{{ $ticket->client->company }}</span>
+                        <a href="{{ route('admin.clients.show', $ticket->client->userid) }}" class="text-xs text-slate-600 hover:text-blue-600">{{ $ticket->client->company }}</a>
                         @elseif($ticket->name)
                         <span class="text-xs text-slate-600">{{ $ticket->name }}</span>
                         @else

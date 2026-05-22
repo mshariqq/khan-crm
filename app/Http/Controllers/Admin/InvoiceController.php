@@ -205,6 +205,10 @@ class InvoiceController extends Controller
             }
         }
 
+        if ($request->filled('referer')) {
+            return redirect($request->referer)->with('success', 'Invoice created successfully!');
+        }
+
         return redirect()->route('admin.invoices.index')->with('success', 'Invoice created successfully!');
     }
 

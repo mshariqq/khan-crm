@@ -8,7 +8,12 @@ class TaskTimer extends Model
 {
     protected $table = 'tbltaskstimers';
     public $timestamps = true;
-    protected $fillable = ['id', 'task_id', 'start_time', 'end_time', 'staff_id', 'hourly_rate', 'note'];
+    protected $fillable = ['task_id', 'start_time', 'end_time', 'staff_id', 'hourly_rate', 'note', 'is_billable'];
+
+    protected $casts = [
+        'start_time' => 'datetime',
+        'end_time' => 'datetime',
+    ];
 
     public function staff()
     {

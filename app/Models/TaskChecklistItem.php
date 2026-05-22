@@ -8,5 +8,5 @@ class TaskChecklistItem extends Model
 {
     protected $table = 'tbltask_checklist_items';
     public $timestamps = true;
-    protected $fillable = ['id', 'taskid', 'description', 'finished', 'dateadded', 'addedfrom', 'finished_from', 'list_order', 'assigned'];
+    protected $fillable = ['taskid', 'description', 'finished', 'dateadded', 'addedfrom', 'finished_from', 'list_order', 'assigned'];
 }

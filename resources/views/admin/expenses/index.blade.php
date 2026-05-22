@@ -122,10 +122,18 @@
                             <a href="{{ route('admin.expenses.show', $expense->id) }}" class="font-medium text-slate-800 hover:text-blue-600 transition-colors">{{ $expense->expense_name }}</a>
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-600">
-                            {{ $expense->client->company ?? 'N/A' }}
+                            @if($expense->client)
+                            <a href="{{ route('admin.clients.show', $expense->client->userid) }}" class="hover:text-blue-600">{{ $expense->client->company }}</a>
+                            @else
+                            N/A
+                            @endif
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-600">
-                            {{ $expense->project->name ?? 'N/A' }}
+                            @if($expense->project)
+                            <a href="{{ route('admin.projects.show', $expense->project->id) }}" class="hover:text-blue-600">{{ $expense->project->name }}</a>
+                            @else
+                            N/A
+                            @endif
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-600 font-medium">
                             {{ number_format($expense->amount, 2) }}

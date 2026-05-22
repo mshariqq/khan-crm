@@ -112,7 +112,9 @@
                     </div>
                     <div class="flex-1">
                         <h3 class="text-sm font-bold text-slate-800">{{ $milestones[$milestoneId]->name }}</h3>
-                        <span class="text-xs text-slate-500">{{ $milestones[$milestoneId]->project->name ?? '' }}</span>
+                        @if(isset($milestones[$milestoneId]->project))
+                        <a href="{{ route('admin.projects.show', $milestones[$milestoneId]->project->id) }}" class="text-xs text-slate-500 hover:text-blue-600">{{ $milestones[$milestoneId]->project->name }}</a>
+                        @endif
                     </div>
                     <span class="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-1 rounded-full">{{ $groupTasks->count() }} tasks</span>
                 </div>

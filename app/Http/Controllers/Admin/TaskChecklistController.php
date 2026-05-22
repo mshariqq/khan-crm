@@ -22,15 +22,16 @@ class TaskChecklistController extends Controller
         ]);
 
         try {
-            // Get the max order for this task
             $maxOrder = TaskChecklistItem::where('taskid', $request->task_id)
-                ->max('checklist_order');
+                ->max('list_order');
 
             $item = TaskChecklistItem::create([
                 'taskid' => $request->task_id,
                 'description' => $request->description,
                 'finished' => 0,
-                'checklist_order' => $maxOrder + 1
+                'dateadded' => now(),
+                'addedfrom' => Auth::id(),
+                'list_order' => ($maxOrder ?? 0) + 1
             ]);
 
             return response()->json([
@@ -116,7 +117,7 @@ class TaskChecklistController extends Controller
 
         try {
             $items = TaskChecklistItem::where('taskid', $taskId)
-                ->orderBy('checklist_order')
+                ->orderBy('list_order')
                 ->get();
 
             return response()->json([
@@ -144,7 +145,7 @@ class TaskChecklistController extends Controller
         try {
             foreach ($request->order as $item) {
                 TaskChecklistItem::where('id', $item['id'])
-                    ->update(['checklist_order' => $item['order']]);
+                    ->update(['list_order' => $item['order']]);
             }
 
             return response()->json([

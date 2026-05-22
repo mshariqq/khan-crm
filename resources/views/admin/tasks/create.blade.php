@@ -410,8 +410,8 @@ function updateAssigneeSelection() {
     if (selected.length === 0) {
         label.textContent = 'Select team members...';
     } else if (selected.length === 1) {
-        const checked = document.querySelector('#assignee-options input[type="checkbox"]:checked + span');
-        label.textContent = checked ? checked.textContent : '1 selected';
+        const checked = document.querySelector('#assignee-options input[type="checkbox"]:checked ~ span');
+        label.textContent = checked ? checked.textContent.trim() : '1 selected';
     } else {
         label.textContent = selected.length + ' selected';
     }
@@ -459,4 +459,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-@endsection
+@endpush

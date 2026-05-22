@@ -7,7 +7,7 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-800">{{ $subscription->name }}</h1>
-            <p class="text-slate-500 text-sm">Viewing subscription details for {{ $subscription->client->company ?? 'Unknown Client' }}.</p>
+            <p class="text-slate-500 text-sm">Viewing subscription details for <a href="{{ route('admin.clients.show', $subscription->client->userid) }}" class="hover:text-blue-600">{{ $subscription->client->company ?? 'Unknown Client' }}</a>.</p>
         </div>
         <div class="flex items-center gap-3">
             @can('subscriptions_edit')
@@ -99,7 +99,7 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-slate-500">Client</span>
-                        <span class="text-slate-800 font-medium text-right">{{ $subscription->client->company ?? 'N/A' }}</span>
+                        <a href="{{ route('admin.clients.show', $subscription->client->userid) }}" class="text-slate-800 font-medium text-right hover:text-blue-600">{{ $subscription->client->company ?? 'N/A' }}</a>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-slate-500">Start Date</span>
@@ -115,7 +115,7 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-slate-500">Project</span>
-                        <span class="text-slate-800 font-medium">{{ $subscription->project->name ?? 'N/A' }}</span>
+                        <a href="{{ route('admin.projects.show', $subscription->project->id) }}" class="text-slate-800 font-medium hover:text-blue-600">{{ $subscription->project->name ?? 'N/A' }}</a>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-slate-500">Currency</span>

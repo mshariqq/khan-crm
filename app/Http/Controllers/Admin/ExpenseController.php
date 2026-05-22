@@ -106,6 +106,10 @@ class ExpenseController extends Controller
             'addedfrom' => Auth::id(),
         ]);
 
+        if ($request->filled('referer')) {
+            return redirect($request->referer)->with('success', 'Expense created successfully!');
+        }
+
         return redirect()->route('admin.expenses.index')->with('success', 'Expense created successfully!');
     }
 

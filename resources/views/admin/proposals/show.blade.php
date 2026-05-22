@@ -285,13 +285,21 @@
                     @if($proposal->rel_id && $proposal->rel_type)
                     <div>
                         <span class="text-slate-500">Linked to</span>
-                        <p class="text-slate-800 capitalize">{{ $proposal->rel_type }} #{{ $proposal->rel_id }}</p>
+                        @php
+                            $relRoutes = ['customer' => 'admin.clients.show', 'lead' => 'admin.leads.show'];
+                            $relRoute = $relRoutes[$proposal->rel_type] ?? null;
+                        @endphp
+                        @if($relRoute)
+                            <a href="{{ route($relRoute, $proposal->rel_id) }}" class="text-slate-800 capitalize hover:text-blue-600">{{ $proposal->rel_type }} #{{ $proposal->rel_id }}</a>
+                        @else
+                            <p class="text-slate-800 capitalize">{{ $proposal->rel_type }} #{{ $proposal->rel_id }}</p>
+                        @endif
                     </div>
                     @endif
                     @if($proposal->project_id)
                     <div>
                         <span class="text-slate-500">Project</span>
-                        <p class="text-slate-800">{{ optional($proposal->project)->name ?? '-' }}</p>
+                        <a href="{{ route('admin.projects.show', $proposal->project->id) }}" class="text-slate-800 hover:text-blue-600">{{ optional($proposal->project)->name ?? '-' }}</a>
                     </div>
                     @endif
                 </div>

@@ -7,7 +7,7 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-800">{{ $creditNote->prefix }}{{ str_pad($creditNote->number, 4, '0', STR_PAD_LEFT) }}</h1>
-            <p class="text-slate-500 text-sm">Issued to {{ $creditNote->client->company ?? 'N/A' }} on {{ \Carbon\Carbon::parse($creditNote->date)->format('M j, Y') }}</p>
+            <p class="text-slate-500 text-sm">Issued to <a href="{{ route('admin.clients.show', $creditNote->client->userid) }}" class="hover:text-blue-600">{{ $creditNote->client->company ?? 'N/A' }}</a> on {{ \Carbon\Carbon::parse($creditNote->date)->format('M j, Y') }}</p>
         </div>
         <div class="flex items-center gap-3">
             @can('credit_notes_edit')

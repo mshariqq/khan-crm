@@ -16,7 +16,7 @@
         </div>
     </div>
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-        <p class="text-slate-600"><strong>Project:</strong> {{ $milestone->project->name ?? 'N/A' }}</p>
+        <p class="text-slate-600"><strong>Project:</strong> <a href="{{ route('admin.projects.show', $milestone->project->id) }}" class="text-blue-600 hover:underline">{{ $milestone->project->name ?? 'N/A' }}</a></p>
         <p class="text-slate-600"><strong>Deadline:</strong> {{ $milestone->due_date ? \Carbon\Carbon::parse($milestone->due_date)->format('M j, Y') : '-' }}</p>
         <p class="text-slate-600 mt-4"><strong>Description:</strong></p>
         <div class="mt-2 text-slate-700 whitespace-pre-wrap">{{ $milestone->description ?? 'No description.' }}</div>

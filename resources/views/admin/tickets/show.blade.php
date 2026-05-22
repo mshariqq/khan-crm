@@ -195,12 +195,12 @@
                     <div class="pt-4 border-t border-slate-200/60 space-y-2">
                         <div class="flex items-center justify-between">
                             <span class="text-[11px] font-medium text-slate-400">Company</span>
-                            <span class="text-[11px] font-bold text-slate-700">{{ $ticket->client->company }}</span>
+                            <a href="{{ route('admin.clients.show', $ticket->client->userid) }}" class="text-[11px] font-bold text-slate-700 hover:text-blue-600">{{ $ticket->client->company }}</a>
                         </div>
                         @if($ticket->project)
                         <div class="flex items-center justify-between">
                             <span class="text-[11px] font-medium text-slate-400">Project</span>
-                            <span class="text-[11px] font-bold text-blue-600">{{ $ticket->project->name }}</span>
+                            <a href="{{ route('admin.projects.show', $ticket->project->id) }}" class="text-[11px] font-bold text-blue-600 hover:text-blue-800">{{ $ticket->project->name }}</a>
                         </div>
                         @endif
                     </div>

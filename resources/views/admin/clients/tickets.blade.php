@@ -20,7 +20,7 @@
                 <tbody class="divide-y divide-slate-200">
                     @forelse($data as $ticket)
                         <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-4 py-3 text-sm font-medium text-slate-800">{{ $ticket->subject }}</td>
+                            <td class="px-4 py-3 text-sm font-medium text-slate-800"><a href="{{ route('admin.tickets.show', $ticket->ticketid) }}" class="hover:text-blue-600">{{ $ticket->subject }}</a></td>
                             <td class="px-4 py-3 text-sm">
                                 <span class="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-bold">{{ $ticket->status->name ?? 'N/A' }}</span>
                             </td>

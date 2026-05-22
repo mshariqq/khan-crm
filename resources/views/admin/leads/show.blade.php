@@ -193,11 +193,10 @@
                                         <div class="flex items-center gap-3">
                                             <span class="w-2 h-2 rounded-full {{ $task->status == 5 ? 'bg-emerald-500' : ($task->status == 4 ? 'bg-blue-500' : 'bg-amber-500') }}"></span>
                                             <div>
-                                                <p class="text-sm font-medium text-slate-700">{{ $task->name }}</p>
+                                                <a href="{{ route('admin.tasks.show', $task->id) }}" class="text-sm font-medium text-slate-700 hover:text-blue-600">{{ $task->name }}</a>
                                                 <p class="text-xs text-slate-400">Due: {{ $task->duedate ? \Carbon\Carbon::parse($task->duedate)->format('M d, Y') : 'No due date' }}</p>
                                             </div>
                                         </div>
-                                        <a href="{{ route('admin.tasks.show', $task->id) }}" class="text-blue-600 text-sm hover:underline">View</a>
                                     </div>
                                 @endforeach
                             </div>

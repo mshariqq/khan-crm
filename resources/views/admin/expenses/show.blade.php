@@ -96,7 +96,7 @@
                     <div>
                         <p class="text-xs text-slate-500 uppercase font-semibold tracking-wide">Client</p>
                         @if($expense->client)
-                            <p class="text-sm font-semibold text-slate-800 mt-1">{{ $expense->client->company }}</p>
+                            <a href="{{ route('admin.clients.show', $expense->client->userid) }}" class="text-sm font-semibold text-slate-800 mt-1 hover:text-blue-600">{{ $expense->client->company }}</a>
                             <p class="text-xs text-slate-500">{{ $expense->client->email ?? '' }}</p>
                         @else
                             <p class="text-sm text-slate-500 mt-1">No client linked</p>
@@ -105,7 +105,7 @@
                     <div class="border-t pt-3">
                         <p class="text-xs text-slate-500 uppercase font-semibold tracking-wide">Project</p>
                         @if($expense->project)
-                            <p class="text-sm font-semibold text-slate-800 mt-1">{{ $expense->project->name }}</p>
+                            <a href="{{ route('admin.projects.show', $expense->project->id) }}" class="text-sm font-semibold text-slate-800 mt-1 hover:text-blue-600">{{ $expense->project->name }}</a>
                             <p class="text-xs text-slate-500">Status: {{ $expense->project->status == 1 ? 'Active' : ($expense->project->status == 2 ? 'Completed' : 'On Hold') }}</p>
                         @else
                             <p class="text-sm text-slate-500 mt-1">No project linked</p>

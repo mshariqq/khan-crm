@@ -8,7 +8,7 @@ class TaskComment extends Model
 {
     protected $table = 'tbltask_comments';
     public $timestamps = true;
-    protected $fillable = ['id', 'content', 'taskid', 'staffid', 'contact_id', 'file_id', 'dateadded'];
+    protected $fillable = ['content', 'taskid', 'staffid', 'contact_id', 'file_id', 'dateadded'];
 
     public function addedFrom()
     {

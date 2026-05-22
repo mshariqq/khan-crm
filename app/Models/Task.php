@@ -9,7 +9,7 @@ class Task extends Model
     protected $table = 'tbltasks';
     public $timestamps = true;
     protected $fillable = [
-        'id', 'name', 'description', 'priority', 'dateadded', 'startdate', 'duedate', 
+        'name', 'description', 'priority', 'dateadded', 'startdate', 'duedate', 
         'datefinished', 'addedfrom', 'is_added_from_contact', 'status', 'recurring_type', 
         'repeat_every', 'recurring', 'is_recurring_from', 'cycles', 'total_cycles', 
         'custom_recurring', 'last_recurring_date', 'rel_id', 'rel_type', 'is_public', 
@@ -22,7 +22,6 @@ class Task extends Model
         return $this->belongsTo(Staff::class, 'addedfrom', 'staffid');
     }
 
-    // Relationship to Milestone (foreign key column is 'milestone')
     public function milestoneRelation()
     {
         return $this->belongsTo(Milestone::class, 'milestone', 'id');
@@ -31,11 +30,6 @@ class Task extends Model
     public function project()
     {
         return $this->belongsTo(Project::class, 'rel_id', 'id');
-    }
-
-    public function getProjectAttribute()
-    {
-        return $this->relatedEntity;
     }
 
     public function invoice()
@@ -89,12 +83,10 @@ class Task extends Model
             return null;
         }
 
-        return match($this->rel_type) {
-            'project' => Project::find($this->rel_id),
-            'invoice' => Invoice::find($this->rel_id),
-            'estimate' => Estimate::find($this->rel_id),
-            'proposal' => Proposal::find($this->rel_id),
-            default => null,
-        };
+        if ($this->relationLoaded('relatable')) {
+            return $this->getRelation('relatable');
+        }
+
+        return $this->relatable()->first();
     }
 }

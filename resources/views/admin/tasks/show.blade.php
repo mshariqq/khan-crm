@@ -194,7 +194,15 @@
                         <span class="text-[10px] text-slate-400 uppercase w-16">Related To</span>
                         <span class="px-2 py-1 bg-blue-50 rounded text-xs text-blue-700">
                             <i class="bi bi-folder text-[10px] mr-1"></i>
+                            @php
+                                $relRouteNames = ['project' => 'admin.projects.show', 'invoice' => 'admin.invoices.show', 'estimate' => 'admin.estimates.show', 'proposal' => 'admin.proposals.show', 'lead' => 'admin.leads.show', 'ticket' => 'admin.tickets.show', 'client' => 'admin.clients.show'];
+                                $relRoute = $relRouteNames[$task->rel_type] ?? null;
+                            @endphp
+                            @if($relRoute)
+                            <a href="{{ route($relRoute, $task->rel_id) }}" class="hover:text-blue-700">{{ ucfirst($task->rel_type) }}: {{ $task->relatedEntity->name ?? $task->relatedEntity->number ?? 'N/A' }}</a>
+                            @else
                             {{ ucfirst($task->rel_type) }}: {{ $task->relatedEntity->name ?? $task->relatedEntity->number ?? 'N/A' }}
+                            @endif
                         </span>
                     </div>
                     @endif
@@ -212,6 +220,12 @@
             @endif
 
             @if($task->timers->count() > 0)
+            @php
+                $totalMinutes = $task->timers->reduce(function($carry, $t) {
+                    if ($t->end_time) return $carry + $t->start_time->diffInMinutes($t->end_time);
+                    return $carry;
+                }, 0);
+            @endphp
             <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-2">
@@ -219,11 +233,12 @@
                         <h3 class="text-sm font-semibold text-slate-800">Time Tracking</h3>
                     </div>
                     <span class="text-xs font-medium text-slate-600">
-                        Total: {{ number_format($task->timers->sum('total_time_hours'), 1) }}h
+                        Total: {{ number_format($totalMinutes / 60, 1) }}h
                     </span>
                 </div>
                 <div class="space-y-2">
                     @foreach($task->timers as $timer)
+                    @php $durationMinutes = $timer->end_time ? $timer->start_time->diffInMinutes($timer->end_time) : 0; @endphp
                     <div class="flex items-center justify-between py-1.5 px-3 bg-slate-50 rounded">
                         <div class="flex items-center gap-2">
                             <span class="w-5 h-5 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-[8px] font-semibold">
@@ -232,7 +247,7 @@
                             <span class="text-xs text-slate-600">{{ $timer->staff->firstname ?? 'Unknown' }}</span>
                         </div>
                         @if($timer->end_time)
-                        <span class="text-xs font-medium text-slate-800">{{ number_format($timer->total_time_hours, 1) }}h</span>
+                        <span class="text-xs font-medium text-slate-800">{{ number_format($durationMinutes / 60, 1) }}h</span>
                         @else
                         <span class="text-xs font-medium text-orange-600 flex items-center gap-1">
                             <span class="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></span> Running

@@ -41,6 +41,11 @@ $validated = $request->validate([
             ]);
             
             Milestone::create($validated);
+
+            if ($request->filled('referer')) {
+                return redirect($request->referer)->with('success', 'Milestone created');
+            }
+
             return redirect()->route('admin.milestones.index')->with('success', 'Milestone created');
     }
 

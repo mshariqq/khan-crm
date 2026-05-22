@@ -124,6 +124,10 @@ class TicketController extends Controller
             ]);
         }
 
+        if ($request->filled('referer')) {
+            return redirect($request->referer)->with('success', 'Ticket created successfully!');
+        }
+
         return redirect()->route('admin.tickets.index')->with('success', 'Ticket created successfully!');
     }
 

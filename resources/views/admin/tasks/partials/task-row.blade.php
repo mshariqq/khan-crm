@@ -16,10 +16,10 @@
             @endif
         </div>
         <div class="flex items-center gap-3 mt-1">
-            @if($task->project)
-            <span class="text-xs text-slate-500 flex items-center gap-1">
-                <i class="bi bi-folder text-slate-400"></i> {{ $task->project->name }}
-            </span>
+            @if($task->relatedEntity && $task->rel_type === 'project')
+            <a href="{{ route('admin.projects.show', $task->rel_id) }}" class="text-xs text-slate-500 flex items-center gap-1 hover:text-blue-600">
+                <i class="bi bi-folder text-slate-400"></i> {{ $task->relatedEntity->name }}
+            </a>
             @endif
             <span class="text-xs text-slate-500">{{ $task->duedate ? \Carbon\Carbon::parse($task->duedate)->format('M j') : 'No date' }}</span>
         </div>
