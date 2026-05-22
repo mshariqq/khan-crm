@@ -334,6 +334,11 @@ Route::post('tasks/{id}/status', [\App\Http\Controllers\Admin\TaskController::cl
 Route::post('tasks/quick-create', [\App\Http\Controllers\Admin\TaskController::class, 'quickCreate'])->name('admin.tasks.quick_create');
 Route::post('tasks/{id}/assign-staff', [\App\Http\Controllers\Admin\TaskController::class, 'assignStaff'])->name('admin.tasks.assign_staff');
 
+    // Task Pane Routes
+    Route::get('pane/tasks/create', [\App\Http\Controllers\Admin\TaskPaneController::class, 'create'])->name('admin.tasks.pane.create');
+    Route::get('pane/tasks/{id}/edit', [\App\Http\Controllers\Admin\TaskPaneController::class, 'edit'])->name('admin.tasks.pane.edit');
+    Route::get('pane/tasks/{id}', [\App\Http\Controllers\Admin\TaskPaneController::class, 'show'])->name('admin.tasks.pane.show');
+
     // Task Comments Routes
     Route::post('comments', [\App\Http\Controllers\Admin\CommentController::class, 'store'])->name('admin.comments.store');
     Route::put('comments/{comment}', [\App\Http\Controllers\Admin\CommentController::class, 'update'])->name('admin.comments.update');

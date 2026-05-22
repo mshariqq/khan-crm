@@ -159,7 +159,7 @@
         </div>
         <div class="divide-y divide-slate-100">
             @forelse($tasks as $task)
-            <a href="{{ route('admin.tasks.show', $task->id) }}" class="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+            <a href="{{ route('admin.tasks.show', $task->id) }}" data-pane="show" data-pane-id="{{ $task->id }}" class="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
                 <div class="flex items-center gap-3 min-w-0">
                     <div class="w-8 h-8 rounded-lg {{ $task->status ? 'bg-emerald-50' : 'bg-amber-50' }} flex items-center justify-center shrink-0">
                         <i class="bi {{ $task->status ? 'bi-check-circle-fill text-emerald-600' : 'bi-circle text-amber-600' }} text-sm"></i>

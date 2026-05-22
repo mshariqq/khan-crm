@@ -18,7 +18,7 @@
 @endphp
 
 <div class="bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all shadow-sm overflow-hidden task-card-{{ $task->id }}"
-     onclick="window.location='{{ route('admin.tasks.show', $task) }}'" 
+     data-pane="show" data-pane-id="{{ $task->id }}"
      style="cursor: pointer;">
     
     {{-- Priority Indicator Bar --}}

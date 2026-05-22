@@ -1,6 +1,6 @@
 <div class="flex items-center justify-between mb-4">
     <h3 class="text-sm font-semibold text-slate-800">Tasks ({{ $taskCount }})</h3>
-    <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 flex items-center gap-1">
+    <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}" data-pane="create" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 flex items-center gap-1">
         <i class="bi bi-plus"></i> Add Task
     </a>
 </div>
@@ -20,7 +20,7 @@
             <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 {{ $task->status == 3 ? 'bg-emerald-500 border-emerald-500' : ($task->status == 2 ? 'bg-blue-500 border-blue-500' : 'border-slate-300') }}">
                 @if($task->status == 3)<i class="bi bi-check text-white text-[8px]"></i>@elseif($task->status == 2)<i class="bi bi-arrow-right text-white text-[8px]"></i>@endif
             </div>
-            <a href="{{ route('admin.tasks.show', $task->id) }}" class="text-sm {{ $task->status == 3 ? 'text-slate-400 line-through' : 'text-slate-700 hover:text-blue-600' }} flex-1 font-medium flex items-center gap-2">
+            <a href="{{ route('admin.tasks.show', $task->id) }}" data-pane="show" data-pane-id="{{ $task->id }}" class="text-sm {{ $task->status == 3 ? 'text-slate-400 line-through' : 'text-slate-700 hover:text-blue-600' }} flex-1 font-medium flex items-center gap-2">
                 <span class="text-[10px] px-1.5 py-0.5 rounded font-medium
                     @if($task->status == 3) bg-emerald-100 text-emerald-700
                     @elseif($task->status == 2) bg-blue-100 text-blue-700
@@ -50,7 +50,7 @@
             @endif
             <span class="text-[10px] text-slate-400">{{ $task->duedate ? \Carbon\Carbon::parse($task->duedate)->format('M j') : '' }}</span>
             <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <a href="{{ route('admin.tasks.edit', $task->id) }}" class="p-1 text-slate-400 hover:text-blue-600" title="Edit">
+                <a href="{{ route('admin.tasks.edit', $task->id) }}" data-pane="edit" data-pane-id="{{ $task->id }}" class="p-1 text-slate-400 hover:text-blue-600" title="Edit">
                     <i class="bi bi-pencil text-xs"></i>
                 </a>
                 <form action="{{ route('admin.tasks.destroy', $task->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete task?');">
@@ -68,7 +68,7 @@
             <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 {{ $task->status == 3 ? 'bg-emerald-500 border-emerald-500' : ($task->status == 2 ? 'bg-blue-500 border-blue-500' : 'border-slate-300') }}">
                 @if($task->status == 3)<i class="bi bi-check text-white text-[8px]"></i>@elseif($task->status == 2)<i class="bi bi-arrow-right text-white text-[8px]"></i>@endif
             </div>
-            <a href="{{ route('admin.tasks.show', $task->id) }}" class="text-sm {{ $task->status == 3 ? 'text-slate-400 line-through' : 'text-slate-700 hover:text-blue-600' }} flex-1 font-medium flex items-center gap-2">
+            <a href="{{ route('admin.tasks.show', $task->id) }}" data-pane="show" data-pane-id="{{ $task->id }}" class="text-sm {{ $task->status == 3 ? 'text-slate-400 line-through' : 'text-slate-700 hover:text-blue-600' }} flex-1 font-medium flex items-center gap-2">
                 <span class="text-[10px] px-1.5 py-0.5 rounded font-medium
                     @if($task->status == 3) bg-emerald-100 text-emerald-700
                     @elseif($task->status == 2) bg-blue-100 text-blue-700
@@ -98,7 +98,7 @@
             @endif
             <span class="text-[10px] text-slate-400">{{ $task->duedate ? \Carbon\Carbon::parse($task->duedate)->format('M j') : '' }}</span>
             <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <a href="{{ route('admin.tasks.edit', $task->id) }}" class="p-1 text-slate-400 hover:text-blue-600" title="Edit">
+                <a href="{{ route('admin.tasks.edit', $task->id) }}" data-pane="edit" data-pane-id="{{ $task->id }}" class="p-1 text-slate-400 hover:text-blue-600" title="Edit">
                     <i class="bi bi-pencil text-xs"></i>
                 </a>
                 <form action="{{ route('admin.tasks.destroy', $task->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete task?');">
@@ -119,6 +119,6 @@
         <i class="bi bi-list-check text-slate-400 text-xl"></i>
     </div>
     <p class="text-sm text-slate-500">No tasks yet</p>
-    <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}" class="mt-3 inline-block px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">Add Task</a>
+    <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}" data-pane="create" class="mt-3 inline-block px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">Add Task</a>
 </div>
 @endif

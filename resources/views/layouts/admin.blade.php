@@ -67,6 +67,20 @@
         <p>&copy; {{ date('Y') }} {{ $global_settings['companyname'] ?? 'CRM' }}. {{ $global_settings['copyright_text'] ?? 'All rights reserved' }}</p>
     </footer>
 
+    {{-- Task Pane --}}
+    <div id="taskPane" class="fixed inset-0 z-[70] hidden" role="dialog" aria-modal="true">
+        <div class="absolute inset-0 bg-black/40" onclick="closeTaskPane()"></div>
+        <div class="absolute right-0 top-0 h-full w-full max-w-[70%] bg-white shadow-2xl transform transition-transform duration-300 flex flex-col">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 flex-shrink-0">
+                <h3 class="text-lg font-semibold text-slate-800" id="taskPaneTitle">Task</h3>
+                <button onclick="closeTaskPane()" class="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all">
+                    <i class="bi bi-x-lg text-lg"></i>
+                </button>
+            </div>
+            <div id="taskPaneContent" class="flex-1 overflow-y-auto p-6 space-y-6"></div>
+        </div>
+    </div>
+
     <script>
   document.addEventListener('DOMContentLoaded', function() {
     const navSidebarToggle = document.getElementById('navSidebarToggle');
@@ -127,6 +141,93 @@
         @if(session('warning')) showToast('{{ session('warning') }}', 'warning'); @endif
         @if(session('info')) showToast('{{ session('info') }}', 'info'); @endif
 });
-</script>
+
+    function openTaskPane(url) {
+        const pane = document.getElementById('taskPane');
+        const content = document.getElementById('taskPaneContent');
+        content.innerHTML = '<div class="flex items-center justify-center h-full"><div class="text-slate-400"><i class="bi bi-arrow-repeat text-4xl animate-spin block mb-2"></i><p class="text-sm">Loading...</p></div></div>';
+        pane.classList.remove('hidden');
+        pane.querySelector('div:last-child').style.transform = 'translateX(0)';
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' } })
+            .then(r => { if (!r.ok) throw new Error('Failed to load'); return r.text(); })
+            .then(html => {
+                content.innerHTML = html;
+                content.querySelectorAll('script').forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                    newScript.textContent = oldScript.textContent;
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                });
+                initPaneForms();
+            })
+            .catch(() => {
+                content.innerHTML = '<div class="flex items-center justify-center h-full text-red-500"><p>Failed to load content. Please try again.</p></div>';
+            });
+    }
+
+    function closeTaskPane() {
+        const pane = document.getElementById('taskPane');
+        pane.querySelector('div:last-child').style.transform = 'translateX(100%)';
+        setTimeout(() => { pane.classList.add('hidden'); document.getElementById('taskPaneContent').innerHTML = ''; }, 300);
+    }
+
+    function initPaneForms() {
+        document.querySelectorAll('#taskPaneContent form[data-pane-submit]').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const btn = form.querySelector('button[type="submit"]');
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-arrow-repeat animate-spin"></i> Saving...';
+
+                fetch(form.action, {
+                    method: form.method,
+                    body: new FormData(form),
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(r => r.json().then(data => ({ status: r.status, data })))
+                .then(({ status, data }) => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    if (data.success) {
+                        showToast(data.message || 'Saved successfully!', 'success');
+                        closeTaskPane();
+                        if (data.reload) { setTimeout(() => location.reload(), 500); }
+                    } else {
+                        const msg = data.message || data.error || 'An error occurred';
+                        showToast(msg, 'error');
+                    }
+                })
+                .catch(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    showToast('Network error. Please try again.', 'error');
+                });
+            });
+        });
+    }
+
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('[data-pane]');
+        if (!link) return;
+        e.preventDefault();
+        const action = link.getAttribute('data-pane');
+        const taskId = link.getAttribute('data-pane-id');
+        let url = '';
+        if (action === 'create') {
+            const params = new URLSearchParams(link.search);
+            url = '{{ route('admin.tasks.pane.create') }}' + (params.toString() ? '?' + params.toString() : '');
+        } else if (action === 'edit' && taskId) {
+            url = '{{ route('admin.tasks.pane.edit', '__ID__') }}'.replace('__ID__', taskId);
+        } else if (action === 'show' && taskId) {
+            url = '{{ route('admin.tasks.pane.show', '__ID__') }}'.replace('__ID__', taskId);
+        }
+        if (url) openTaskPane(url);
+    });
+    </script>
+
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 
 @endsection

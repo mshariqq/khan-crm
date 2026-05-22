@@ -193,7 +193,7 @@
                                         <div class="flex items-center gap-3">
                                             <span class="w-2 h-2 rounded-full {{ $task->status == 5 ? 'bg-emerald-500' : ($task->status == 4 ? 'bg-blue-500' : 'bg-amber-500') }}"></span>
                                             <div>
-                                                <a href="{{ route('admin.tasks.show', $task->id) }}" class="text-sm font-medium text-slate-700 hover:text-blue-600">{{ $task->name }}</a>
+                                                <a href="{{ route('admin.tasks.show', $task->id) }}" data-pane="show" data-pane-id="{{ $task->id }}" class="text-sm font-medium text-slate-700 hover:text-blue-600">{{ $task->name }}</a>
                                                 <p class="text-xs text-slate-400">Due: {{ $task->duedate ? \Carbon\Carbon::parse($task->duedate)->format('M d, Y') : 'No due date' }}</p>
                                             </div>
                                         </div>
@@ -203,7 +203,7 @@
                         @else
                             <div class="text-center py-4">
                                 <p class="text-sm text-slate-400 mb-2">No tasks linked to this lead</p>
-                                <a href="{{ route('admin.tasks.create') }}?rel_type=lead&rel_id={{ $lead->id }}" class="text-blue-600 text-sm hover:underline">+ Create Task</a>
+                                <a href="{{ route('admin.tasks.create') }}?rel_type=lead&rel_id={{ $lead->id }}" data-pane="create" class="text-blue-600 text-sm hover:underline">+ Create Task</a>
                             </div>
                         @endif
                     </div>

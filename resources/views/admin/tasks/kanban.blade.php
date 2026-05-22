@@ -104,7 +104,7 @@
             <a href="{{ route('admin.tasks.index') }}" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2">
                 <i class="bi bi-list"></i> List View
             </a>
-            <a href="{{ route('admin.tasks.create') }}" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
+            <a href="{{ route('admin.tasks.create') }}" data-pane="create" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
                 <i class="bi bi-plus-lg"></i> Add Task
             </a>
         </div>

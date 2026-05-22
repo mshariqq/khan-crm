@@ -37,7 +37,7 @@
             <a href="{{ route('admin.tasks.kanban') }}" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2">
                 <i class="bi bi-kanban"></i> Board View
             </a>
-            <a href="{{ route('admin.tasks.create') }}" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
+            <a href="{{ route('admin.tasks.create') }}" data-pane="create" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
                 <i class="bi bi-plus-lg"></i> Add Task
             </a>
         </div>
@@ -131,7 +131,7 @@
             </div>
             <h3 class="text-lg font-semibold text-slate-800 mb-2">No tasks found</h3>
             <p class="text-slate-500 mb-6">Start by creating your first task.</p>
-            <a href="{{ route('admin.tasks.create') }}" class="px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all inline-flex items-center gap-2">
+            <a href="{{ route('admin.tasks.create') }}" data-pane="create" class="px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all inline-flex items-center gap-2">
                 <i class="bi bi-plus-lg"></i> Add Task
             </a>
         </div>

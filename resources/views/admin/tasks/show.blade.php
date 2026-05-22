@@ -46,7 +46,7 @@
                 <i class="bi bi-check2-circle"></i> Mark Done
             </button>
             @endif
-            <a href="{{ route('admin.tasks.edit', $task->id) }}" class="px-3 py-1.5 bg-amber-500 text-white text-xs font-medium rounded-lg hover:bg-amber-600 transition-all">Edit</a>
+            <a href="{{ route('admin.tasks.edit', $task->id) }}" data-pane="edit" data-pane-id="{{ $task->id }}" class="px-3 py-1.5 bg-amber-500 text-white text-xs font-medium rounded-lg hover:bg-amber-600 transition-all">Edit</a>
             <form action="{{ route('admin.tasks.destroy', $task->id) }}" method="POST" onsubmit="return confirm('Delete task?');" class="inline">
                 @csrf @method('DELETE')
                 <button type="submit" class="px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 transition-all">Delete</button>

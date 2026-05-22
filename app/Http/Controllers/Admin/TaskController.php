@@ -199,6 +199,10 @@ class TaskController extends Controller
             ]);
         }
 
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Task created successfully!', 'task' => $task, 'reload' => true]);
+        }
+
         if ($request->filled('referer')) {
             return redirect($request->referer)->with('success', 'Task created successfully!');
         }
@@ -287,6 +291,10 @@ class TaskController extends Controller
                 'additional_data' => json_encode(['task_name' => $task->name, 'changes' => $changes]),
                 'dateadded' => now(),
             ]);
+        }
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Task updated successfully!', 'task' => $task, 'reload' => true]);
         }
 
         return redirect()->route('admin.tasks.index')->with('success', 'Task updated successfully!');

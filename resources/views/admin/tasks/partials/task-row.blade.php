@@ -1,4 +1,4 @@
-<div class="task-row flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors {{ $isNested ? 'pl-12 border-l-2 border-slate-100' : 'border-b border-slate-100' }}" onclick="window.location='{{ route('admin.tasks.show', $task->id) }}'" style="cursor: pointer;">
+<div class="task-row flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors {{ $isNested ? 'pl-12 border-l-2 border-slate-100' : 'border-b border-slate-100' }}" data-pane="show" data-pane-id="{{ $task->id }}" style="cursor: pointer;">
     {{-- Priority Indicator --}}
     <div class="priority-indicator self-stretch rounded-full w-1 flex-shrink-0 {{ $task->priority == 'high' || $task->priority == 3 ? 'bg-red-500' : ($task->priority == 'medium' || $task->priority == 2 ? 'bg-amber-500' : 'bg-emerald-500') }}"></div>
 
@@ -51,10 +51,10 @@
 
     {{-- Actions --}}
     <div class="flex items-center gap-1 flex-shrink-0" onclick="event.stopPropagation();">
-        <a href="{{ route('admin.tasks.show', $task->id) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View">
+        <a href="{{ route('admin.tasks.show', $task->id) }}" data-pane="show" data-pane-id="{{ $task->id }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View">
             <i class="bi bi-eye"></i>
         </a>
-        <a href="{{ route('admin.tasks.edit', $task->id) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Edit">
+        <a href="{{ route('admin.tasks.edit', $task->id) }}" data-pane="edit" data-pane-id="{{ $task->id }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Edit">
             <i class="bi bi-pencil"></i>
         </a>
         <form action="{{ route('admin.tasks.destroy', $task->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this task?');">

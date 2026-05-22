@@ -138,7 +138,7 @@
             <a href="{{ route('admin.projects.edit', $project->id) }}" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2">
                 <i class="bi bi-pencil"></i> Edit
             </a>
-            <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}&referer={{ url()->current() }}" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
+            <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}&referer={{ url()->current() }}" data-pane="create" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
                 <i class="bi bi-plus-lg"></i> Add Task
             </a>
         </div>
@@ -325,7 +325,7 @@
                                 <i class="bi bi-circle-fill text-xs"></i>
                             </div>
                             <div class="flex-1 min-w-0">
-                                <a href="{{ route('admin.tasks.show', $task) }}" class="text-sm font-semibold text-slate-800 hover:text-blue-600 truncate block">{{ $task->name }}</a>
+                                <a href="{{ route('admin.tasks.show', $task) }}" data-pane="show" data-pane-id="{{ $task->id }}" class="text-sm font-semibold text-slate-800 hover:text-blue-600 truncate block">{{ $task->name }}</a>
                                 <div class="flex items-center gap-3 mt-1">
                                     <span class="text-xs text-slate-500">Due {{ $task->duedate ? \Carbon\Carbon::parse($task->duedate)->format('M j') : '—' }}</span>
                                     <span class="text-xs px-2 py-0.5 rounded-full
@@ -346,7 +346,7 @@
                         </div>
                         @empty
                         <div class="p-8 text-center">
-                            <p class="text-slate-500 text-sm">No tasks yet. <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}&referer={{ url()->current() }}" class="text-blue-600 font-medium">Create one</a></p>
+                            <p class="text-slate-500 text-sm">No tasks yet. <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}&referer={{ url()->current() }}" data-pane="create" class="text-blue-600 font-medium">Create one</a></p>
                         </div>
                         @endforelse
                     </div>
@@ -439,7 +439,7 @@
     <div id="section-kanban" class="dashboard-section hidden space-y-6">
         <div class="flex items-center justify-between">
             <h2 class="text-xl font-bold text-slate-800">Task Board</h2>
-            <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}&referer={{ url()->current() }}" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all flex items-center gap-2">
+            <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}&referer={{ url()->current() }}" data-pane="create" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all flex items-center gap-2">
                 <i class="bi bi-plus-lg"></i> Add Task
             </a>
         </div>
@@ -467,7 +467,7 @@
                     @forelse($project->tasks->where('status', $statusId) as $task)
                     <div class="kanban-card bg-white rounded-xl p-3 border border-slate-200 shadow-sm priority-{{ $task->priority }}">
                         <div class="flex items-start justify-between mb-2">
-                            <a href="{{ route('admin.tasks.show', $task) }}" class="text-sm font-semibold text-slate-800 hover:text-blue-600 leading-tight">{{ $task->name }}</a>
+                            <a href="{{ route('admin.tasks.show', $task) }}" data-pane="show" data-pane-id="{{ $task->id }}" class="text-sm font-semibold text-slate-800 hover:text-blue-600 leading-tight">{{ $task->name }}</a>
                             @if($task->priority == 'high')
                                 <span class="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 mt-1"></span>
                             @elseif($task->priority == 'medium')

@@ -286,7 +286,7 @@
                                 <h3 class="text-sm font-semibold text-slate-800">Quick Actions</h3>
                             </div>
                             <div class="grid grid-cols-2 gap-2">
-                                <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}" class="px-3 py-2 bg-blue-600 text-white text-xs rounded-lg text-center hover:bg-blue-700">Add Task</a>
+                                <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}" data-pane="create" class="px-3 py-2 bg-blue-600 text-white text-xs rounded-lg text-center hover:bg-blue-700">Add Task</a>
                                 <a href="{{ route('admin.invoices.create') }}?project_id={{ $project->id }}" class="px-3 py-2 bg-emerald-600 text-white text-xs rounded-lg text-center hover:bg-emerald-700">New Invoice</a>
                                 <a href="{{ route('admin.expenses.create') }}?project_id={{ $project->id }}" class="px-3 py-2 bg-amber-600 text-white text-xs rounded-lg text-center hover:bg-amber-700">Add Expense</a>
                                 <a href="{{ route('admin.projects.edit', $project->id) }}" class="px-3 py-2 bg-slate-600 text-white text-xs rounded-lg text-center hover:bg-slate-700">Edit Project</a>

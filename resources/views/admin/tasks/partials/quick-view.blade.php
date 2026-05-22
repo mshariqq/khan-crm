@@ -225,11 +225,11 @@
         <i class="bi bi-person-circle"></i> Created by {{ $task->creator->firstname ?? 'System' }} {{ $task->creator->lastname ?? '' }}
     </div>
     <div class="flex items-center gap-3">
-        <a href="{{ route('admin.tasks.show', $task) }}" 
+        <a href="{{ route('admin.tasks.show', $task) }}" data-pane="show" data-pane-id="{{ $task->id }}"
            class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">
             <i class="bi bi-eye"></i> Full Details
         </a>
-        <a href="{{ route('admin.tasks.edit', $task) }}" 
+        <a href="{{ route('admin.tasks.edit', $task) }}" data-pane="edit" data-pane-id="{{ $task->id }}"
            class="px-4 py-2 bg-amber-500 text-white text-sm font-semibold rounded-xl hover:bg-amber-600 transition-all">
             <i class="bi bi-pencil"></i> Edit
         </a>

@@ -20,7 +20,7 @@
                 <tbody class="divide-y divide-slate-200">
                     @forelse($data as $task)
                         <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-4 py-3 text-sm font-medium text-slate-800"><a href="{{ route('admin.tasks.show', $task->id) }}" class="hover:text-blue-600">{{ $task->name }}</a></td>
+                            <td class="px-4 py-3 text-sm font-medium text-slate-800"><a href="{{ route('admin.tasks.show', $task->id) }}" data-pane="show" data-pane-id="{{ $task->id }}" class="hover:text-blue-600">{{ $task->name }}</a></td>
                             <td class="px-4 py-3 text-sm text-slate-600">{{ $task->duedate ?? 'N/A' }}</td>
                             <td class="px-4 py-3 text-sm">
                                 <span class="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-bold">Status {{ $task->status }}</span>
