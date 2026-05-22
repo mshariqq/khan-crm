@@ -63,6 +63,10 @@
         @yield('main')
     </main>
 
+    <footer class="bg-white border-t border-slate-200 py-4 px-6 text-center text-sm text-slate-500 ml-0 md:ml-56">
+        <p>&copy; {{ date('Y') }} {{ $global_settings['companyname'] ?? 'CRM' }}. {{ $global_settings['copyright_text'] ?? 'All rights reserved' }}</p>
+    </footer>
+
     <script>
   document.addEventListener('DOMContentLoaded', function() {
     const navSidebarToggle = document.getElementById('navSidebarToggle');

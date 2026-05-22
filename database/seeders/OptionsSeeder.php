@@ -74,6 +74,9 @@ class OptionsSeeder extends Seeder
             
             // Credit Notes
             ['name' => 'credit_note_prefix', 'value' => 'CN-', 'autoload' => 1],
+
+            // Front End Settings
+            ['name' => 'copyright_text', 'value' => 'All rights reserved', 'autoload' => 1],
         ];
 
         foreach ($options as $option) {

@@ -40,6 +40,9 @@
             <button onclick="switchTab('projects')" id="tab-projects" class="tab-btn px-6 py-4 text-sm font-semibold text-slate-500 hover:text-slate-700 transition-all border-b-2 border-transparent hover:border-slate-300 whitespace-nowrap">
                 <i class="bi bi-kanban mr-2"></i> Projects
             </button>
+            <button onclick="switchTab('frontend')" id="tab-frontend" class="tab-btn px-6 py-4 text-sm font-semibold text-slate-500 hover:text-slate-700 transition-all border-b-2 border-transparent hover:border-slate-300 whitespace-nowrap">
+                <i class="bi bi-tv mr-2"></i> Front End
+            </button>
             <button onclick="switchTab('legal')" id="tab-legal" class="tab-btn px-6 py-4 text-sm font-semibold text-slate-500 hover:text-slate-700 transition-all border-b-2 border-transparent hover:border-slate-300 whitespace-nowrap">
                 <i class="bi bi-shield-check mr-2"></i> Legal
             </button>
@@ -304,6 +307,17 @@
                 </div>
             </div>
 
+            <!-- Front End Tab -->
+            <div id="content-frontend" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-slate-700">Copyright Footer Text</label>
+                        <input type="text" name="copyright_text" value="{{ $settings['copyright_text'] ?? 'All rights reserved' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                        <p class="text-xs text-slate-400">Displayed in the footer across all layouts (Admin, Client Portal, Guest).</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Legal Tab -->
             <div id="content-legal" class="tab-content hidden space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -318,10 +332,6 @@
                     <div class="space-y-2">
                         <label class="text-sm font-medium text-slate-700">Cookie Policy URL</label>
                         <input type="text" name="cookie_policy_url" value="{{ $settings['cookie_policy_url'] ?? '' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-sm font-medium text-slate-700">Copyright Text</label>
-                        <input type="text" name="copyright_text" value="{{ $settings['copyright_text'] ?? 'All rights reserved' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
                     </div>
                     <div class="space-y-2 md:col-span-2">
                         <h3 class="text-lg font-bold text-slate-800 mt-4 border-b pb-2">Security Settings</h3>
