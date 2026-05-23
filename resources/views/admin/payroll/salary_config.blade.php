@@ -14,7 +14,7 @@
         </a>
     </div>
 
-    <form action="{{ route('admin.payroll.salary-config.update', $staff->id) }}" method="POST" class="max-w-2xl bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <form action="{{ route('admin.payroll.salary-config.update', $staff->staffid) }}" method="POST" class="max-w-2xl bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         @csrf
         @method('POST')
         <div class="p-6 space-y-6">
