@@ -132,4 +132,14 @@ class Staff extends Authenticatable
     {
         return $this->hasMany(TaskTimer::class, 'staff_id', 'staffid');
     }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class, 'touserid', 'staffid');
+    }
+
+    public function unreadNotifications()
+    {
+        return $this->hasMany(Notification::class, 'touserid', 'staffid')->where('isread', 0);
+    }
 }

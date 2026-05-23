@@ -40,6 +40,10 @@ Route::middleware('guest')->group(function () {
 Route::middleware(['auth:staff'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/search', [SearchController::class, 'index'])->name('admin.search');
+    Route::get('notifications/fetch', [\App\Http\Controllers\Admin\NotificationController::class, 'fetch'])->name('admin.notifications.fetch');
+    Route::get('notifications/unread-count', [\App\Http\Controllers\Admin\NotificationController::class, 'unreadCount'])->name('admin.notifications.unread_count');
+    Route::post('notifications/{id}/read', [\App\Http\Controllers\Admin\NotificationController::class, 'markAsRead'])->name('admin.notifications.read');
+    Route::post('notifications/read-all', [\App\Http\Controllers\Admin\NotificationController::class, 'markAllAsRead'])->name('admin.notifications.read_all');
     Route::get('/settings', [SettingsController::class, 'index'])->name('admin.settings.index');
     Route::post('/settings', [SettingsController::class, 'update'])->name('admin.settings.update');
 

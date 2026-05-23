@@ -49,31 +49,16 @@
         <div class="relative group">
             <button id="notifDropdownBtn" class="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
                 <i class="bi bi-bell text-xl"></i>
-                <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 border-2 border-white rounded-full"></span>
+                <span id="notifBadge" class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 border-2 border-white rounded-full hidden"></span>
             </button>
             <div id="notifDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50 transition-all animate-in fade-in slide-in-from-top-2">
-                <div class="px-4 py-2 border-b border-gray-50 font-semibold text-sm text-gray-700">Notifications</div>
-                <div class="max-h-64 overflow-y-auto">
-                    <a href="#" class="flex gap-3 p-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
-                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
-                            <i class="bi bi-info-circle"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-xs text-gray-800">New client registered: <span class="font-semibold">Acme Corp</span></p>
-                            <p class="text-[10px] text-gray-400 mt-1">2 mins ago</p>
-                        </div>
-                    </a>
-                    <a href="#" class="flex gap-3 p-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
-                        <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center flex-shrink-0">
-                            <i class="bi bi-check-circle"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-xs text-gray-800">Project <span class="font-semibold">Website Redesign</span> completed</p>
-                            <p class="text-[10px] text-gray-400 mt-1">1 hour ago</p>
-                        </div>
-                    </a>
+                <div class="flex items-center justify-between px-4 py-2 border-b border-gray-50">
+                    <span class="font-semibold text-sm text-gray-700">Notifications</span>
+                    <button id="markAllReadBtn" class="text-[10px] text-purple-600 hover:text-purple-800 hidden">Mark all read</button>
                 </div>
-                <a href="#" class="block text-center py-2 text-xs text-purple-600 font-medium hover:bg-gray-50 transition-colors">View All Notifications</a>
+                <div id="notifList" class="max-h-64 overflow-y-auto">
+                    <div class="p-4 text-center text-xs text-gray-400">Loading...</div>
+                </div>
             </div>
         </div>
 
@@ -293,7 +278,75 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Set up notification and profile dropdowns
+  var notifFetched = false;
+
+  function loadNotifications() {
+    var list = document.getElementById('notifList');
+    if (!list) return;
+    list.innerHTML = '<div class="p-4 text-center text-xs text-gray-400">Loading...</div>';
+
+    fetch('{{ route("admin.notifications.fetch") }}')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data || data.length === 0) {
+          list.innerHTML = '<div class="p-4 text-center text-xs text-gray-400">No notifications</div>';
+          return;
+        }
+        var html = '';
+        data.forEach(function(n) {
+          var icon = n.isread ? 'bi-info-circle text-slate-400 bg-slate-100' : 'bi-info-circle text-blue-600 bg-blue-100';
+          var bg = n.isread ? '' : 'bg-blue-50/30';
+          html += '<a href="' + (n.link || '#') + '" data-id="' + n.id + '" class="notif-item flex gap-3 p-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ' + bg + '">';
+          html += '<div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ' + (n.isread ? 'bg-slate-100 text-slate-400' : 'bg-blue-100 text-blue-600') + '">';
+          html += '<i class="bi bi-bell text-sm"></i>';
+          html += '</div>';
+          html += '<div class="flex-1 min-w-0">';
+          html += '<p class="text-xs text-gray-800 leading-relaxed">' + n.description + '</p>';
+          html += '<p class="text-[10px] text-gray-400 mt-1">' + n.time_ago + '</p>';
+          html += '</div>';
+          if (!n.isread) {
+            html += '<div class="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0"></div>';
+          }
+          html += '</a>';
+        });
+        list.innerHTML = html;
+
+        document.querySelectorAll('.notif-item').forEach(function(el) {
+          el.addEventListener('click', function(e) {
+            var id = this.dataset.id;
+            fetch('{{ url("admin/notifications") }}/' + id + '/read', { method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } });
+          });
+        });
+      })
+      .catch(function() {
+        list.innerHTML = '<div class="p-4 text-center text-xs text-red-400">Failed to load</div>';
+      });
+  }
+
+  function loadUnreadCount() {
+    fetch('{{ route("admin.notifications.unread_count") }}')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var badge = document.getElementById('notifBadge');
+        if (badge) {
+          if (data.count > 0) {
+            badge.classList.remove('hidden');
+            badge.textContent = '';
+          } else {
+            badge.classList.add('hidden');
+          }
+        }
+        var markAllBtn = document.getElementById('markAllReadBtn');
+        if (markAllBtn) {
+          if (data.count > 0) {
+            markAllBtn.classList.remove('hidden');
+          } else {
+            markAllBtn.classList.add('hidden');
+          }
+        }
+      });
+  }
+
   function setupDropdown(btnId, dropdownId) {
     const btn = document.getElementById(btnId);
     const dropdown = document.getElementById(dropdownId);
@@ -302,11 +355,27 @@ document.addEventListener('DOMContentLoaded', function() {
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
       dropdown.classList.toggle('hidden');
+      if (!dropdown.classList.contains('hidden') && !notifFetched) {
+        loadNotifications();
+        notifFetched = true;
+      }
     });
   }
   
   setupDropdown('notifDropdownBtn', 'notifDropdown');
   setupDropdown('profileDropdownBtn', 'profileDropdown');
+
+  document.getElementById('markAllReadBtn')?.addEventListener('click', function(e) {
+    e.stopPropagation();
+    fetch('{{ route("admin.notifications.read_all") }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } })
+      .then(function() {
+        loadNotifications();
+        loadUnreadCount();
+      });
+  });
+
+  loadUnreadCount();
+  setInterval(loadUnreadCount, 30000);
   
   // Global click handler to close dropdowns when clicking outside
   document.addEventListener('click', function() {

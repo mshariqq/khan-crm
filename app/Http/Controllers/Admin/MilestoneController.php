@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Milestone;
 use App\Models\Project;
+use App\Models\Notification;
 use App\Services\ProjectNotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class MilestoneController extends Controller
 {
@@ -54,6 +56,16 @@ $validated = $request->validate([
                 'milestone_name' => $milestone->name,
                 'milestone_duedate' => $milestone->due_date ? \Carbon\Carbon::parse($milestone->due_date)->format('d M, Y') : '',
             ]);
+
+            $project = Project::find($milestone->project_id);
+            if ($project) {
+                $staffIds = $project->staff()->pluck('staffid')->toArray();
+                $exclude = [(int)Auth::id()];
+                $recipients = array_values(array_diff($staffIds, $exclude));
+                if (!empty($recipients)) {
+                    Notification::createForMultipleStaff($recipients, Auth::user()->full_name . ' added milestone <strong>' . e($milestone->name) . '</strong> to <strong>' . e($project->name) . '</strong>', route('admin.projects.show', $project->id));
+                }
+            }
 
             if ($request->wantsJson()) {
                 return response()->json(['success' => true, 'message' => 'Milestone created successfully!', 'reload' => true, 'pane_refresh_url' => route('admin.milestones.pane.show', $milestone->id)]);

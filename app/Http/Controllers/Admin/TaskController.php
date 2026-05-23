@@ -9,6 +9,7 @@ use App\Models\Milestone;
 use App\Models\Invoice;
 use App\Models\Project;
 use App\Models\ProjectActivity;
+use App\Models\Notification;
 use App\Models\Estimate;
 use App\Models\Proposal;
 use App\Models\File;
@@ -215,7 +216,7 @@ class TaskController extends Controller
             'datefinished' => $request->datefinished,
             'rel_id' => $request->rel_id ?: null,
             'rel_type' => $request->rel_type ?: null,
-            'milestone' => $request->milestone ?: null,
+            'milestone' => $request->milestone ?? 0,
             'billable' => $request->billable ?? 0,
             'billed' => $request->billed ?? 0,
             'hourly_rate' => $request->hourly_rate ?? 0,
@@ -248,6 +249,8 @@ class TaskController extends Controller
                             'task_duedate' => $task->duedate ? \Carbon\Carbon::parse($task->duedate)->format('d M, Y') : '',
                             'task_link' => route('admin.tasks.show', $task->id),
                         ]);
+
+                        Notification::createForStaff($staffMember->staffid, Auth::user()->full_name . ' assigned task <strong>' . e($task->name) . '</strong> to you', route('admin.tasks.show', $task->id));
                     }
                 }
             } else {
@@ -331,7 +334,7 @@ class TaskController extends Controller
         ]), [
             'rel_id' => $request->rel_id ?: null,
             'rel_type' => $request->rel_type ?: null,
-            'milestone' => $request->milestone ?: null,
+            'milestone' => $request->milestone ?? 0,
             'billable' => $request->billable ?? 0,
             'billed' => $request->billed ?? 0,
             'hourly_rate' => $request->hourly_rate ?? 0,
@@ -351,6 +354,16 @@ class TaskController extends Controller
                 'task_name' => $task->name,
                 'task_link' => route('admin.tasks.show', $task->id),
             ]);
+
+            $project = Project::find($task->rel_id);
+            if ($project) {
+                $staffIds = $project->staff()->pluck('staffid')->toArray();
+                $exclude = [(int)Auth::id()];
+                $recipients = array_values(array_diff($staffIds, $exclude));
+                if (!empty($recipients)) {
+                    Notification::createForMultipleStaff($recipients, Auth::user()->full_name . ' completed task <strong>' . e($task->name) . '</strong> in <strong>' . e($project->name) . '</strong>', route('admin.tasks.show', $task->id));
+                }
+            }
         }
 
         // Log activity for task update

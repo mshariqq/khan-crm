@@ -83,7 +83,7 @@ class ExpenseController extends Controller
             'amount' => $request->amount,
             'date' => $request->date,
             'clientid' => $request->clientid,
-            'project_id' => $request->project_id,
+            'project_id' => $request->project_id ?? 0,
             'currency' => $request->currency,
             'category' => $request->category,
             'paymentmode' => $request->paymentmode,

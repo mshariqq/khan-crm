@@ -356,10 +356,11 @@ class LeadController extends Controller
         $lead = Lead::findOrFail($id);
         GdprRequest::create([
             'lead_id' => $lead->id,
-            'type' => $request->type,
+            'request_type' => $request->type,
             'description' => $request->description ?? '',
             'status' => 'pending',
-            'created_at' => now(),
+            'request_date' => now(),
+            'request_from' => 'staff',
         ]);
 
         LeadActivityLogService::gdprRequestSubmitted($lead, $request->type);

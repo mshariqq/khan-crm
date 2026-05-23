@@ -92,6 +92,7 @@
                     <option value="2" {{ request('status') == '2' ? 'selected' : '' }}>Sent</option>
                     <option value="3" {{ request('status') == '3' ? 'selected' : '' }}>Accepted</option>
                     <option value="4" {{ request('status') == '4' ? 'selected' : '' }}>Declined</option>
+                    <option value="5" {{ request('status') == '5' ? 'selected' : '' }}>Converted</option>
                 </select>
             </div>
             <div class="flex gap-2">
@@ -138,7 +139,7 @@
                         </td>
                         <td class="px-6 py-4">
                             @php
-                                $statusMap = [1 => ['label' => 'Draft', 'class' => 'bg-slate-100 text-slate-700'], 2 => ['label' => 'Sent', 'class' => 'bg-blue-100 text-blue-700'], 3 => ['label' => 'Accepted', 'class' => 'bg-green-100 text-green-700'], 4 => ['label' => 'Declined', 'class' => 'bg-red-100 text-red-700']];
+                                $statusMap = [1 => ['label' => 'Draft', 'class' => 'bg-slate-100 text-slate-700'], 2 => ['label' => 'Sent', 'class' => 'bg-blue-100 text-blue-700'], 3 => ['label' => 'Accepted', 'class' => 'bg-green-100 text-green-700'], 4 => ['label' => 'Declined', 'class' => 'bg-red-100 text-red-700'], 5 => ['label' => 'Converted', 'class' => 'bg-purple-100 text-purple-700']];
                                 $s = $statusMap[$estimate->status] ?? ['label' => 'Unknown', 'class' => 'bg-slate-100 text-slate-700'];
                             @endphp
                             <span class="px-2 py-1 rounded-full text-xs font-bold {{ $s['class'] }}">{{ $s['label'] }}</span>

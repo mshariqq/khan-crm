@@ -299,7 +299,7 @@
                                 @foreach($lead->gdprRequests()->orderBy('created_at', 'desc')->get() as $gdpr)
                                     <div class="bg-purple-50 rounded-lg p-3 flex justify-between items-center border-l-3 border-purple-400">
                                         <div>
-                                            <p class="text-sm font-medium text-slate-700 uppercase">{{ $gdpr->type }}</p>
+                                            <p class="text-sm font-medium text-slate-700 uppercase">{{ $gdpr->request_type }}</p>
                                             <p class="text-xs text-slate-500">{{ $gdpr->description }}</p>
                                         </div>
                                         <span class="px-2 py-1 bg-{{ $gdpr->status == 'pending' ? 'amber' : 'emerald' }}-100 text-{{ $gdpr->status == 'pending' ? 'amber' : 'emerald' }}-700 text-xs rounded">{{ $gdpr->status }}</span>

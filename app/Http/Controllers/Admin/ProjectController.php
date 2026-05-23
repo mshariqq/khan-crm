@@ -8,6 +8,7 @@ use App\Models\ProjectActivity; // Add this line
 use App\Models\Client;
 use App\Models\Staff;
 use App\Models\Note;
+use App\Models\Notification;
 use App\Models\ProjectDiscussion;
 use App\Models\ProjectDiscussionComment;
 use App\Services\EmailService;
@@ -95,6 +96,13 @@ class ProjectController extends Controller
 
         $this->projectNotification->send('project-created', $project->id);
 
+        $staffIds = $project->staff()->pluck('staffid')->toArray();
+        $creatorId = (int)($project->addedfrom ?? Auth::id());
+        $allRecipients = array_unique(array_merge($staffIds, [$creatorId]));
+        $desc = Auth::user()->full_name . ' created project <strong>' . e($project->name) . '</strong>';
+        $link = route('admin.projects.show', $project->id);
+        Notification::createForMultipleStaff($allRecipients, $desc, $link);
+
         return redirect()->route('admin.projects.index')->with('success', 'Project created successfully!');
     }
 
@@ -152,6 +160,8 @@ class ProjectController extends Controller
                         'member_email' => $staffMember->email,
                         'added_by' => (Auth::user()->firstname ?? '') . ' ' . (Auth::user()->lastname ?? ''),
                     ]);
+
+                    Notification::createForStaff($staffMember->staffid, Auth::user()->full_name . ' added you to project <strong>' . e($project->name) . '</strong>', route('admin.projects.show', $project->id));
                 }
             }
 
@@ -174,6 +184,7 @@ class ProjectController extends Controller
         $notified = !empty($addedStaff);
 
         if ($oldStatus !== (int)$project->status) {
+            $statusLabels = [1 => 'Active', 2 => 'Completed', 3 => 'On Hold', 4 => 'Cancelled'];
             $statusSlugs = [2 => 'project-completed', 3 => 'project-on-hold', 4 => 'project-cancelled'];
             if (isset($statusSlugs[(int)$project->status])) {
                 $this->projectNotification->send($statusSlugs[(int)$project->status], $project->id);
@@ -182,6 +193,15 @@ class ProjectController extends Controller
                 $this->projectNotification->send('project-resumed', $project->id);
                 $notified = true;
             }
+
+            $oldLabel = $statusLabels[$oldStatus] ?? 'Unknown';
+            $newLabel = $statusLabels[(int)$project->status] ?? 'Unknown';
+            $staffIds = $project->staff()->pluck('staffid')->toArray();
+            $exclude = [(int)Auth::id()];
+            $recipients = array_values(array_diff($staffIds, $exclude));
+            if (!empty($recipients)) {
+                Notification::createForMultipleStaff($recipients, 'Project <strong>' . e($project->name) . '</strong> moved from ' . $oldLabel . ' to ' . $newLabel, route('admin.projects.show', $project->id));
+            }
         }
 
         if (!$notified) {
@@ -189,11 +209,26 @@ class ProjectController extends Controller
             if ($oldDeadline !== $project->deadline) {
                 $this->projectNotification->send('project-deadline-changed', $project->id);
                 $notified = true;
+
+                $staffIds = $project->staff()->pluck('staffid')->toArray();
+                $exclude = [(int)Auth::id()];
+                $recipients = array_values(array_diff($staffIds, $exclude));
+                if (!empty($recipients)) {
+                    $newDate = $project->deadline ? \Carbon\Carbon::parse($project->deadline)->format('M j, Y') : 'Not set';
+                    Notification::createForMultipleStaff($recipients, 'Deadline for <strong>' . e($project->name) . '</strong> changed to ' . $newDate, route('admin.projects.show', $project->id));
+                }
             }
         }
 
         if (!$notified) {
             $this->projectNotification->send('project-updated', $project->id);
+
+            $staffIds = $project->staff()->pluck('staffid')->toArray();
+            $exclude = [(int)Auth::id()];
+            $recipients = array_values(array_diff($staffIds, $exclude));
+            if (!empty($recipients)) {
+                Notification::createForMultipleStaff($recipients, Auth::user()->full_name . ' updated project <strong>' . e($project->name) . '</strong>', route('admin.projects.show', $project->id));
+            }
         }
 
         // Log activity for project update
@@ -373,7 +408,7 @@ class ProjectController extends Controller
 
         $project = Project::findOrFail($projectId);
 
-        ProjectDiscussion::create([
+        $discussion = ProjectDiscussion::create([
             'project_id' => $project->id,
             'subject' => $request->subject,
             'description' => $request->description ?? '',

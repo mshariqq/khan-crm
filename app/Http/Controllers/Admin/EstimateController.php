@@ -304,7 +304,7 @@ class EstimateController extends Controller
         }
 
         $estimate = Estimate::findOrFail($id);
-        $estimate->update(['status' => 2]);
+        $estimate->update(['status' => 3]);
 
         return redirect()->route('admin.estimates.show', $estimate->id)->with('success', 'Estimate accepted!');
     }
@@ -316,7 +316,7 @@ class EstimateController extends Controller
         }
 
         $estimate = Estimate::findOrFail($id);
-        $estimate->update(['status' => 3]);
+        $estimate->update(['status' => 4]);
 
         return redirect()->route('admin.estimates.show', $estimate->id)->with('success', 'Estimate declined!');
     }
@@ -350,7 +350,7 @@ class EstimateController extends Controller
             'billing_country' => $estimate->billing_country,
         ]);
 
-        $estimate->update(['status' => 4, 'invoice_id' => $invoice->id]);
+        $estimate->update(['status' => 5, 'invoice_id' => $invoice->id]);
 
         return redirect()->route('admin.invoices.show', $invoice->id)->with('success', 'Invoice created from estimate!');
     }

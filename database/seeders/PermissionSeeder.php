@@ -73,10 +73,10 @@ class PermissionSeeder extends Seeder
             ['name' => 'Delete Estimates', 'slug' => 'estimates_delete'],
             
             // Finance - Credit Notes
-            ['name' => 'View Credit Notes', 'slug' => 'creditnotes_view'],
-            ['name' => 'Create Credit Notes', 'slug' => 'creditnotes_create'],
-            ['name' => 'Edit Credit Notes', 'slug' => 'creditnotes_edit'],
-            ['name' => 'Delete Credit Notes', 'slug' => 'creditnotes_delete'],
+            ['name' => 'View Credit Notes', 'slug' => 'credit_notes_view'],
+            ['name' => 'Create Credit Notes', 'slug' => 'credit_notes_create'],
+            ['name' => 'Edit Credit Notes', 'slug' => 'credit_notes_edit'],
+            ['name' => 'Delete Credit Notes', 'slug' => 'credit_notes_delete'],
             
             // Finance - Expenses
             ['name' => 'View Expenses', 'slug' => 'expenses_view'],

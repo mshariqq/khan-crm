@@ -58,8 +58,9 @@ class EmailService
                 if (!empty($headers)) {
                     $symfonyMessage = $message->getSymfonyMessage();
                     foreach ($headers as $key => $value) {
-                        if ($key === 'Message-ID') {
-                            $symfonyMessage->getHeaders()->addIdHeader($key, $value);
+                        if (in_array($key, ['Message-ID', 'In-Reply-To', 'References'])) {
+                            $ids = array_map(fn($id) => trim($id, ' <>'), preg_split('/\s+/', $value));
+                            $symfonyMessage->getHeaders()->addIdHeader($key, $ids);
                         } else {
                             $symfonyMessage->getHeaders()->addTextHeader($key, $value);
                         }

@@ -75,6 +75,12 @@ class CreditNoteController extends Controller
                 'datecreated' => now(),
                 'addedfrom' => Auth::id(),
                 'status' => 1,
+                'include_shipping' => 0,
+                'show_shipping_on_credit_note' => 0,
+                'show_quantity_as' => 1,
+                'discount_type' => 'percent',
+                'discount_percent' => 0,
+                'discount_total' => 0,
             ]));
 
             // Handle items
