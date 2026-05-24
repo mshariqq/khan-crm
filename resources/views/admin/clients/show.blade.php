@@ -49,6 +49,12 @@
                     </div>
                 </div>
             </div>
+            <div class="space-y-6">
+                <h3 class="text-lg font-semibold text-slate-800 border-b pb-2">Quick Actions</h3>
+                <a href="{{ route('admin.tasks.create') }}?rel_type=client&rel_id={{ $client->userid }}" data-pane="create" data-pane-type="task" class="block w-full px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all text-center">
+                    <i class="bi bi-plus-lg mr-1"></i> Create Task
+                </a>
+            </div>
         </div>
     </div>
 </div>

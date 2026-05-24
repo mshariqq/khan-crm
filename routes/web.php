@@ -20,12 +20,23 @@ use App\Http\Controllers\Admin\FileController;
 use App\Http\Controllers\Admin\TaskChecklistController;
 use App\Http\Controllers\Admin\SearchController;
 
+// --- PUBLIC EMAIL TRACKING ROUTES ---
+Route::get('email/track/open/{message_id}', [\App\Http\Controllers\Admin\EmailTrackingController::class, 'trackOpen'])
+    ->name('email.tracking.open')
+    ->middleware('throttle:60,1');
+Route::get('email/track/click/{message_id}', [\App\Http\Controllers\Admin\EmailTrackingController::class, 'trackClick'])
+    ->name('email.tracking.click')
+    ->middleware('throttle:60,1');
+
 // --- GUEST AREA ---
 // Home page and Knowledge Base - accessible to ALL (no middleware)
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/knowledge-base', [HomeController::class, 'kb'])->name('kb');
 Route::get('/kb/article/{slug}', [HomeController::class, 'kbArticle'])->name('kb.article');
 Route::post('/kb/article/{id}/feedback', [HomeController::class, 'kbFeedback'])->name('kb.feedback');
+
+// Public Project Sharing View
+Route::get('/shared/project/{token}', [\App\Http\Controllers\Guest\SharedProjectController::class, 'view'])->name('public.projects.view');
 
 Route::middleware('guest')->group(function () {
     // Login routes - only for guest users
@@ -50,9 +61,13 @@ Route::middleware(['auth:staff'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/search', [SearchController::class, 'index'])->name('admin.search');
     Route::get('notifications/fetch', [\App\Http\Controllers\Admin\NotificationController::class, 'fetch'])->name('admin.notifications.fetch');
+    Route::get('notifications/fetch-grouped', [\App\Http\Controllers\Admin\NotificationController::class, 'fetchGrouped'])->name('admin.notifications.fetch_grouped');
     Route::get('notifications/unread-count', [\App\Http\Controllers\Admin\NotificationController::class, 'unreadCount'])->name('admin.notifications.unread_count');
     Route::post('notifications/{id}/read', [\App\Http\Controllers\Admin\NotificationController::class, 'markAsRead'])->name('admin.notifications.read');
+    Route::post('notifications/{id}/unread', [\App\Http\Controllers\Admin\NotificationController::class, 'markAsUnread'])->name('admin.notifications.unread');
     Route::post('notifications/read-all', [\App\Http\Controllers\Admin\NotificationController::class, 'markAllAsRead'])->name('admin.notifications.read_all');
+    Route::get('notifications/preferences', [\App\Http\Controllers\Admin\NotificationPreferenceController::class, 'index'])->name('admin.notifications.preferences.index');
+    Route::post('notifications/preferences', [\App\Http\Controllers\Admin\NotificationPreferenceController::class, 'update'])->name('admin.notifications.preferences.update');
     Route::get('/settings', [SettingsController::class, 'index'])->name('admin.settings.index');
     Route::post('/settings', [SettingsController::class, 'update'])->name('admin.settings.update');
 
@@ -60,6 +75,8 @@ Route::middleware(['auth:staff'])->prefix('admin')->group(function () {
     Route::get('settings/email-templates', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'index'])->name('admin.settings.email_templates.index');
     Route::get('settings/email-templates/{id}/edit', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'edit'])->name('admin.settings.email_templates.edit');
     Route::post('settings/email-templates/{id}', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'update'])->name('admin.settings.email_templates.update');
+    Route::get('settings/email-templates/preview/{slug}', [\App\Http\Controllers\Admin\EmailTrackingController::class, 'preview'])->name('admin.settings.email_templates.preview');
+    Route::post('settings/email-templates/test-send', [\App\Http\Controllers\Admin\EmailTrackingController::class, 'testSend'])->name('admin.settings.email_templates.test_send');
 
     // Ticket Email Integration Routes
     Route::get('settings/ticket-email-integration', [\App\Http\Controllers\Admin\TicketEmailIntegrationController::class, 'index'])->name('admin.settings.ticket_email_integration.index');
@@ -305,7 +322,9 @@ Route::middleware(['auth:staff'])->prefix('admin')->group(function () {
     Route::get('pane/leads/{lead}/proposals', [\App\Http\Controllers\Admin\LeadPaneController::class, 'showProposals'])->name('admin.leads.pane.proposals');
     Route::get('pane/leads/{lead}/proposals/create', [\App\Http\Controllers\Admin\LeadPaneController::class, 'createProposal'])->name('admin.leads.pane.proposals.create');
 
-    Route::resource('projects', \App\Http\Controllers\Admin\ProjectController::class)->names([
+    Route::get('projects/export', [\App\Http\Controllers\Admin\ProjectController::class, 'export'])->name('admin.projects.export');
+
+Route::resource('projects', \App\Http\Controllers\Admin\ProjectController::class)->names([
     'index' => 'admin.projects.index',
     'create' => 'admin.projects.create',
     'store' => 'admin.projects.store',
@@ -331,6 +350,129 @@ Route::get('projects/{project}/gantt', [\App\Http\Controllers\Admin\ProjectContr
 Route::get('projects/{project}/tab/{tab}', [\App\Http\Controllers\Admin\ProjectController::class, 'tabContent'])->name('admin.projects.tab');
 Route::post('projects/{project}/send-notification', [\App\Http\Controllers\Admin\ProjectController::class, 'sendNotification'])->name('admin.projects.send_notification');
 Route::post('projects/{project}/send', [\App\Http\Controllers\Admin\ProjectController::class, 'sendProject'])->name('admin.projects.send');
+
+Route::post('projects/{project}/status', [\App\Http\Controllers\Admin\ProjectController::class, 'updateStatus'])->name('admin.projects.status');
+Route::post('projects/{project}/progress', [\App\Http\Controllers\Admin\ProjectController::class, 'updateProgress'])->name('admin.projects.progress');
+Route::post('projects/{project}/team', [\App\Http\Controllers\Admin\ProjectController::class, 'updateTeamMembers'])->name('admin.projects.team');
+Route::post('projects/{project}/duplicate', [\App\Http\Controllers\Admin\ProjectController::class, 'duplicate'])->name('admin.projects.duplicate');
+Route::post('projects/{project}/archive', [\App\Http\Controllers\Admin\ProjectController::class, 'archive'])->name('admin.projects.archive');
+Route::post('projects/{project}/restore', [\App\Http\Controllers\Admin\ProjectController::class, 'restoreProject'])->name('admin.projects.restore');
+Route::post('projects/{project}/file', [\App\Http\Controllers\Admin\ProjectController::class, 'uploadFile'])->name('admin.projects.file.upload');
+Route::post('projects/{project}/convert-billable', [\App\Http\Controllers\Admin\ProjectController::class, 'convertBillableToInvoice'])->name('admin.projects.convert_billable');
+Route::get('projects/{project}/gdpr/export', [\App\Http\Controllers\Admin\ProjectController::class, 'exportGdpr'])->name('admin.projects.gdpr.export');
+Route::post('projects/{project}/gdpr/delete', [\App\Http\Controllers\Admin\ProjectController::class, 'deleteGdpr'])->name('admin.projects.gdpr.delete');
+Route::delete('projects/{project}/notes/{note}', [\App\Http\Controllers\Admin\ProjectController::class, 'notesDelete'])->name('admin.projects.notes.delete');
+Route::put('projects/{project}/discussions/{discussion}', [\App\Http\Controllers\Admin\ProjectController::class, 'updateDiscussion'])->name('admin.projects.discussions.update');
+Route::delete('projects/{project}/discussions/{discussion}', [\App\Http\Controllers\Admin\ProjectController::class, 'deleteDiscussion'])->name('admin.projects.discussions.delete');
+Route::post('projects/{project}/discussions/{discussion}/pin', [\App\Http\Controllers\Admin\ProjectController::class, 'togglePinDiscussion'])->name('admin.projects.discussions.pin');
+Route::delete('projects/{project}/discussions/{discussion}/comment/{comment}', [\App\Http\Controllers\Admin\ProjectController::class, 'deleteDiscussionComment'])->name('admin.projects.discussions.comment.delete');
+Route::put('projects/{project}/discussions/{discussion}/comment/{comment}', [\App\Http\Controllers\Admin\ProjectController::class, 'updateDiscussionComment'])->name('admin.projects.discussions.comment.update');
+
+// Discussion Search
+Route::get('projects/{project}/discussions/search', [\App\Http\Controllers\Admin\ProjectController::class, 'searchDiscussions'])->name('admin.projects.discussions.search');
+
+// Discussion Categories
+Route::get('discussion-categories', [\App\Http\Controllers\Admin\ProjectController::class, 'discussionCategories'])->name('admin.projects.discussion_categories.index');
+Route::post('discussion-categories', [\App\Http\Controllers\Admin\ProjectController::class, 'storeDiscussionCategory'])->name('admin.projects.discussion_categories.store');
+Route::delete('discussion-categories/{id}', [\App\Http\Controllers\Admin\ProjectController::class, 'deleteDiscussionCategory'])->name('admin.projects.discussion_categories.destroy');
+
+// Discussion Email Integration (stub)
+Route::get('projects/{project}/discussions/email-settings', [\App\Http\Controllers\Admin\ProjectController::class, 'discussionEmailSettings'])->name('admin.projects.discussions.email_settings');
+
+Route::post('milestones/{milestone}/complete', [\App\Http\Controllers\Admin\MilestoneController::class, 'complete'])->name('admin.milestones.complete');
+
+// ===== Project Advanced Features =====
+Route::get('projects/portfolio', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'portfolio'])->name('admin.projects.portfolio');
+Route::get('projects/profitability', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'profitabilityReport'])->name('admin.projects.profitability');
+Route::get('projects/calendar', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'calendar'])->name('admin.projects.calendar');
+
+// Batch Operations
+Route::post('projects/batch/status', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'batchStatus'])->name('admin.projects.batch.status');
+Route::post('projects/batch/delete', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'batchDelete'])->name('admin.projects.batch.delete');
+Route::post('projects/batch/assign-team', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'batchAssignTeam'])->name('admin.projects.batch.assign_team');
+
+// Project Templates
+Route::get('project-templates', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'templatesIndex'])->name('admin.projects.templates.index');
+Route::get('project-templates/create', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'templatesCreate'])->name('admin.projects.templates.create');
+Route::post('project-templates', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'templatesStore'])->name('admin.projects.templates.store');
+Route::post('project-templates/{template}/apply', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'templatesApply'])->name('admin.projects.templates.apply');
+
+// Project Categories
+Route::get('project-categories', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'categoriesIndex'])->name('admin.projects.categories.index');
+Route::post('project-categories', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'categoriesStore'])->name('admin.projects.categories.store');
+Route::put('project-categories/{id}', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'categoriesUpdate'])->name('admin.projects.categories.update');
+Route::delete('project-categories/{id}', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'categoriesDestroy'])->name('admin.projects.categories.destroy');
+
+// Per-Project Advanced Features
+Route::prefix('projects/{project}')->group(function () {
+    // Phases
+    Route::get('phases', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'phasesIndex'])->name('admin.projects.phases.index');
+    Route::post('phases', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'phasesStore'])->name('admin.projects.phases.store');
+    Route::put('phases/{phase}', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'phasesUpdate'])->name('admin.projects.phases.update');
+    Route::delete('phases/{phase}', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'phasesDestroy'])->name('admin.projects.phases.destroy');
+
+    // Risks
+    Route::get('risks', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'risksIndex'])->name('admin.projects.risks.index');
+    Route::post('risks', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'risksStore'])->name('admin.projects.risks.store');
+    Route::put('risks/{risk}', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'risksUpdate'])->name('admin.projects.risks.update');
+    Route::delete('risks/{risk}', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'risksDestroy'])->name('admin.projects.risks.destroy');
+
+    // Change Requests
+    Route::get('change-requests', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'changeRequestsIndex'])->name('admin.projects.change_requests.index');
+    Route::post('change-requests', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'changeRequestsStore'])->name('admin.projects.change_requests.store');
+    Route::post('change-requests/{cr}/approve', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'changeRequestsApprove'])->name('admin.projects.change_requests.approve');
+    Route::post('change-requests/{cr}/reject', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'changeRequestsReject'])->name('admin.projects.change_requests.reject');
+
+    // Resource Allocations
+    Route::get('resources', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'resourcesIndex'])->name('admin.projects.resources.index');
+    Route::post('resources', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'resourcesStore'])->name('admin.projects.resources.store');
+    Route::delete('resources/{resource}', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'resourcesDestroy'])->name('admin.projects.resources.destroy');
+
+    // Critical Path
+    Route::get('critical-path', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'criticalPath'])->name('admin.projects.critical_path');
+
+    // Baselines
+    Route::get('baselines', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'baselinesIndex'])->name('admin.projects.baselines.index');
+    Route::post('baselines', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'baselinesCapture'])->name('admin.projects.baselines.capture');
+
+    // Closure Checklist
+    Route::get('closure-checklist', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'closureChecklistIndex'])->name('admin.projects.closure_checklist.index');
+    Route::post('closure-checklist', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'closureChecklistAdd'])->name('admin.projects.closure_checklist.add');
+    Route::post('closure-checklist/{item}/toggle', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'closureChecklistToggle'])->name('admin.projects.closure_checklist.toggle');
+
+    // Lessons Learned
+    Route::get('lessons-learned', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'lessonsIndex'])->name('admin.projects.lessons.index');
+    Route::post('lessons-learned', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'lessonsStore'])->name('admin.projects.lessons.store');
+
+    // Locations
+    Route::get('locations', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'locationsIndex'])->name('admin.projects.locations.index');
+    Route::post('locations', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'locationsStore'])->name('admin.projects.locations.store');
+    Route::delete('locations/{location}', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'locationsDestroy'])->name('admin.projects.locations.destroy');
+
+    // Sharing
+    Route::get('shares', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'sharesIndex'])->name('admin.projects.shares.index');
+    Route::post('shares', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'sharesStore'])->name('admin.projects.shares.store');
+    Route::delete('shares/{share}', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'sharesDestroy'])->name('admin.projects.shares.destroy');
+
+    // Watchers
+    Route::post('toggle-watcher', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'toggleWatcher'])->name('admin.projects.toggle_watcher');
+
+    // Recurring
+    Route::get('recurring', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'recurringConfig'])->name('admin.projects.recurring.index');
+    Route::post('recurring', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'recurringStore'])->name('admin.projects.recurring.store');
+    Route::post('recurring/deactivate', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'recurringDeactivate'])->name('admin.projects.recurring.deactivate');
+
+    // Feedback
+    Route::get('feedback', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'feedbackIndex'])->name('admin.projects.feedback.index');
+    Route::post('feedback', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'feedbackStore'])->name('admin.projects.feedback.store');
+
+    // Search within tabs
+    Route::get('tab/{tab}/search', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'searchTab'])->name('admin.projects.tab.search');
+});
+
+// Task Dependencies
+Route::post('task-dependencies', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'taskDependenciesStore'])->name('admin.task_dependencies.store');
+Route::delete('task-dependencies/{id}', [\App\Http\Controllers\Admin\ProjectAdvancedController::class, 'taskDependenciesDestroy'])->name('admin.task_dependencies.destroy');
 
 Route::get('tasks/kanban', [\App\Http\Controllers\Admin\TaskController::class, 'kanban'])->name('admin.tasks.kanban');
 
@@ -368,12 +510,16 @@ Route::get('tasks/kanban', [\App\Http\Controllers\Admin\TaskController::class, '
     Route::post('payroll/mark-paid/{id}', [\App\Http\Controllers\Admin\PayrollController::class, 'markAsPaid'])->name('admin.payroll.mark-paid');
     Route::get('payroll/my-payslips', [\App\Http\Controllers\Admin\PayrollController::class, 'myPayslips'])->name('admin.payroll.my-payslips');
     Route::get('payroll/view/{id}', [\App\Http\Controllers\Admin\PayrollController::class, 'viewPayslip'])->name('admin.payroll.view');
+    Route::post('payroll/sync-from-project', [\App\Http\Controllers\Admin\PayrollController::class, 'syncFromProjects'])->name('admin.payroll.sync_from_project');
     
     // Task AJAX Routes
 Route::get('tasks/{id}/quick-view', [\App\Http\Controllers\Admin\TaskController::class, 'quickView'])->name('admin.tasks.quick_view');
 Route::post('tasks/{id}/status', [\App\Http\Controllers\Admin\TaskController::class, 'updateStatus'])->name('admin.tasks.update_status');
 Route::post('tasks/quick-create', [\App\Http\Controllers\Admin\TaskController::class, 'quickCreate'])->name('admin.tasks.quick_create');
 Route::post('tasks/{id}/assign-staff', [\App\Http\Controllers\Admin\TaskController::class, 'assignStaff'])->name('admin.tasks.assign_staff');
+Route::post('tasks/{id}/update-priority', [\App\Http\Controllers\Admin\TaskController::class, 'updatePriority'])->name('admin.tasks.update_priority');
+Route::post('tasks/{id}/toggle-follow', [\App\Http\Controllers\Admin\TaskController::class, 'toggleFollow'])->name('admin.tasks.toggle_follow');
+Route::post('tasks/{id}/duplicate', [\App\Http\Controllers\Admin\TaskController::class, 'duplicate'])->name('admin.tasks.duplicate');
 
     // Task Pane Routes
     Route::get('pane/tasks/create', [\App\Http\Controllers\Admin\TaskPaneController::class, 'create'])->name('admin.tasks.pane.create');
@@ -411,11 +557,27 @@ Route::post('timers', [\App\Http\Controllers\Admin\TaskTimerController::class, '
 Route::put('timers/{timer}', [\App\Http\Controllers\Admin\TaskTimerController::class, 'update'])->name('admin.timers.update');
 Route::delete('timers/{timer}', [\App\Http\Controllers\Admin\TaskTimerController::class, 'destroy'])->name('admin.timers.destroy');
 Route::get('timers/task/{taskId}', [\App\Http\Controllers\Admin\TaskTimerController::class, 'getByTask'])->name('admin.timers.task.timers');
+Route::post('timers/{timer}/approve', [\App\Http\Controllers\Admin\TaskTimerController::class, 'approve'])->name('admin.timers.approve');
+Route::post('timers/{timer}/reject', [\App\Http\Controllers\Admin\TaskTimerController::class, 'reject'])->name('admin.timers.reject');
+Route::post('timers/bulk-approve', [\App\Http\Controllers\Admin\TaskTimerController::class, 'bulkApprove'])->name('admin.timers.bulk_approve');
+Route::get('projects/{project}/timesheets/export', [\App\Http\Controllers\Admin\ProjectController::class, 'exportTimesheets'])->name('admin.projects.timesheets.export');
+Route::get('projects/{project}/timesheets/summary', [\App\Http\Controllers\Admin\ProjectController::class, 'timesheetSummary'])->name('admin.projects.timesheets.summary');
 
 // File Routes
 Route::post('files/upload', [\App\Http\Controllers\Admin\FileController::class, 'upload'])->name('admin.files.upload');
 Route::delete('files/{file}', [\App\Http\Controllers\Admin\FileController::class, 'destroy'])->name('admin.files.destroy');
 Route::get('files', [\App\Http\Controllers\Admin\FileController::class, 'getFiles'])->name('admin.files.get');
+Route::put('files/{file}/rename', [\App\Http\Controllers\Admin\FileController::class, 'rename'])->name('admin.files.rename');
+Route::get('files/{file}/preview', [\App\Http\Controllers\Admin\FileController::class, 'preview'])->name('admin.files.preview');
+Route::post('files/{file}/expiry', [\App\Http\Controllers\Admin\FileController::class, 'setExpiry'])->name('admin.files.expiry');
+Route::get('files/{file}/downloads', [\App\Http\Controllers\Admin\FileController::class, 'downloadHistory'])->name('admin.files.downloads');
+Route::get('projects/{project}/files/{file}/download', [\App\Http\Controllers\Admin\FileController::class, 'download'])->name('admin.projects.files.download');
+Route::post('files/bulk-download', [\App\Http\Controllers\Admin\FileController::class, 'bulkDownload'])->name('admin.files.bulk-download');
+Route::post('files/move-to-folder', [\App\Http\Controllers\Admin\FileController::class, 'moveToFolder'])->name('admin.files.move-to-folder');
+// File Folder Routes
+Route::get('projects/{project}/file-folders', [\App\Http\Controllers\Admin\FileController::class, 'folders'])->name('admin.files.folders');
+Route::post('projects/{project}/file-folders', [\App\Http\Controllers\Admin\FileController::class, 'storeFolder'])->name('admin.files.folders.store');
+Route::delete('file-folders/{folder}', [\App\Http\Controllers\Admin\FileController::class, 'destroyFolder'])->name('admin.files.folders.destroy');
 
 // Task Checklist Routes
 Route::post('task-checklist', [\App\Http\Controllers\Admin\TaskChecklistController::class, 'store'])->name('admin.task-checklist.store');
@@ -544,6 +706,21 @@ Route::middleware(['auth:client'])->prefix('client')->group(function () {
     Route::get('/projects', [\App\Http\Controllers\Client\ProjectController::class, 'index'])->name('client.projects.index');
     Route::get('/projects/export', [\App\Http\Controllers\Client\ProjectController::class, 'export'])->name('client.projects.export');
     Route::get('/projects/{id}', [\App\Http\Controllers\Client\ProjectController::class, 'show'])->name('client.projects.show');
+    Route::get('/projects/{project}/files', [\App\Http\Controllers\Client\ProjectController::class, 'files'])->name('client.projects.files');
+    Route::get('/projects/{project}/files/{file}/download', [\App\Http\Controllers\Client\ProjectController::class, 'downloadFile'])->name('client.projects.files.download');
+    Route::get('/projects/{project}/discussions', [\App\Http\Controllers\Client\ProjectController::class, 'discussions'])->name('client.projects.discussions');
+    Route::get('/projects/{project}/discussions/{discussion}', [\App\Http\Controllers\Client\ProjectController::class, 'showDiscussion'])->name('client.projects.discussions.show');
+    Route::post('/projects/{project}/discussions/{discussion}/comment', [\App\Http\Controllers\Client\ProjectController::class, 'addComment'])->name('client.projects.discussions.comment');
+    Route::get('/projects/{project}/notes', [\App\Http\Controllers\Client\ProjectController::class, 'notes'])->name('client.projects.notes');
+    Route::get('/projects/{project}/activity', [\App\Http\Controllers\Client\ProjectController::class, 'activity'])->name('client.projects.activity');
+    Route::get('/projects/{project}/timesheets', [\App\Http\Controllers\Client\ProjectController::class, 'timesheets'])->name('client.projects.timesheets');
+    Route::get('/projects/{project}/gantt', [\App\Http\Controllers\Client\ProjectController::class, 'gantt'])->name('client.projects.gantt');
+    Route::get('/projects/{project}/invoices', [\App\Http\Controllers\Client\ProjectController::class, 'invoices'])->name('client.projects.invoices');
+    Route::get('/projects/{project}/estimates', [\App\Http\Controllers\Client\ProjectController::class, 'estimates'])->name('client.projects.estimates');
+    Route::get('/projects/{project}/milestones', [\App\Http\Controllers\Client\ProjectController::class, 'milestones'])->name('client.projects.milestones');
+    Route::post('/projects/{project}/feedback', [\App\Http\Controllers\Client\ProjectController::class, 'submitFeedback'])->name('client.projects.feedback');
+    Route::get('/profile/edit', [\App\Http\Controllers\Client\ProfileController::class, 'edit'])->name('client.profile.edit');
+    Route::put('/profile/update', [\App\Http\Controllers\Client\ProfileController::class, 'update'])->name('client.profile.update');
 
     // Invoices
     Route::get('/invoices', [\App\Http\Controllers\Client\InvoiceController::class, 'index'])->name('client.invoices.index');

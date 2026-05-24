@@ -68,6 +68,7 @@
                 <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Priority</label>
                 <select name="priority" class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-w-[150px]">
                     <option value="">All Priorities</option>
+                    <option value="4" {{ request('priority') == '4' ? 'selected' : '' }}>Urgent</option>
                     <option value="3" {{ request('priority') == '3' ? 'selected' : '' }}>High</option>
                     <option value="2" {{ request('priority') == '2' ? 'selected' : '' }}>Medium</option>
                     <option value="1" {{ request('priority') == '1' ? 'selected' : '' }}>Low</option>
@@ -81,6 +82,41 @@
                     <option value="1" {{ request('status') == '1' ? 'selected' : '' }}>To Do</option>
                     <option value="2" {{ request('status') == '2' ? 'selected' : '' }}>In Progress</option>
                     <option value="3" {{ request('status') == '3' ? 'selected' : '' }}>Done</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Rel Type</label>
+                <select name="rel_type" class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-w-[150px]">
+                    <option value="">All Types</option>
+                    <option value="project" {{ request('rel_type') == 'project' ? 'selected' : '' }}>Project</option>
+                    <option value="invoice" {{ request('rel_type') == 'invoice' ? 'selected' : '' }}>Invoice</option>
+                    <option value="estimate" {{ request('rel_type') == 'estimate' ? 'selected' : '' }}>Estimate</option>
+                    <option value="proposal" {{ request('rel_type') == 'proposal' ? 'selected' : '' }}>Proposal</option>
+                    <option value="lead" {{ request('rel_type') == 'lead' ? 'selected' : '' }}>Lead</option>
+                    <option value="ticket" {{ request('rel_type') == 'ticket' ? 'selected' : '' }}>Ticket</option>
+                    <option value="client" {{ request('rel_type') == 'client' ? 'selected' : '' }}>Client</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Assigned To</label>
+                <select name="assigned_to" class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-w-[150px]">
+                    <option value="">All Staff</option>
+                    @isset($allStaff)
+                    @foreach($allStaff as $s)
+                    <option value="{{ $s->staffid }}" {{ request('assigned_to') == $s->staffid ? 'selected' : '' }}>{{ $s->firstname }} {{ $s->lastname }}</option>
+                    @endforeach
+                    @endisset
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Sort</label>
+                <select name="sort" class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-w-[150px]">
+                    <option value="newest" {{ request('sort', 'newest') == 'newest' ? 'selected' : '' }}>Newest</option>
+                    <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest</option>
+                    <option value="due_date_asc" {{ request('sort') == 'due_date_asc' ? 'selected' : '' }}>Due Date (asc)</option>
+                    <option value="due_date_desc" {{ request('sort') == 'due_date_desc' ? 'selected' : '' }}>Due Date (desc)</option>
+                    <option value="priority_high" {{ request('sort') == 'priority_high' ? 'selected' : '' }}>Priority (high)</option>
+                    <option value="priority_low" {{ request('sort') == 'priority_low' ? 'selected' : '' }}>Priority (low)</option>
                 </select>
             </div>
             <div class="flex gap-2">

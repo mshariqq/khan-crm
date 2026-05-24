@@ -1,3 +1,4 @@
+@php use App\Models\Project; @endphp
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
     <div class="p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
         <div class="flex items-center justify-between mb-1">
@@ -10,14 +11,14 @@
         <div class="flex items-center justify-between mb-1">
             <i class="bi bi-receipt text-emerald-500 text-sm"></i>
         </div>
-        <p class="text-xl font-bold text-emerald-700">${{ number_format($project->invoices->sum('total'), 0) }}</p>
+        <p class="text-xl font-bold text-emerald-700">{{ app_format_money($project->invoices->sum('total')) }}</p>
         <p class="text-[10px] text-emerald-600">Invoiced</p>
     </div>
     <div class="p-3 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border border-amber-200">
         <div class="flex items-center justify-between mb-1">
             <i class="bi bi-cash-stack text-amber-500 text-sm"></i>
         </div>
-        <p class="text-xl font-bold text-amber-700">${{ number_format($project->expenses->sum('amount'), 0) }}</p>
+        <p class="text-xl font-bold text-amber-700">{{ app_format_money($project->expenses->sum('amount')) }}</p>
         <p class="text-[10px] text-amber-600">Expenses</p>
     </div>
     <div class="p-3 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
@@ -63,19 +64,19 @@
             <div class="space-y-2 text-xs">
                 <div class="flex justify-between py-2 border-b border-slate-200/50">
                     <span class="text-slate-500">Start Date</span>
-                    <span class="text-slate-700 font-medium">{{ $project->start_date ? \Carbon\Carbon::parse($project->start_date)->format('M j, Y') : 'Not set' }}</span>
+                    <span class="text-slate-700 font-medium">{{ $project->start_date ? $project->start_date->format('M j, Y') : 'Not set' }}</span>
                 </div>
                 <div class="flex justify-between py-2 border-b border-slate-200/50">
                     <span class="text-slate-500">Deadline</span>
-                    <span class="text-slate-700 font-medium">{{ $project->deadline ? \Carbon\Carbon::parse($project->deadline)->format('M j, Y') : 'Not set' }}</span>
+                    <span class="text-slate-700 font-medium">{{ $project->deadline ? $project->deadline->format('M j, Y') : 'Not set' }}</span>
                 </div>
                 <div class="flex justify-between py-2 border-b border-slate-200/50">
                     <span class="text-slate-500">Project Cost</span>
-                    <span class="text-slate-700 font-medium">${{ number_format($project->project_cost ?? 0, 2) }}</span>
+                    <span class="text-slate-700 font-medium">{{ app_format_money($project->project_cost ?? 0) }}</span>
                 </div>
                 <div class="flex justify-between py-2">
                     <span class="text-slate-500">Hourly Rate</span>
-                    <span class="text-slate-700 font-medium">${{ number_format($project->hourly_rate ?? 0, 2) }}</span>
+                    <span class="text-slate-700 font-medium">{{ app_format_money($project->hourly_rate ?? 0) }}</span>
                 </div>
             </div>
         </div>
@@ -115,16 +116,24 @@
             <div class="space-y-2 text-xs">
                 <div class="flex justify-between py-2 border-b border-slate-200/50">
                     <span class="text-slate-500">Total Invoiced</span>
-                    <span class="text-slate-700 font-medium">${{ number_format($project->invoices->sum('total'), 2) }}</span>
+                    <span class="text-slate-700 font-medium">{{ app_format_money($project->invoices->sum('total')) }}</span>
                 </div>
                 <div class="flex justify-between py-2 border-b border-slate-200/50">
                     <span class="text-slate-500">Total Expenses</span>
-                    <span class="text-slate-700 font-medium">${{ number_format($project->expenses->sum('amount'), 2) }}</span>
+                    <span class="text-slate-700 font-medium">{{ app_format_money($project->expenses->sum('amount')) }}</span>
                 </div>
                 <div class="flex justify-between py-2">
                     <span class="text-slate-500">Profit</span>
-                    <span class="text-emerald-600 font-medium">${{ number_format(($project->project_cost ?? 0) - $project->expenses->sum('amount'), 2) }}</span>
+                    <span class="text-emerald-600 font-medium">{{ app_format_money(($project->project_cost ?? 0) - $project->expenses->sum('amount')) }}</span>
                 </div>
+                @if($project->budget_utilization !== null)
+                <div class="flex justify-between py-2 border-t border-slate-200/50">
+                    <span class="text-slate-500">Budget Used</span>
+                    <span class="font-medium {{ $project->budget_utilization > 100 ? 'text-red-600' : ($project->budget_utilization > 80 ? 'text-amber-600' : 'text-emerald-600') }}">
+                        {{ $project->budget_utilization }}%
+                    </span>
+                </div>
+                @endif
             </div>
         </div>
 
@@ -136,12 +145,14 @@
                 <h3 class="text-sm font-semibold text-slate-800">Status</h3>
             </div>
             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
-                @if($project->status == 1) bg-emerald-100 text-emerald-700
-                @elseif($project->status == 2) bg-indigo-100 text-indigo-700
-                @else bg-amber-100 text-amber-700 @endif">
-                @if($project->status == 1) Active
-                @elseif($project->status == 2) Completed
-                @else On Hold @endif
+                @if($project->status === Project::STATUS_ACTIVE) bg-emerald-100 text-emerald-700
+                @elseif($project->status === Project::STATUS_COMPLETED) bg-indigo-100 text-indigo-700
+                @elseif($project->status === Project::STATUS_ON_HOLD) bg-amber-100 text-amber-700
+                @else bg-red-100 text-red-700 @endif">
+                @if($project->status === Project::STATUS_ACTIVE) Active
+                @elseif($project->status === Project::STATUS_COMPLETED) Completed
+                @elseif($project->status === Project::STATUS_ON_HOLD) On Hold
+                @else Cancelled @endif
             </span>
         </div>
     </div>

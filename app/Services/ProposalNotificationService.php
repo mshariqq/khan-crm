@@ -80,6 +80,12 @@ class ProposalNotificationService
         }
 
         $data = $this->buildData($proposal, $options);
+        if ($proposal->rel_type === 'client' && $proposal->rel_id) {
+            $data['_rate_limit_type'] = 'client';
+            $data['_rate_limit_id'] = $proposal->rel_id;
+            $data['_rate_recipient_type'] = 'client';
+            $data['_rate_max_per_hour'] = (int)\App\Helpers\SettingsHelper::get('email_rate_limit_per_client', 50);
+        }
         $parsed = $template->parse($data);
 
         $globalSubject = str_replace(
@@ -255,7 +261,12 @@ class ProposalNotificationService
         $staffIds = array_filter($staffIds);
 
         if (!empty($staffIds)) {
-            Notification::createForMultipleStaff($staffIds, $description, $link);
+            Notification::createForMultipleStaff(
+                $staffIds,
+                strip_tags($description),
+                $link,
+                notificationType: 'proposal'
+            );
         }
     }
 

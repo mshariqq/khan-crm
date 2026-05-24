@@ -57,7 +57,7 @@
         <a href="{{ route('admin.tasks.edit', $task->id) }}" data-pane="edit" data-pane-id="{{ $task->id }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Edit">
             <i class="bi bi-pencil"></i>
         </a>
-        <form action="{{ route('admin.tasks.destroy', $task->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this task?');">
+        <form action="{{ route('admin.tasks.destroy', $task->id) }}" method="POST" class="inline" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Are you sure you want to delete this task?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
             @csrf
             @method('DELETE')
             <button type="submit" class="p-2 text-slate-400 hover:text-red-600 transition-colors" title="Delete">

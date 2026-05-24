@@ -340,7 +340,7 @@
                                                 <a href="{{ route('admin.invoices.payments.edit', [$invoice->id, $payment->id]) }}" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Payment">
                                                     <i class="bi bi-pencil text-sm"></i>
                                                 </a>
-                                                <form action="{{ route('admin.invoices.payments.destroy', [$invoice->id, $payment->id]) }}" method="POST" class="inline" onsubmit="return confirm('Delete this payment?')">
+                                                <form action="{{ route('admin.invoices.payments.destroy', [$invoice->id, $payment->id]) }}" method="POST" class="inline" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete this payment?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete Payment">
@@ -420,7 +420,7 @@
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <p class="text-sm font-black text-blue-800">{{ app_format_money($credit->amount, $invoice->currency) }}</p>
-                                    <form action="{{ route('admin.invoices.credits.destroy', [$invoice->id, $credit->id]) }}" method="POST" onsubmit="return confirm('Remove this credit?')">
+                                    <form action="{{ route('admin.invoices.credits.destroy', [$invoice->id, $credit->id]) }}" method="POST" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Remove this credit?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="p-1.5 text-blue-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Remove Credit">
@@ -789,6 +789,9 @@
             <div class="bg-white rounded-xl border border-slate-200 p-4">
                 <h3 class="text-sm font-semibold text-slate-700 mb-3">Actions</h3>
                 <div class="space-y-2">
+                    <a href="{{ route('admin.tasks.create') }}?rel_type=invoice&rel_id={{ $invoice->id }}" data-pane="create" data-pane-type="task" class="w-full px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 text-left flex items-center gap-2">
+                        <i class="bi bi-plus-lg"></i> Create Task
+                    </a>
                     @if($invoice->status != 3 && $invoice->status != 4)
                     <form action="{{ route('admin.invoices.mark_paid', $invoice->id) }}" method="POST">
                         @csrf
@@ -800,7 +803,7 @@
                     @if($invoice->status != 4)
                     <form action="{{ route('admin.invoices.mark_cancelled', $invoice->id) }}" method="POST">
                         @csrf
-                        <button type="submit" onclick="return confirm('Cancel invoice?')" class="w-full px-3 py-2 bg-slate-500 text-white rounded-lg text-sm hover:bg-slate-600 text-left flex items-center gap-2">
+                        <button type="submit" onclick="event.preventDefault(); confirmDelete('Confirm Delete', 'Cancel invoice?', this.form.action, (this.form.querySelector('[name=_method]')?.value || 'POST'));" class="w-full px-3 py-2 bg-slate-500 text-white rounded-lg text-sm hover:bg-slate-600 text-left flex items-center gap-2">
                             <i class="bi bi-x-circle"></i> Cancel Invoice
                         </button>
                     </form>
@@ -817,7 +820,7 @@
                     <form action="{{ route('admin.invoices.destroy', $invoice->id) }}" method="POST">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" onclick="return confirm('Delete invoice?')" class="w-full px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm hover:bg-red-100 text-left flex items-center gap-2">
+                        <button type="submit" onclick="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete invoice?', this.form.action, (this.form.querySelector('[name=_method]')?.value || 'POST'));" class="w-full px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm hover:bg-red-100 text-left flex items-center gap-2">
                             <i class="bi bi-trash"></i> Delete
                         </button>
                     </form>

@@ -53,7 +53,7 @@
                             <a href="{{ route('admin.settings.ticket_email_integration.edit', $integration->id) }}" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
                                 <i class="bi bi-pencil-square"></i>
                             </a>
-                            <form action="{{ route('admin.settings.ticket_email_integration.destroy', $integration->id) }}" method="POST" onsubmit="return confirm('Delete this integration?');" class="inline">
+                            <form action="{{ route('admin.settings.ticket_email_integration.destroy', $integration->id) }}" method="POST" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete this integration?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));" class="inline">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
                                     <i class="bi bi-trash3"></i>

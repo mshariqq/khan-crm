@@ -23,7 +23,7 @@
             </div>
             <div>
                 <a href="{{ route('admin.proposals.show', $proposal->id) }}" data-pane="show" data-pane-type="proposal" data-pane-id="{{ $proposal->id }}" class="text-sm font-medium text-slate-700 hover:text-blue-600">{{ $proposal->subject }}</a>
-                <span class="text-[10px] text-slate-400 ml-2">{{ $proposal->datecreated ? \Carbon\Carbon::parse($proposal->datecreated)->format('M j, Y') : '' }}</span>
+                <span class="text-[10px] text-slate-400 ml-2">{{ $proposal->datecreated?->format('M j, Y') }}</span>
             </div>
         </div>
         <div class="flex items-center gap-3">
@@ -47,7 +47,7 @@
                 <a href="{{ route('admin.proposals.edit', $proposal->id) }}" data-pane="edit" data-pane-type="proposal" data-pane-id="{{ $proposal->id }}" class="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-200" title="Edit">
                     <i class="bi bi-pencil text-xs"></i>
                 </a>
-                <form action="{{ route('admin.proposals.destroy', $proposal->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this proposal?');">
+                <form action="{{ route('admin.proposals.destroy', $proposal->id) }}" method="POST" class="inline" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete this proposal?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                     @csrf @method('DELETE')
                     <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 rounded hover:bg-slate-200" title="Delete">
                         <i class="bi bi-trash text-xs"></i>

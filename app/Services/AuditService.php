@@ -95,4 +95,30 @@ class AuditService
     {
         $this->log("payroll_{$action}", "Payroll {$action}", 'Payslip', $payslipId, null, $data, null, $request);
     }
+
+    public function projectCreated(int $projectId, array $data, ?Request $request = null): void
+    {
+        $this->log('project_created', 'Project created', 'Project', $projectId, null, $data, null, $request);
+    }
+
+    public function projectUpdated(int $projectId, array $old, array $new, ?Request $request = null): void
+    {
+        $diffs = array_keys(array_diff_assoc(
+            array_intersect_key($new, $old),
+            array_intersect_key($old, $new)
+        ));
+        if (!empty($diffs)) {
+            $this->log('project_updated', 'Project updated: ' . implode(', ', $diffs), 'Project', $projectId, $old, $new, null, $request);
+        }
+    }
+
+    public function projectDeleted(int $projectId, array $data, ?Request $request = null): void
+    {
+        $this->log('project_deleted', 'Project deleted', 'Project', $projectId, $data, null, null, $request);
+    }
+
+    public function projectStatusChanged(int $projectId, int $oldStatus, int $newStatus, ?Request $request = null): void
+    {
+        $this->log('project_status_changed', "Project status changed from {$oldStatus} to {$newStatus}", 'Project', $projectId, ['status' => $oldStatus], ['status' => $newStatus], null, $request);
+    }
 }

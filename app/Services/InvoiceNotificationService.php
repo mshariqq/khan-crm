@@ -115,6 +115,12 @@ class InvoiceNotificationService
         }
 
         $data = $this->buildData($invoice, $options);
+        if ($invoice->client) {
+            $data['_rate_limit_type'] = 'client';
+            $data['_rate_limit_id'] = $invoice->client->userid;
+            $data['_rate_recipient_type'] = 'client';
+            $data['_rate_max_per_hour'] = (int)\App\Helpers\SettingsHelper::get('email_rate_limit_per_client', 50);
+        }
         $parsed = $template->parse($data);
 
         $globalSubject = str_replace(

@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,6 +24,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(\App\Models\Task::class, \App\Policies\TaskPolicy::class);
+
         Relation::enforceMorphMap([
             'project' => \App\Models\Project::class,
             'lead' => \App\Models\Lead::class,
@@ -81,6 +85,16 @@ class AppServiceProvider extends ServiceProvider
                  'tables_pagination_limit',
              ]);
             $view->with('global_settings', $settings);
+        });
+
+        Response::macro('gif', function ($content) {
+            return response($content, 200, [
+                'Content-Type' => 'image/gif',
+                'Content-Length' => strlen($content),
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
+            ]);
         });
 
         // Custom Blade Directive for Permission Checking

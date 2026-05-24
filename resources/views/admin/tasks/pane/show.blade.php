@@ -10,6 +10,40 @@ $totalMinutes = $task->timers->reduce(function($carry, $t) {
     if ($t->end_time) return $carry + $t->start_time->diffInMinutes($t->end_time);
     return $carry;
 }, 0);
+$activeTimer = $task->timers->whereNull('end_time')->where('staff_id', auth()->id())->first();
+$isFollowing = $task->followers->contains('staffid', auth()->id());
+$userStaffId = auth()->id();
+
+$activityLog = collect();
+if ($task->rel_type === 'project' && $task->rel_id) {
+    $activityLog = \App\Models\ProjectActivity::with('staff')
+        ->where('project_id', $task->rel_id)
+        ->where(function ($q) use ($task) {
+            $q->where('description_key', 'like', '%task%')
+              ->orWhere('additional_data', 'like', '%' . $task->name . '%');
+        })
+        ->orderBy('dateadded', 'desc')
+        ->take(10)
+        ->get();
+}
+$manualActivities = collect();
+$manualActivities->push((object)[
+    'staff_id' => $task->addedfrom,
+    'staff_name' => $task->creator->firstname ?? 'Unknown',
+    'description_key' => 'Task created',
+    'dateadded' => $task->dateadded,
+]);
+if ($task->datefinished) {
+    $manualActivities->push((object)[
+        'staff_id' => $task->addedfrom,
+        'staff_name' => $task->creator->firstname ?? 'Unknown',
+        'description_key' => 'Task completed',
+        'dateadded' => $task->datefinished,
+    ]);
+}
+$allActivity = $activityLog->isNotEmpty() ? $activityLog : $manualActivities;
+
+$allStaff = \App\Models\Staff::where('active', 1)->orderBy('firstname')->get();
 @endphp
 
 <div class="flex items-start justify-between mb-6">
@@ -41,13 +75,45 @@ $totalMinutes = $task->timers->reduce(function($carry, $t) {
         </div>
     </div>
     <div class="flex items-center gap-2 flex-shrink-0">
-        @if($task->status != 3)
-        <button onclick="paneUpdateTaskStatus({{ $task->id }}, 3)" class="px-4 py-2 bg-emerald-500 text-white text-xs font-bold rounded-xl hover:bg-emerald-600 transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-200">
-            <i class="bi bi-check2-circle"></i> Mark Done
+        {{-- Timer Start/Stop --}}
+        @if($activeTimer)
+        <button onclick="stopTimer({{ $activeTimer->id }}, {{ $task->id }})" class="px-3 py-2 bg-red-500 text-white text-xs font-bold rounded-xl hover:bg-red-600 transition-all flex items-center gap-1.5 shadow-lg shadow-red-200">
+            <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span> <span id="active-timer-display" data-start="{{ $activeTimer->start_time->timestamp }}">00:00:00</span>
+        </button>
+        @else
+        <button onclick="startTimer({{ $task->id }})" class="px-3 py-2 bg-orange-500 text-white text-xs font-bold rounded-xl hover:bg-orange-600 transition-all flex items-center gap-1.5 shadow-lg shadow-orange-200">
+            <i class="bi bi-play-fill"></i> Start Timer
         </button>
         @endif
+
+        {{-- Status Dropdown --}}
+        <div class="relative" x-data="{ open: false }">
+            <button @click="open = !open" class="px-3 py-2 bg-white border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-50 transition-all flex items-center gap-1.5">
+                <i class="bi bi-arrow-repeat"></i> Status <i class="bi bi-chevron-down text-[10px]"></i>
+            </button>
+            <div x-show="open" @click.away="open = false" class="absolute right-0 mt-1 w-44 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-50">
+                @foreach($statusLabels as $i => $label)
+                <button onclick="updateTaskStatus({{ $task->id }}, {{ $i }})" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center gap-2 {{ $task->status == $i ? 'font-semibold text-blue-600' : 'text-slate-700' }}">
+                    <span class="w-2 h-2 rounded-full {{ ['bg-slate-400', 'bg-amber-400', 'bg-blue-400', 'bg-emerald-400'][$i] }}"></span>
+                    {{ $label }}
+                </button>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- Edit --}}
         <button onclick="parent.openTaskPane('{{ route('admin.tasks.pane.edit', $task->id) }}')" class="px-3 py-2 bg-white border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-50 transition-all flex items-center gap-1.5">
             <i class="bi bi-pencil"></i> Edit
+        </button>
+
+        {{-- Duplicate --}}
+        <button onclick="duplicateTask({{ $task->id }})" class="px-3 py-2 bg-white border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-50 transition-all flex items-center gap-1.5" title="Duplicate">
+            <i class="bi bi-files"></i>
+        </button>
+
+        {{-- Delete --}}
+        <button onclick="deleteTask({{ $task->id }})" class="px-3 py-2 bg-white border border-red-200 text-red-500 text-xs font-bold rounded-xl hover:bg-red-50 transition-all flex items-center gap-1.5" title="Delete">
+            <i class="bi bi-trash3"></i>
         </button>
     </div>
 </div>
@@ -68,7 +134,6 @@ $totalMinutes = $task->timers->reduce(function($carry, $t) {
         @endif
 
         {{-- Checklist --}}
-        @if($total > 0)
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -78,22 +143,43 @@ $totalMinutes = $task->timers->reduce(function($carry, $t) {
                 <span class="text-xs font-medium text-slate-500">{{ $completed }}/{{ $total }}</span>
             </div>
             <div class="p-5">
+                @if($total > 0)
                 <div class="w-full bg-slate-100 rounded-full h-2 mb-4">
                     <div class="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all" style="width: {{ $progress }}%"></div>
                 </div>
-                <div class="space-y-1.5">
-                    @foreach($task->checklistItems as $item)
-                    <div class="flex items-center gap-3 px-3 py-2 rounded-lg {{ $item->finished ? 'bg-emerald-50/50' : 'hover:bg-slate-50' }} transition-colors">
-                        <div class="w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all {{ $item->finished ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300' }}">
+                @endif
+                <div class="space-y-1.5 mb-4" id="checklist-items">
+                    @forelse($task->checklistItems as $item)
+                    <div class="flex items-center gap-3 px-3 py-2 rounded-lg {{ $item->finished ? 'bg-emerald-50/50' : 'hover:bg-slate-50' }} transition-colors group" id="checklist-item-{{ $item->id }}">
+                        <button onclick="toggleChecklistItem({{ $item->id }}, {{ $task->id }})" class="w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all {{ $item->finished ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 hover:border-blue-400' }}">
                             @if($item->finished)<i class="bi bi-check text-white text-[10px]"></i>@endif
-                        </div>
-                        <span class="text-sm {{ $item->finished ? 'line-through text-slate-400' : 'text-slate-700' }}">{{ $item->description }}</span>
+                        </button>
+                        <span class="text-sm flex-1 {{ $item->finished ? 'line-through text-slate-400' : 'text-slate-700' }}">{{ $item->description }}</span>
+                        @if($item->assignedStaff)
+                        <span class="text-[10px] text-slate-400 flex items-center gap-1">
+                            <span class="w-4 h-4 rounded-full bg-slate-300 flex items-center justify-center text-white text-[6px] font-bold">{{ strtoupper(substr($item->assignedStaff->firstname, 0, 1)) }}</span>
+                            {{ $item->assignedStaff->firstname }}
+                        </span>
+                        @endif
+                        <button onclick="deleteChecklistItem({{ $item->id }}, {{ $task->id }})" class="w-6 h-6 rounded-md flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100 flex-shrink-0">
+                            <i class="bi bi-x text-sm"></i>
+                        </button>
                     </div>
-                    @endforeach
+                    @empty
+                    <div class="text-center py-4 text-sm text-slate-400">No checklist items yet. Add one below.</div>
+                    @endforelse
                 </div>
+
+                {{-- Add Checklist Item Form --}}
+                <form onsubmit="event.preventDefault(); addChecklistItem({{ $task->id }})" class="flex items-center gap-2">
+                    @csrf
+                    <input type="text" name="description" placeholder="Add checklist item..." class="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-300 outline-none" required>
+                    <button type="submit" class="px-4 py-2 bg-purple-500 text-white text-xs font-bold rounded-lg hover:bg-purple-600 transition-all flex items-center gap-1.5 shadow-lg shadow-purple-200">
+                        <i class="bi bi-plus-lg"></i> Add
+                    </button>
+                </form>
             </div>
         </div>
-        @endif
 
         {{-- Comments --}}
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -157,6 +243,47 @@ $totalMinutes = $task->timers->reduce(function($carry, $t) {
                 </form>
             </div>
         </div>
+
+        {{-- Activity Log --}}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
+                <i class="bi bi-activity text-slate-400"></i>
+                <h3 class="text-sm font-semibold text-slate-800">Activity</h3>
+            </div>
+            <div class="divide-y divide-slate-100">
+                @forelse($allActivity as $activity)
+                <div class="p-4 flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                        @php
+                            $actStaffName = $activity->staff->firstname ?? ($activity->staff_name ?? 'U');
+                        @endphp
+                        {{ strtoupper(substr($actStaffName, 0, 1)) }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm text-slate-700">
+                            <span class="font-semibold">{{ $activity->staff->firstname ?? ($activity->staff_name ?? 'Unknown') }} {{ $activity->staff->lastname ?? '' }}</span>
+                            @php
+                                $descKey = $activity->description_key ?? '';
+                                $descMap = [
+                                    'project_activity_task_created' => 'created this task',
+                                    'project_activity_task_updated' => 'updated this task',
+                                    'project_activity_task_status_updated' => 'changed the task status',
+                                    'project_activity_task_quick_created' => 'quick created this task',
+                                    'Task created' => 'created this task',
+                                    'Task completed' => 'marked this task as completed',
+                                ];
+                                $descText = $descMap[$descKey] ?? $descKey;
+                            @endphp
+                            {{ $descText }}
+                        </p>
+                        <span class="text-[10px] text-slate-400">{{ \Carbon\Carbon::parse($activity->dateadded)->diffForHumans() }}</span>
+                    </div>
+                </div>
+                @empty
+                <div class="p-6 text-center text-sm text-slate-400">No activity recorded yet.</div>
+                @endforelse
+            </div>
+        </div>
     </div>
 
     {{-- Sidebar --}}
@@ -173,18 +300,21 @@ $totalMinutes = $task->timers->reduce(function($carry, $t) {
                     <div>
                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status</span>
                         <div class="mt-1.5">
-                            <span class="px-3 py-1.5 rounded-lg text-xs font-bold {{ $statusColors[$task->status] ?? $statusColors[0] }}">{{ $statusLabels[$task->status] ?? 'Unknown' }}</span>
+                            <select onchange="updateTaskStatus({{ $task->id }}, this.value)" class="px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-200 focus:ring-2 focus:ring-blue-500/20 outline-none {{ $statusColors[$task->status] ?? $statusColors[0] }}">
+                                @foreach($statusLabels as $i => $label)
+                                <option value="{{ $i }}" {{ $task->status == $i ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
                     <div>
                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Priority</span>
                         <div class="mt-1.5">
-                            <span class="px-3 py-1.5 rounded-lg text-xs font-bold {{ $priorityColors[$task->priority-1] ?? $priorityColors[0] }}">
-                                @if($task->priority == 3)<i class="bi bi-arrow-up-short mr-0.5"></i>
-                                @elseif($task->priority == 2)<i class="bi bi-dash mr-0.5"></i>
-                                @else<i class="bi bi-arrow-down-short mr-0.5"></i>@endif
-                                {{ $priorityLabels[$task->priority-1] ?? 'Unknown' }}
-                            </span>
+                            <select onchange="updatePriority({{ $task->id }}, this.value)" class="px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-200 focus:ring-2 focus:ring-blue-500/20 outline-none {{ $priorityColors[$task->priority-1] ?? $priorityColors[0] }}">
+                                @foreach($priorityLabels as $i => $label)
+                                <option value="{{ $i+1 }}" {{ $task->priority == $i+1 ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -227,14 +357,31 @@ $totalMinutes = $task->timers->reduce(function($carry, $t) {
                     <p class="mt-1.5 text-sm font-medium text-emerald-600"><i class="bi bi-check-circle-fill mr-1 text-[10px]"></i>{{ \Carbon\Carbon::parse($task->datefinished)->format('M j, Y · g:i A') }}</p>
                 </div>
                 @endif
+
+                @if($task->tags)
+                <div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Tags</span>
+                    <div class="flex flex-wrap gap-1.5">
+                        @foreach(explode(',', $task->tags) as $tag)
+                        @php $colors = ['bg-blue-100 text-blue-700', 'bg-emerald-100 text-emerald-700', 'bg-purple-100 text-purple-700', 'bg-amber-100 text-amber-700', 'bg-rose-100 text-rose-700', 'bg-cyan-100 text-cyan-700', 'bg-indigo-100 text-indigo-700']; @endphp
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-medium {{ $colors[crc32(trim($tag)) % count($colors)] }}">{{ trim($tag) }}</span>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
             </div>
         </div>
 
         {{-- Team --}}
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="px-5 py-3.5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
-                <i class="bi bi-people text-slate-400"></i>
-                <h3 class="text-sm font-semibold text-slate-800">Team</h3>
+            <div class="px-5 py-3.5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="bi bi-people text-slate-400"></i>
+                    <h3 class="text-sm font-semibold text-slate-800">Team</h3>
+                </div>
+                <button onclick="showAssignStaffModal({{ $task->id }})" class="px-3 py-1.5 bg-blue-500 text-white text-[10px] font-bold rounded-lg hover:bg-blue-600 transition-all flex items-center gap-1 shadow-lg shadow-blue-200">
+                    <i class="bi bi-plus-lg"></i> Manage
+                </button>
             </div>
             <div class="p-5 space-y-4">
                 <div>
@@ -254,21 +401,54 @@ $totalMinutes = $task->timers->reduce(function($carry, $t) {
                     <p class="text-sm text-slate-400 italic">No one assigned</p>
                     @endif
                 </div>
-                @if($task->followers->count() > 0)
+
+                {{-- Followers --}}
                 <div class="pt-3 border-t border-slate-100">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2.5">Followers</span>
-                    <div class="flex flex-wrap gap-2">
-                        @foreach($task->followers as $follower)
+                    <div class="flex items-center justify-between mb-2.5">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Followers <span class="ml-1 text-xs font-normal normal-case" id="follower-count">({{ $task->followers->count() }})</span></span>
+                        <button onclick="toggleFollow({{ $task->id }})" class="px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 {{ $isFollowing ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}" id="follow-btn">
+                            <i class="bi {{ $isFollowing ? 'bi-star-fill' : 'bi-star' }}"></i>
+                            <span id="follow-btn-text">{{ $isFollowing ? 'Following' : 'Follow' }}</span>
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap gap-2" id="followers-list">
+                        @forelse($task->followers as $follower)
                         <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
                             <span class="w-6 h-6 rounded-full bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white text-[9px] font-bold">
                                 {{ strtoupper(substr($follower->firstname, 0, 1)) }}{{ strtoupper(substr($follower->lastname ?? '', 0, 1)) }}
                             </span>
                             <span class="text-xs font-medium text-slate-600">{{ $follower->firstname }}</span>
                         </div>
-                        @endforeach
+                        @empty
+                        <p class="text-sm text-slate-400 italic">No followers yet</p>
+                        @endforelse
                     </div>
                 </div>
-                @endif
+            </div>
+        </div>
+
+        {{-- Assign Staff Modal --}}
+        <div id="assignStaffModal" class="fixed inset-0 z-[80] hidden bg-black/40 flex items-center justify-center" onclick="if(event.target===this)closeAssignStaffModal()">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 max-h-[80vh] flex flex-col" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+                    <h3 class="text-lg font-semibold text-slate-800">Manage Assignees</h3>
+                    <button onclick="closeAssignStaffModal()" class="p-2 rounded-lg hover:bg-slate-100 text-slate-400"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="p-4 space-y-2 overflow-y-auto" id="assign-staff-list">
+                    @foreach($allStaff as $staff)
+                    <label class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+                        <input type="checkbox" value="{{ $staff->staffid }}" {{ $task->assignedStaff->contains('staffid', $staff->staffid) ? 'checked' : '' }} class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        <span class="w-7 h-7 rounded-full bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0">
+                            {{ strtoupper(substr($staff->firstname, 0, 1)) }}{{ strtoupper(substr($staff->lastname ?? '', 0, 1)) }}
+                        </span>
+                        <span class="text-sm font-medium text-slate-700">{{ $staff->firstname }} {{ $staff->lastname ?? '' }}</span>
+                    </label>
+                    @endforeach
+                </div>
+                <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
+                    <button onclick="closeAssignStaffModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800">Cancel</button>
+                    <button onclick="saveAssignStaff({{ $task->id }})" class="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg">Save</button>
+                </div>
             </div>
         </div>
 
@@ -641,21 +821,248 @@ document.getElementById('paneCommentForm').addEventListener('submit', function(e
     });
 });
 
-function paneUpdateTaskStatus(id, status) {
+function refreshPane() {
+    parent.openTaskPane('{{ route('admin.tasks.pane.show', $task->id) }}', 'Task');
+}
+
+// --- Status Update ---
+function updateTaskStatus(id, status) {
+    var statusMap = ['backlog', 'pending', 'in_progress', 'completed'];
+    var key = statusMap[parseInt(status)] || status;
     fetch('/admin/tasks/' + id + '/status', {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ status: status === 3 ? 'completed' : 'in_progress' })
+        body: JSON.stringify({ status: key })
     })
     .then(res => res.json())
     .then(data => {
         if (data.success) {
-            parent.showToast('Task marked as done', 'success');
-            parent.closeTaskPane();
+            parent.showToast('Status updated', 'success');
+            refreshPane();
         }
     });
 }
 
+// --- Priority Update ---
+function updatePriority(id, priority) {
+    fetch('/admin/tasks/' + id + '/update-priority', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ priority: parseInt(priority) })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            parent.showToast('Priority updated', 'success');
+            refreshPane();
+        } else {
+            parent.showToast(data.message || 'Update failed', 'error');
+        }
+    });
+}
+
+// --- Checklist ---
+function addChecklistItem(taskId) {
+    var form = event.target;
+    var input = form.querySelector('input[name="description"]');
+    var desc = input.value.trim();
+    if (!desc) return;
+
+    var formData = new FormData();
+    formData.append('task_id', taskId);
+    formData.append('description', desc);
+
+    fetch('/admin/task-checklist', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            parent.showToast(data.message, 'success');
+            refreshPane();
+        } else {
+            parent.showToast(data.message || 'Failed to add item', 'error');
+        }
+    });
+}
+
+function toggleChecklistItem(itemId, taskId) {
+    fetch('/admin/task-checklist/' + itemId, {
+        method: 'PUT',
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ finished: true })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            refreshPane();
+        } else {
+            parent.showToast(data.message || 'Update failed', 'error');
+        }
+    });
+}
+
+function deleteChecklistItem(itemId, taskId) {
+    if (!confirm('Delete this checklist item?')) return;
+    fetch('/admin/task-checklist/' + itemId, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            parent.showToast(data.message, 'success');
+            refreshPane();
+        } else {
+            parent.showToast(data.message || 'Delete failed', 'error');
+        }
+    });
+}
+
+// --- Followers ---
+function toggleFollow(id) {
+    fetch('/admin/tasks/' + id + '/toggle-follow', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            parent.showToast(data.message, 'success');
+            refreshPane();
+        } else {
+            parent.showToast(data.message || 'Failed', 'error');
+        }
+    });
+}
+
+// --- Assign Staff ---
+function showAssignStaffModal(taskId) {
+    document.getElementById('assignStaffModal').classList.remove('hidden');
+}
+
+function closeAssignStaffModal() {
+    document.getElementById('assignStaffModal').classList.add('hidden');
+}
+
+function saveAssignStaff(taskId) {
+    var checkboxes = document.querySelectorAll('#assign-staff-list input[type="checkbox"]:checked');
+    var staffIds = [];
+    checkboxes.forEach(function(cb) { staffIds.push(cb.value); });
+
+    fetch('/admin/tasks/' + taskId + '/assign-staff', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ staff_ids: staffIds })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            parent.showToast('Assignees updated', 'success');
+            closeAssignStaffModal();
+            refreshPane();
+        } else {
+            parent.showToast(data.message || 'Failed', 'error');
+        }
+    });
+}
+
+// --- Duplicate ---
+function duplicateTask(id) {
+    fetch('/admin/tasks/' + id + '/duplicate', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            parent.showToast(data.message, 'success');
+            parent.openTaskPane('/admin/pane/tasks/' + data.new_task_id + '/edit', 'Task');
+        } else {
+            parent.showToast(data.message || 'Duplicate failed', 'error');
+        }
+    });
+}
+
+// --- Delete ---
+function deleteTask(id) {
+    if (!confirm('Delete this task permanently?')) return;
+    fetch('/admin/tasks/' + id, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success !== false) {
+            parent.showToast('Task deleted', 'success');
+            parent.closeTaskPane();
+            if (typeof parent.loadTaskTable !== 'undefined') parent.loadTaskTable();
+        } else {
+            parent.showToast(data.message || 'Delete failed', 'error');
+        }
+    })
+    .catch(function() {
+        parent.showToast('Task deleted', 'success');
+        parent.closeTaskPane();
+        if (typeof parent.loadTaskTable !== 'undefined') parent.loadTaskTable();
+    });
+}
+
+// --- Timer ---
+function startTimer(taskId) {
+    fetch('/admin/timers/start', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ task_id: taskId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            parent.showToast(data.message, 'success');
+            refreshPane();
+        } else {
+            parent.showToast(data.message || 'Failed to start timer', 'error');
+        }
+    });
+}
+
+function stopTimer(timerId, taskId) {
+    fetch('/admin/timers/' + timerId + '/stop', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            parent.showToast(data.message, 'success');
+            refreshPane();
+        } else {
+            parent.showToast(data.message || 'Failed to stop timer', 'error');
+        }
+    });
+}
+
+// --- Active Timer Display ---
+(function() {
+    var el = document.getElementById('active-timer-display');
+    if (el) {
+        var startTs = parseInt(el.getAttribute('data-start'));
+        function updateTimerDisplay() {
+            var now = Math.floor(Date.now() / 1000);
+            var elapsed = now - startTs;
+            var h = Math.floor(elapsed / 3600);
+            var m = Math.floor((elapsed % 3600) / 60);
+            var s = elapsed % 60;
+            el.textContent = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        }
+        updateTimerDisplay();
+        setInterval(updateTimerDisplay, 1000);
+    }
+})();
+
+// --- Attachments ---
 function deleteTaskAttachment(id, btn) {
     if (!confirm('Delete this attachment?')) return;
     btn.disabled = true;
@@ -668,12 +1075,12 @@ function deleteTaskAttachment(id, btn) {
     .then(data => {
         if (data.success) {
             parent.showToast(data.message, 'success');
-            parent.openTaskPane('{{ route('admin.tasks.pane.show', $task->id) }}', 'Task');
+            refreshPane();
         } else {
             parent.showToast(data.message || 'Delete failed', 'error');
         }
     })
-    .catch(() => {
+    .catch(function() {
         parent.showToast('Network error', 'error');
     });
 }
@@ -704,12 +1111,12 @@ function updateTimesheet(id) {
     .then(data => {
         if (data.success) {
             parent.showToast(data.message, 'success');
-            parent.openTaskPane('{{ route('admin.tasks.pane.show', $task->id) }}', 'Task');
+            refreshPane();
         } else {
             parent.showToast(data.message || 'Update failed', 'error');
         }
     })
-    .catch(() => {
+    .catch(function() {
         parent.showToast('Network error', 'error');
     });
 }
@@ -724,13 +1131,20 @@ function deleteTimesheet(id) {
     .then(data => {
         if (data.success) {
             parent.showToast(data.message, 'success');
-            parent.openTaskPane('{{ route('admin.tasks.pane.show', $task->id) }}', 'Task');
+            refreshPane();
         } else {
             parent.showToast(data.message || 'Delete failed', 'error');
         }
     })
-    .catch(() => {
+    .catch(function() {
         parent.showToast('Network error', 'error');
     });
 }
+
+// Ensure modals close on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeAssignStaffModal();
+    }
+});
 </script>

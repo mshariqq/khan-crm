@@ -125,7 +125,7 @@
                             <a href="{{ route('admin.creditnotes.edit', $cn->id) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Edit"><i class="bi bi-pencil-square text-lg"></i></a>
                             @endcan
                             @can('credit_notes_delete')
-                            <form action="{{ route('admin.creditnotes.destroy', $cn->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure? This will also remove applied credits.');">
+                            <form action="{{ route('admin.creditnotes.destroy', $cn->id) }}" method="POST" class="inline-block" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Are you sure? This will also remove applied credits.', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="p-2 text-slate-400 hover:text-red-600 transition-colors" title="Delete"><i class="bi bi-trash text-lg"></i></button>
                             </form>

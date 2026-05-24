@@ -8,6 +8,7 @@ use App\Models\Country;
 use App\Models\Currency;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ClientController extends Controller
@@ -76,6 +77,13 @@ class ClientController extends Controller
         if (!Auth::user()->can('clients_view')) {
             abort(403, 'Unauthorized action.');
         }
+
+        $rateKey = 'client-export-csv-' . Auth::id();
+        $attempts = (int) Cache::get($rateKey, 0);
+        if ($attempts >= 3) {
+            return redirect()->back()->with('error', 'Maximum of 3 exports per hour reached. Please try again later.');
+        }
+        Cache::put($rateKey, $attempts + 1, 3600);
 
         $query = Client::query()->with(['country']);
 

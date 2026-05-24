@@ -15,7 +15,7 @@
             </div>
             <div>
                 <span class="text-sm font-medium text-slate-700">{{ $expense->expense_name ?? $expense->description ?? 'Expense' }}</span>
-                <span class="text-[10px] text-slate-400 ml-2">{{ $expense->date ? \Carbon\Carbon::parse($expense->date)->format('M j, Y') : '' }}</span>
+                <span class="text-[10px] text-slate-400 ml-2">{{ $expense->date?->format('M j, Y') }}</span>
             </div>
         </div>
         <div class="flex items-center gap-3">
@@ -27,7 +27,7 @@
                 <a href="{{ route('admin.expenses.edit', $expense->id) }}" data-pane="edit" data-pane-type="expense" data-pane-id="{{ $expense->id }}" class="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-200" title="Edit">
                     <i class="bi bi-pencil text-xs"></i>
                 </a>
-                <form action="{{ route('admin.expenses.destroy', $expense->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this expense?');">
+                <form action="{{ route('admin.expenses.destroy', $expense->id) }}" method="POST" class="inline" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete this expense?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                     @csrf @method('DELETE')
                     <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 rounded hover:bg-slate-200" title="Delete">
                         <i class="bi bi-trash text-xs"></i>

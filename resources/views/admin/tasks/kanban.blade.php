@@ -45,6 +45,10 @@
     border-left-color: #10b981; 
     background: rgba(16, 185, 129, 0.05);
 }
+.kanban-task-card.priority-urgent { 
+    border-left-color: #dc2626; 
+    background: rgba(220, 38, 38, 0.08);
+}
 .kanban-task-card.dragging {
     opacity: 0.7;
     transform: rotate(2deg) scale(0.98);
@@ -109,14 +113,36 @@
             </a>
         </div>
     </div>
-
+    <div class="flex items-center gap-4 flex-wrap">
+        <form action="{{ route('admin.tasks.kanban') }}" method="GET" class="flex items-center gap-3">
+            <select name="project" class="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" onchange="this.form.submit()">
+                <option value="">All Projects</option>
+                @foreach($projects as $p)
+                <option value="{{ $p->id }}" {{ request('project') == $p->id ? 'selected' : '' }}>{{ $p->name }}</option>
+                @endforeach
+            </select>
+            <select name="rel_type" class="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" onchange="this.form.submit()">
+                <option value="">All Types</option>
+                <option value="project" {{ request('rel_type') == 'project' ? 'selected' : '' }}>Project</option>
+                <option value="invoice" {{ request('rel_type') == 'invoice' ? 'selected' : '' }}>Invoice</option>
+                <option value="estimate" {{ request('rel_type') == 'estimate' ? 'selected' : '' }}>Estimate</option>
+                <option value="proposal" {{ request('rel_type') == 'proposal' ? 'selected' : '' }}>Proposal</option>
+                <option value="lead" {{ request('rel_type') == 'lead' ? 'selected' : '' }}>Lead</option>
+                <option value="ticket" {{ request('rel_type') == 'ticket' ? 'selected' : '' }}>Ticket</option>
+                <option value="client" {{ request('rel_type') == 'client' ? 'selected' : '' }}>Client</option>
+            </select>
+        </form>
+        <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+            <input type="checkbox" id="showCompleted" checked onchange="toggleCompletedColumn()" class="w-4 h-4 border-slate-300 text-blue-600 focus:ring-blue-500 rounded">
+            Show Done
+        </label>
+    </div>
     @if(session('success'))
         <div class="px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm font-medium flex items-center gap-2 animate-fade-in flex-shrink-0">
             <i class="bi bi-check-circle-fill"></i> {{ session('success') }}
         </div>
     @endif
 
-    {{-- Kanban Board --}}
     <div class="kanban-board flex-1 -mx-6 px-6 overflow-x-auto pb-4">
         <div class="flex gap-4 min-w-max h-full">
             @php
@@ -171,7 +197,9 @@
         {{-- Card Header: Title & Priority --}}
         <div class="flex items-start justify-between gap-3 mb-3">
             <h4 class="text-sm font-bold text-slate-900 leading-tight flex-1 line-clamp-2">{{ $task->name }}</h4>
-            @if($task->priority == 'high' || $task->priority == 3)
+            @if($task->priority == 'urgent' || $task->priority == 4)
+            <span class="w-2.5 h-2.5 bg-red-600 rounded-full flex-shrink-0 mt-1 ring-2 ring-red-200 animate-pulse" title="Urgent Priority"></span>
+            @elseif($task->priority == 'high' || $task->priority == 3)
             <span class="w-2.5 h-2.5 bg-red-500 rounded-full flex-shrink-0 mt-1 ring-2 ring-red-100" title="High Priority"></span>
             @elseif($task->priority == 'medium' || $task->priority == 2)
             <span class="w-2.5 h-2.5 bg-amber-500 rounded-full flex-shrink-0 mt-1 ring-2 ring-amber-100" title="Medium Priority"></span>
@@ -457,6 +485,7 @@ function quickAddTask(columnStatus) {
                     <option value="1">Low</option>
                     <option value="2" selected>Medium</option>
                     <option value="3">High</option>
+                    <option value="4">Urgent</option>
                 </select>
                 <div class="flex gap-1">
                     <button onclick="cancelQuickAdd('${columnStatus}')" 
@@ -556,9 +585,19 @@ function updateColumnCounts() {
     });
 }
 
+// Toggle completed column visibility
+function toggleCompletedColumn() {
+    const checked = document.getElementById('showCompleted').checked;
+    const col = document.querySelector('.kanban-column[data-status="completed"]');
+    if (col) {
+        col.style.display = checked ? '' : 'none';
+    }
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     initializeDragAndDrop();
+    toggleCompletedColumn();
     
     // Close modal on escape key
     document.addEventListener('keydown', function(e) {

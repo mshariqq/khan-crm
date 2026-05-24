@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Staff extends Authenticatable
 {
-    use Notifiable;
+    use HasFactory, Notifiable;
     protected $table = 'tblstaff';
     protected $primaryKey = 'staffid';
     public $timestamps = true;
@@ -75,6 +76,14 @@ class Staff extends Authenticatable
     {
         $permission = is_array($abilities) ? $abilities[0] : $abilities;
         return app(\App\Services\PermissionService::class)->hasPermission($this, $permission);
+    }
+
+    public function canViewProject(Project $project): bool
+    {
+        if ($this->can('projects_view')) {
+            return true;
+        }
+        return $project->staff->contains('staffid', $this->staffid);
     }
 
     public function hasRole(int $roleId): bool
@@ -160,5 +169,10 @@ class Staff extends Authenticatable
     public function unreadNotifications()
     {
         return $this->hasMany(Notification::class, 'touserid', 'staffid')->where('isread', 0);
+    }
+
+    public function notificationPreferences()
+    {
+        return $this->hasMany(StaffNotificationPreference::class, 'staffid', 'staffid');
     }
 }

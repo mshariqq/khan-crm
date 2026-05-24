@@ -49,12 +49,15 @@
         <div class="relative group">
             <button id="notifDropdownBtn" class="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
                 <i class="bi bi-bell text-xl"></i>
-                <span id="notifBadge" class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 border-2 border-white rounded-full hidden"></span>
+                <span id="notifBadge" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] hidden"></span>
             </button>
             <div id="notifDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50 transition-all animate-in fade-in slide-in-from-top-2">
                 <div class="flex items-center justify-between px-4 py-2 border-b border-gray-50">
                     <span class="font-semibold text-sm text-gray-700">Notifications</span>
-                    <button id="markAllReadBtn" class="text-[10px] text-purple-600 hover:text-purple-800 hidden">Mark all read</button>
+                    <div class="flex items-center gap-2">
+                        <button id="markAllReadBtn" class="text-[10px] text-purple-600 hover:text-purple-800 hidden">Mark all read</button>
+                        <a href="{{ route('admin.notifications.preferences.index') }}" class="text-[10px] text-gray-400 hover:text-gray-600" title="Notification Preferences"><i class="bi bi-gear"></i></a>
+                    </div>
                 </div>
                 <div id="notifList" class="max-h-64 overflow-y-auto">
                     <div class="p-4 text-center text-xs text-gray-400">Loading...</div>
@@ -76,6 +79,9 @@
                 </div>
                 <a href="/admin/profile" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
                     <i class="bi bi-person"></i> Profile
+                </a>
+                <a href="{{ route('admin.notifications.preferences.index') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+                    <i class="bi bi-bell"></i> Notifications
                 </a>
                 <a href="/admin/settings" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
                     <i class="bi bi-gear"></i> Settings
@@ -302,6 +308,47 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   var notifFetched = false;
+  var prevUnreadCount = 0;
+  var audioCtx = null;
+
+  function playNotifSound() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.value = 800;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 0.15);
+    } catch(e) {}
+  }
+
+  function updateFaviconBadge(count) {
+    var link = document.querySelector('link[rel="icon"]');
+    if (!link) return;
+    if (count > 0) {
+      var canvas = document.createElement('canvas');
+      canvas.width = 32;
+      canvas.height = 32;
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#6366f1';
+      ctx.beginPath();
+      ctx.arc(16, 16, 16, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 18px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(count > 9 ? '9+' : count, 16, 17);
+      link.href = canvas.toDataURL();
+    } else {
+      link.href = '/favicon.ico';
+    }
+  }
 
   function loadNotifications() {
     var list = document.getElementById('notifList');
@@ -317,27 +364,43 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         var html = '';
         data.forEach(function(n) {
-          var icon = n.isread ? 'bi-info-circle text-slate-400 bg-slate-100' : 'bi-info-circle text-blue-600 bg-blue-100';
           var bg = n.isread ? '' : 'bg-blue-50/30';
-          html += '<a href="' + (n.link || '#') + '" data-id="' + n.id + '" class="notif-item flex gap-3 p-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ' + bg + '">';
+          var countBadge = n.group_count ? '<span class="text-[9px] bg-blue-100 text-blue-700 rounded-full px-1.5 py-0.5 ml-1 font-bold">' + n.group_count + '</span>' : '';
+          html += '<div data-id="' + n.id + '" class="notif-item flex gap-3 p-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ' + bg + '">';
           html += '<div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ' + (n.isread ? 'bg-slate-100 text-slate-400' : 'bg-blue-100 text-blue-600') + '">';
           html += '<i class="bi bi-bell text-sm"></i>';
           html += '</div>';
           html += '<div class="flex-1 min-w-0">';
-          html += '<p class="text-xs text-gray-800 leading-relaxed">' + n.description + '</p>';
+          html += '<p class="text-xs text-gray-800 leading-relaxed">' + n.description + countBadge + '</p>';
           html += '<p class="text-[10px] text-gray-400 mt-1">' + n.time_ago + '</p>';
           html += '</div>';
           if (!n.isread) {
             html += '<div class="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0"></div>';
           }
-          html += '</a>';
+          html += '<div class="flex flex-col gap-1 flex-shrink-0">';
+          html += '<button class="notif-mark-unread text-[9px] text-gray-400 hover:text-blue-600 p-0.5 ' + (n.isread ? '' : 'hidden') + '" title="Mark as unread"><i class="bi bi-circle"></i></button>';
+          html += '</div>';
+          html += '</div>';
         });
         list.innerHTML = html;
 
         document.querySelectorAll('.notif-item').forEach(function(el) {
           el.addEventListener('click', function(e) {
+            if (e.target.closest('.notif-mark-unread')) return;
             var id = this.dataset.id;
+            var link = this.querySelector('a')?.getAttribute('href');
             fetch('{{ url("admin/notifications") }}/' + id + '/read', { method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } });
+            if (link && link !== '#') { window.location.href = link; }
+          });
+        });
+
+        document.querySelectorAll('.notif-mark-unread').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var item = this.closest('.notif-item');
+            var id = item.dataset.id;
+            fetch('{{ url("admin/notifications") }}/' + id + '/unread', { method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } })
+              .then(function() { loadNotifications(); loadUnreadCount(); });
           });
         });
       })
@@ -354,7 +417,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (badge) {
           if (data.count > 0) {
             badge.classList.remove('hidden');
-            badge.textContent = '';
+            badge.textContent = data.count > 9 ? '9+' : data.count;
+            if (data.count > 99) badge.textContent = '99+';
+            badge.className = 'absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center text-[9px] font-bold text-white bg-red-500 border-2 border-white rounded-full px-1';
           } else {
             badge.classList.add('hidden');
           }
@@ -367,6 +432,12 @@ document.addEventListener('DOMContentLoaded', function() {
             markAllBtn.classList.add('hidden');
           }
         }
+
+        if (data.count > prevUnreadCount && prevUnreadCount > 0) {
+          playNotifSound();
+        }
+        prevUnreadCount = data.count;
+        updateFaviconBadge(data.count);
       });
   }
 
@@ -398,9 +469,13 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   loadUnreadCount();
-  setInterval(loadUnreadCount, 30000);
+  setInterval(function() {
+    loadUnreadCount();
+    if (!document.getElementById('notifDropdown').classList.contains('hidden')) {
+      loadNotifications();
+    }
+  }, 15000);
   
-  // Global click handler to close dropdowns when clicking outside
   document.addEventListener('click', function() {
     document.getElementById('notifDropdown')?.classList.add('hidden');
     document.getElementById('profileDropdown')?.classList.add('hidden');

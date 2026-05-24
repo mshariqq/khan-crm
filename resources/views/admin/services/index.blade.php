@@ -39,7 +39,7 @@
                                     <a href="{{ route('admin.services.edit', $service->serviceid) }}" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <form action="{{ route('admin.services.destroy', $service->serviceid) }}" method="POST" onsubmit="return confirm('Delete this service?');">
+                                    <form action="{{ route('admin.services.destroy', $service->serviceid) }}" method="POST" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete this service?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
                                             <i class="bi bi-trash"></i>

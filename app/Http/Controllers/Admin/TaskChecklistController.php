@@ -91,10 +91,11 @@ class TaskChecklistController extends Controller
         try {
             $item = TaskChecklistItem::findOrFail($id);
 
-            // Check permissions
+            // Allow if user has tasks_delete_all OR (has tasks_delete AND owns the item)
             if (!Auth::user()->can('tasks_delete_all')) {
-                // Users can only delete their own checklist items (if we want to add ownership later)
-                return response()->json(['success' => false, 'message' => 'Cannot delete checklist item'], 403);
+                if ($item->addedfrom !== Auth::id()) {
+                    return response()->json(['success' => false, 'message' => 'Cannot delete checklist item'], 403);
+                }
             }
 
             $item->delete();

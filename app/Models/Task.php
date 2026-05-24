@@ -10,6 +10,7 @@ class Task extends Model
     const STATUS_PENDING = 1;
     const STATUS_IN_PROGRESS = 2;
     const STATUS_COMPLETED = 3;
+    const PRIORITY_URGENT = 4;
 
     protected $table = 'tbltasks';
     public $timestamps = true;
@@ -19,7 +20,7 @@ class Task extends Model
         'repeat_every', 'recurring', 'is_recurring_from', 'cycles', 'total_cycles', 
         'custom_recurring', 'last_recurring_date', 'rel_id', 'rel_type', 'is_public', 
         'billable', 'billed', 'invoice_id', 'hourly_rate', 'milestone', 'kanban_order', 
-        'milestone_order', 'visible_to_client', 'deadline_notified'
+        'milestone_order', 'visible_to_client', 'deadline_notified', 'tags'
     ];
 
     protected $casts = [
@@ -37,7 +38,8 @@ class Task extends Model
         'billable' => 'boolean',
         'billed' => 'boolean',
         'visible_to_client' => 'boolean',
-        'deadline_notified' => 'boolean'
+        'deadline_notified' => 'boolean',
+        'tags' => 'string'
     ];
 
     protected $attributes = [
@@ -56,7 +58,7 @@ class Task extends Model
 
     public function project()
     {
-        return $this->belongsTo(Project::class, 'rel_id', 'id');
+        return $this->belongsTo(Project::class, 'rel_id', 'id')->where('rel_type', 'project');
     }
 
     public function invoice()
@@ -92,6 +94,18 @@ class Task extends Model
     public function attachments()
     {
         return $this->hasMany(File::class, 'rel_id', 'id')->where('rel_type', 'task');
+    }
+
+    public function scopeForStaff($query, $staffId)
+    {
+        return $query->whereHas('assignedStaff', function ($q) use ($staffId) {
+            $q->where('staffid', $staffId);
+        });
+    }
+
+    public function scopeByRelType($query, $relType)
+    {
+        return $query->where('rel_type', $relType);
     }
 
     public function relatable()

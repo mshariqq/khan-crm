@@ -7,6 +7,8 @@ use App\Models\Staff;
 use App\Models\Notification;
 use App\Models\Project;
 use App\Models\ProjectActivity;
+use App\Models\TaskChecklistItem;
+use App\Models\TaskChecklistTemplate;
 use Illuminate\Support\Facades\Auth;
 
 class TaskService extends BaseService
@@ -52,7 +54,7 @@ class TaskService extends BaseService
             'name', 'description', 'priority', 'status', 'startdate', 'duedate', 'datefinished',
             'rel_id', 'rel_type', 'milestone', 'billable', 'billed', 'hourly_rate',
             'is_public', 'visible_to_client', 'recurring', 'recurring_type',
-            'repeat_every', 'cycles', 'total_cycles', 'custom_recurring'
+            'repeat_every', 'cycles', 'total_cycles', 'custom_recurring', 'tags'
         ]), [
             'rel_id' => $request->rel_id ?: null,
             'rel_type' => $request->rel_type ?: null,
@@ -65,6 +67,21 @@ class TaskService extends BaseService
             'recurring' => $request->recurring ?? 0,
             'cycles' => $request->cycles ?? 0,
             'total_cycles' => $request->total_cycles ?? 0,
+        ]);
+    }
+
+    public function applyChecklistTemplate(Task $task, int $templateId): void
+    {
+        $template = TaskChecklistTemplate::find($templateId);
+        if (!$template) return;
+
+        TaskChecklistItem::create([
+            'taskid' => $task->id,
+            'description' => $template->description,
+            'finished' => 0,
+            'dateadded' => now(),
+            'addedfrom' => Auth::id(),
+            'list_order' => 1,
         ]);
     }
 
@@ -87,7 +104,13 @@ class TaskService extends BaseService
                         'task_duedate' => $task->duedate ? \Carbon\Carbon::parse($task->duedate)->format('d M, Y') : '',
                         'task_link' => route('admin.tasks.show', $task->id),
                     ]);
-                    Notification::createForStaff($staffMember->staffid, Auth::user()->full_name . ' assigned task <strong>' . e($task->name) . '</strong> to you', route('admin.tasks.show', $task->id));
+                    Notification::createForStaff(
+                        $staffMember->staffid,
+                        Auth::user()->full_name . ' assigned task ' . e($task->name) . ' to you',
+                        route('admin.tasks.show', $task->id),
+                        notificationType: 'task_assigned',
+                        groupingKey: 'task_assigned_' . $task->id
+                    );
                 }
             }
         } else {
@@ -120,6 +143,46 @@ class TaskService extends BaseService
         }
     }
 
+    public function toggleFollower(Task $task, int $staffId): bool
+    {
+        $existing = $task->followers()->where('staffid', $staffId)->exists();
+        if ($existing) {
+            $task->followers()->detach($staffId);
+            return false;
+        } else {
+            $task->followers()->attach($staffId);
+            return true;
+        }
+    }
+
+    public function duplicateTask(Task $task): Task
+    {
+        $newTask = $task->replicate();
+        $newTask->name = $task->name . ' (Copy)';
+        $newTask->dateadded = now();
+        $newTask->addedfrom = Auth::id();
+        $newTask->datefinished = null;
+        $newTask->save();
+
+        $staffIds = $task->assignedStaff()->pluck('staffid')->toArray();
+        if (!empty($staffIds)) {
+            $newTask->assignedStaff()->sync($staffIds);
+        }
+
+        return $newTask;
+    }
+
+    public function updateDateFinished(Task $task, int $oldStatus, int $newStatus): void
+    {
+        if ($oldStatus !== Task::STATUS_COMPLETED && $newStatus === Task::STATUS_COMPLETED) {
+            $task->datefinished = now();
+            $task->save();
+        } elseif ($oldStatus === Task::STATUS_COMPLETED && $newStatus !== Task::STATUS_COMPLETED) {
+            $task->datefinished = null;
+            $task->save();
+        }
+    }
+
     public function handleTaskCompleted(Task $task, int $oldStatus): void
     {
         if ($task->rel_type === 'project' && $task->rel_id && $oldStatus !== Task::STATUS_COMPLETED && (int)$task->status === Task::STATUS_COMPLETED) {
@@ -134,7 +197,13 @@ class TaskService extends BaseService
                 $exclude = [(int)Auth::id()];
                 $recipients = array_values(array_diff($staffIds, $exclude));
                 if (!empty($recipients)) {
-                    Notification::createForMultipleStaff($recipients, Auth::user()->full_name . ' completed task <strong>' . e($task->name) . '</strong> in <strong>' . e($project->name) . '</strong>', route('admin.tasks.show', $task->id));
+                    Notification::createForMultipleStaff(
+                        $recipients,
+                        Auth::user()->full_name . ' completed task ' . e($task->name) . ' in ' . e($project->name),
+                        route('admin.tasks.show', $task->id),
+                        notificationType: 'task_completed',
+                        groupingKey: 'task_completed_' . $task->id
+                    );
                 }
             }
         }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Helpers\SettingsHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -35,7 +36,15 @@ class ClientAuthController extends Controller
         if (Auth::guard('client')->attempt($credentials)) {
             $contact = Auth::guard('client')->user();
 
-            $verificationRequired = \App\Helpers\SettingsHelper::get('client_email_verification_required', '0') === '1';
+            $client2faEnabled = SettingsHelper::get('client_2fa_enabled', '0') === '1';
+            if ($client2faEnabled) {
+                // TODO: Implement client 2FA
+                // Reference: App\Services\TwoFactorAuthService for pattern
+                // Store 2FA code on contact model, verify via session
+                // For now, 2FA is a placeholder — enable via admin setting 'client_2fa_enabled'
+            }
+
+            $verificationRequired = SettingsHelper::get('client_email_verification_required', '0') === '1';
             if ($verificationRequired && !$contact->email_verified_at) {
                 Auth::guard('client')->logout();
                 $key = md5($contact->id . $contact->email . random_int(100000, 999999));

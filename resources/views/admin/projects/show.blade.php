@@ -1,3 +1,4 @@
+@php use App\Models\Project; @endphp
 @extends('layouts.admin')
 
 @section('breadcrumb', 'Project Detail')
@@ -15,6 +16,26 @@
     animation: spin 1s linear infinite;
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.sidebar-tabs-container {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.sidebar-tabs-container::-webkit-scrollbar { display: none; }
+.sidebar-tabs-fade {
+    position: relative;
+}
+.sidebar-tabs-fade::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 24px;
+    background: linear-gradient(to left, white, transparent);
+    pointer-events: none;
+}
 </style>
 
 @section('main')
@@ -34,21 +55,41 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
-            @if($project->status == 1)
+            @if($project->status === Project::STATUS_ACTIVE)
             <span class="px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-[10px] font-medium">Active</span>
-            @elseif($project->status == 2)
+            @elseif($project->status === Project::STATUS_COMPLETED)
             <span class="px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-[10px] font-medium">Completed</span>
-            @else
+            @elseif($project->status === Project::STATUS_ON_HOLD)
             <span class="px-2 py-1 bg-amber-50 text-amber-700 rounded text-[10px] font-medium">On Hold</span>
+            @else
+            <span class="px-2 py-1 bg-red-50 text-red-700 rounded text-[10px] font-medium">Cancelled</span>
             @endif
+            <button onclick="toggleWatcher()" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-all {{ $project->watchers->contains('staffid', auth()->id()) ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
+                <i class="bi {{ $project->watchers->contains('staffid', auth()->id()) ? 'bi-eye-fill' : 'bi-eye' }}"></i>
+                {{ $project->watchers->contains('staffid', auth()->id()) ? 'Watching' : 'Watch' }}
+            </button>
             <a href="{{ route('admin.projects.edit', $project->id) }}" class="px-3 py-1.5 bg-amber-500 text-white text-xs font-medium rounded-lg hover:bg-amber-600">Edit</a>
         </div>
     </div>
 
+    <script>
+    function toggleWatcher() {
+        fetch('/admin/projects/{{ $project->id }}/toggle-watcher', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) location.reload();
+        });
+    }
+    </script>
+    </div>
+
     <div class="flex flex-col lg:flex-row gap-4">
         <div class="lg:w-1/5 flex-shrink-0">
-            <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden sticky top-4">
-                <div class="py-2">
+            <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden sticky top-4 sidebar-tabs-fade">
+                <div class="sidebar-tabs-container py-2" style="max-height: calc(100vh - 120px); overflow-y: auto;">
                     <button onclick="loadTab('overview')" class="vertical-tab active w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 text-left flex items-center gap-2 transition-all">
                         <i class="bi bi-grid"></i> Overview
                     </button>
@@ -68,7 +109,7 @@
                         <i class="bi bi-headset"></i> Tickets
                     </button>
                     <button onclick="loadTab('invoices')" class="vertical-tab w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 text-left flex items-center gap-2 transition-all">
-                        <i class="bi bi-receipt"></i> Invoices <span class="ml-auto bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">{{ $project->invoices->count() }}</span>
+                        <i class="bi bi-receipt"></i> Invoices <span class="ml-auto bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">{{ $project->invoices()->count() }}</span>
                     </button>
                     <button onclick="loadTab('estimates')" class="vertical-tab w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 text-left flex items-center gap-2 transition-all">
                         <i class="bi bi-file-earmark-text"></i> Estimates
@@ -94,14 +135,57 @@
                     <button onclick="loadTab('activity')" class="vertical-tab w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 text-left flex items-center gap-2 transition-all">
                         <i class="bi bi-activity"></i> Activity
                     </button>
+                    <div class="border-t border-slate-200 my-1"></div>
+                    <button onclick="loadTab('phases')" class="vertical-tab w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 text-left flex items-center gap-2 transition-all">
+                        <i class="bi bi-layers"></i> Phases
+                    </button>
+                    <button onclick="loadTab('risks')" class="vertical-tab w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 text-left flex items-center gap-2 transition-all">
+                        <i class="bi bi-exclamation-triangle"></i> Risks
+                    </button>
+                    <button onclick="loadTab('change_requests')" class="vertical-tab w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 text-left flex items-center gap-2 transition-all">
+                        <i class="bi bi-arrow-left-right"></i> Changes
+                    </button>
+                    <button onclick="loadTab('resources')" class="vertical-tab w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 text-left flex items-center gap-2 transition-all">
+                        <i class="bi bi-people"></i> Resources
+                    </button>
+                    <button onclick="loadTab('baselines')" class="vertical-tab w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 text-left flex items-center gap-2 transition-all">
+                        <i class="bi bi-graph-up"></i> Baselines
+                    </button>
+                    <button onclick="loadTab('critical_path')" class="vertical-tab w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 text-left flex items-center gap-2 transition-all">
+                        <i class="bi bi-diagram-3"></i> Critical Path
+                    </button>
+                    <button onclick="loadTab('closure_checklist')" class="vertical-tab w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 text-left flex items-center gap-2 transition-all">
+                        <i class="bi bi-check2-square"></i> Closure
+                    </button>
+                    <button onclick="loadTab('lessons_learned')" class="vertical-tab w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 text-left flex items-center gap-2 transition-all">
+                        <i class="bi bi-journal"></i> Lessons
+                    </button>
+                    <button onclick="loadTab('locations')" class="vertical-tab w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 text-left flex items-center gap-2 transition-all">
+                        <i class="bi bi-geo-alt"></i> Locations
+                    </button>
+                    <button onclick="loadTab('shares')" class="vertical-tab w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 text-left flex items-center gap-2 transition-all">
+                        <i class="bi bi-share"></i> Sharing
+                    </button>
+                    <button onclick="loadTab('feedback')" class="vertical-tab w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 text-left flex items-center gap-2 transition-all">
+                        <i class="bi bi-star"></i> Feedback
+                    </button>
+                    <button onclick="loadTab('recurring')" class="vertical-tab w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 text-left flex items-center gap-2 transition-all">
+                        <i class="bi bi-arrow-repeat"></i> Recurring
+                    </button>
                 </div>
             </div>
         </div>
 
         <div class="lg:w-4/5 flex-1 min-w-0">
             <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4 overflow-x-auto">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="flex-1 relative">
+                        <input type="text" id="tabSearchInput" placeholder="Search within tab..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 outline-none">
+                        <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    </div>
+                    <button onclick="searchTab()" class="px-3 py-1.5 bg-slate-800 text-white text-xs font-medium rounded-lg hover:bg-slate-900">Search</button>
+                </div>
                 <div id="tab-content-container">
-                    <div id="tab-overview" class="tab-content active">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                         <div class="p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
                             <div class="flex items-center justify-between mb-1">
@@ -176,11 +260,11 @@
                             <div class="space-y-3">
                                 <div class="flex items-center justify-between py-2 border-b border-slate-200/50">
                                     <span class="text-xs text-slate-500">Start Date</span>
-                                    <span class="text-xs font-medium text-slate-700">{{ $project->start_date ? \Carbon\Carbon::parse($project->start_date)->format('M j, Y') : '-' }}</span>
+                                    <span class="text-xs font-medium text-slate-700">{{ $project->start_date ? $project->start_date->format('M j, Y') : '-' }}</span>
                                 </div>
                                 <div class="flex items-center justify-between py-2 border-b border-slate-200/50">
                                     <span class="text-xs text-slate-500">Deadline</span>
-                                    <span class="text-xs font-medium {{ $project->deadline && \Carbon\Carbon::parse($project->deadline)->isPast() ? 'text-red-600' : 'text-slate-700' }}">{{ $project->deadline ? \Carbon\Carbon::parse($project->deadline)->format('M j, Y') : '-' }}</span>
+                                    <span class="text-xs font-medium {{ $project->deadline && $project->deadline->isPast() ? 'text-red-600' : 'text-slate-700' }}">{{ $project->deadline ? $project->deadline->format('M j, Y') : '-' }}</span>
                                 </div>
                                 <div class="flex items-center justify-between py-2 border-b border-slate-200/50">
                                     <span class="text-xs text-slate-500">Billing Type</span>
@@ -262,16 +346,23 @@
                             </div>
                             <div class="space-y-2">
                                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
-                                    @if($project->status == 1) bg-emerald-100 text-emerald-700
-                                    @elseif($project->status == 2) bg-indigo-100 text-indigo-700
-                                    @else bg-amber-100 text-amber-700 @endif">
-                                    @if($project->status == 1) Active
-                                    @elseif($project->status == 2) Completed
-                                    @else On Hold @endif
+                                    @if($project->status === Project::STATUS_ACTIVE) bg-emerald-100 text-emerald-700
+                                    @elseif($project->status === Project::STATUS_COMPLETED) bg-indigo-100 text-indigo-700
+                                    @elseif($project->status === Project::STATUS_ON_HOLD) bg-amber-100 text-amber-700
+                                    @else bg-red-100 text-red-700 @endif">
+                                    @if($project->status === Project::STATUS_ACTIVE) Active
+                                    @elseif($project->status === Project::STATUS_COMPLETED) Completed
+                                    @elseif($project->status === Project::STATUS_ON_HOLD) On Hold
+                                    @else Cancelled @endif
                                 </span>
-                                @if($project->notify_type)
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-                                    {{ $project->notify_type == 'email' ? 'Email Notifications' : 'Dashboard' }}
+                                @if($project->priority)
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium {{ \App\Models\Project::priorityColors()[$project->priority] ?? 'bg-slate-100 text-slate-700' }}">
+                                    Priority: {{ ucfirst($project->priority) }}
+                                </span>
+                                @endif
+                                @if($project->category)
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" style="background: {{ $project->category->color }}20; color: {{ $project->category->color }}">
+                                    {{ $project->category->name }}
                                 </span>
                                 @endif
                             </div>
@@ -310,6 +401,13 @@
 </div>
 
 <script>
+document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+    if (e.key === 'e') { window.location.href = '{{ route("admin.projects.edit", $project->id) }}'; }
+    if (e.key === 'f') { document.getElementById('tabSearchInput')?.focus(); }
+    if (e.key === 'w') { toggleWatcher(); }
+});
+
 const projectId = {{ $project->id }};
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -317,7 +415,10 @@ document.addEventListener('DOMContentLoaded', function() {
     loadTab(defaultTab);
 });
 
+let currentTab = 'overview';
+
 function loadTab(tabName) {
+    currentTab = tabName;
     document.querySelectorAll('.vertical-tab').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
 
@@ -341,7 +442,6 @@ function loadTab(tabName) {
             .then(data => {
                 const tab = document.getElementById('tab-' + tabName);
                 if (tab) {
-                    // Extract and execute scripts, then set HTML
                     const scriptBlock = document.createElement('div');
                     scriptBlock.innerHTML = data.html;
                     const scripts = scriptBlock.querySelectorAll('script');
@@ -361,9 +461,31 @@ function loadTab(tabName) {
             })
             .catch(err => {
                 const tab = document.getElementById('tab-' + tabName);
-                if (tab) tab.innerHTML = '<div class="text-center py-12 text-red-500">Failed to load content</div>';
+                if (tab) tab.innerHTML = '<div class="text-center py-12"><div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-3"><i class="bi bi-exclamation-triangle text-red-500 text-xl"></i></div><p class="text-sm text-red-500 mb-3">Failed to load content</p><button onclick="loadTab(\'' + tabName + '\')" class="px-4 py-2 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700"><i class="bi bi-arrow-clockwise"></i> Retry</button></div>';
             });
     }
+}
+
+function searchTab() {
+    const query = document.getElementById('tabSearchInput').value.trim();
+    if (!query || currentTab === 'overview') return;
+    fetch(`/admin/projects/${projectId}/tab/${currentTab}/search?q=${encodeURIComponent(query)}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.results.length > 0) {
+                const tab = document.getElementById('tab-' + currentTab);
+                if (tab) {
+                    let html = '<div class="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200"><p class="text-xs text-blue-700">Found ' + data.results.length + ' result(s) for "' + query + '"</p></div>';
+                    data.results.forEach(item => {
+                        html += '<div class="p-3 bg-slate-50 rounded-lg border border-slate-200 mb-2"><p class="text-sm font-medium text-slate-700">' + (item.name || item.title || item.subject || item.original_file_name || 'N/A') + '</p></div>';
+                    });
+                    tab.innerHTML = html;
+                }
+            } else {
+                alert('No results found.');
+            }
+        })
+        .catch(() => alert('Search failed.'));
 }
 </script>
 
@@ -400,6 +522,7 @@ function loadTab(tabName) {
             </div>
         </div>
 
+        <div id="noteError" class="hidden mx-4 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700"></div>
         <div class="flex justify-end gap-2 p-4 border-t border-slate-200">
             <button onclick="closeNoteModal()" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Close</button>
             <button id="noteSaveBtn" onclick="saveNote()" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Save</button>
@@ -461,9 +584,11 @@ function saveNote() {
     const content = document.getElementById('noteContent').value;
 
     if (!content.trim()) {
-        alert('Please enter a note');
+        document.getElementById('noteError').textContent = 'Please enter a note';
+        document.getElementById('noteError').classList.remove('hidden');
         return;
     }
+    document.getElementById('noteError').classList.add('hidden');
 
     const projectIdVal = {{ $project->id }};
     
@@ -507,14 +632,17 @@ function saveNote() {
                 closeNoteModal();
                 loadTab('notes');
             } else {
-                alert(data.message || 'Failed to save note');
+                document.getElementById('noteError').textContent = data.message || 'Failed to save note';
+                document.getElementById('noteError').classList.remove('hidden');
             }
         } catch (e) {
-            alert('Invalid response: ' + text.substring(0, 100));
+            document.getElementById('noteError').textContent = 'Invalid response: ' + text.substring(0, 100);
+            document.getElementById('noteError').classList.remove('hidden');
         }
     })
     .catch(error => {
-        alert('Failed to save note: ' + error.message);
+        document.getElementById('noteError').textContent = 'Failed to save note: ' + error.message;
+        document.getElementById('noteError').classList.remove('hidden');
     });
 }
 </script>

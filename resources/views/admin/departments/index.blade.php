@@ -55,7 +55,7 @@
                             <a href="{{ route('admin.departments.edit', $dept->departmentid) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Edit Department">
                                 <i class="bi bi-pencil-square text-lg"></i>
                             </a>
-                            <form action="{{ route('admin.departments.destroy', $dept->departmentid) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this department?');">
+                            <form action="{{ route('admin.departments.destroy', $dept->departmentid) }}" method="POST" class="inline-block" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Are you sure you want to delete this department?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="p-2 text-slate-400 hover:text-red-600 transition-colors" title="Delete Department">

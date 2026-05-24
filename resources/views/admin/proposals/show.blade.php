@@ -38,7 +38,7 @@
             <a href="{{ route('admin.proposals.edit', $proposal->id) }}" data-pane="edit" data-pane-type="proposal" data-pane-id="{{ $proposal->id }}" class="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 transition-all" title="Edit Proposal">
                 <i class="bi bi-pencil-square"></i>
             </a>
-            <form action="{{ route('admin.proposals.destroy', $proposal->id) }}" method="POST" onsubmit="return confirm('Delete this proposal?');" class="inline">
+            <form action="{{ route('admin.proposals.destroy', $proposal->id) }}" method="POST" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete this proposal?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));" class="inline">
                 @csrf @method('DELETE')
                 <button type="submit" class="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-500 transition-all" title="Delete Proposal">
                     <i class="bi bi-trash3"></i>
@@ -263,6 +263,9 @@
                     </div>
                 </div>
                 <div class="space-y-2 pt-2">
+                    <a href="{{ route('admin.tasks.create') }}?rel_type=proposal&rel_id={{ $proposal->id }}" data-pane="create" data-pane-type="task" class="w-full px-4 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center gap-2 justify-center">
+                        <i class="bi bi-plus-lg"></i> Create Task
+                    </a>
                     @if($proposal->status == 1)
                     <form action="{{ route('admin.proposals.mark_accepted', $proposal->id) }}" method="POST">
                         @csrf

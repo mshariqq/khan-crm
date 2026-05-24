@@ -56,7 +56,7 @@
                                     <a href="{{ route('admin.currencies.edit', $currency->id) }}" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <form action="{{ route('admin.currencies.destroy', $currency->id) }}" method="POST" onsubmit="return confirm('Delete this currency?');">
+                                    <form action="{{ route('admin.currencies.destroy', $currency->id) }}" method="POST" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete this currency?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
                                             <i class="bi bi-trash"></i>

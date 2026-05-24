@@ -58,7 +58,7 @@
                             <a href="{{ route('admin.permissions.edit', $permission->id) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Edit Permission">
                                 <i class="bi bi-pencil-square text-lg"></i>
                             </a>
-                            <form action="{{ route('admin.permissions.destroy', $permission->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this permission? This might affect roles that use it.');">
+                            <form action="{{ route('admin.permissions.destroy', $permission->id) }}" method="POST" class="inline-block" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Are you sure you want to delete this permission? This might affect roles that use it.', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="p-2 text-slate-400 hover:text-red-600 transition-colors" title="Delete Permission">

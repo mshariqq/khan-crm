@@ -4,7 +4,6 @@ namespace Database\Factories;
 
 use App\Models\Staff;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Facades\Hash;
 
 class StaffFactory extends Factory
 {
@@ -16,22 +15,12 @@ class StaffFactory extends Factory
             'firstname' => fake()->firstName(),
             'lastname' => fake()->lastName(),
             'email' => fake()->unique()->safeEmail(),
-            'password' => Hash::make('password'),
-            'admin' => 0,
+            'password' => bcrypt('password'),
+            'datecreated' => now(),
             'role' => 2,
             'active' => 1,
-            'datecreated' => now(),
             'default_language' => 'english',
             'direction' => 'ltr',
         ];
-    }
-
-    public function admin(): static
-    {
-        return $this->state(fn(array $attributes) => [
-            'admin' => 1,
-            'role' => 1,
-            'email' => 'admin@crm.com',
-        ]);
     }
 }

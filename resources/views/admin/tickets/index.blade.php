@@ -109,7 +109,7 @@
                             <a href="{{ route('admin.tickets.edit', $ticket->ticketid) }}" data-pane="edit" data-pane-type="ticket" data-pane-id="{{ $ticket->ticketid }}" class="p-1.5 text-slate-400 hover:text-amber-600" title="Edit">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <form action="{{ route('admin.tickets.destroy', $ticket->ticketid) }}" method="POST" class="inline" onsubmit="return confirm('Delete?');">
+                            <form action="{{ route('admin.tickets.destroy', $ticket->ticketid) }}" method="POST" class="inline" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600" title="Delete">
                                     <i class="bi bi-trash"></i>

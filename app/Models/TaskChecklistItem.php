@@ -16,4 +16,10 @@ class TaskChecklistItem extends Model
         'dateadded' => 'datetime',
         'finished' => 'boolean'
     ];
+
+    public function task()
+    {
+        return $this->belongsTo(Task::class, 'taskid', 'id');
+    }
+}
 }

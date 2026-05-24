@@ -3,7 +3,10 @@
 namespace App\Listeners;
 
 use App\Events\InvoicePaid;
+use App\Models\Notification;
+use App\Models\Staff;
 use App\Services\AuditService;
+use Illuminate\Support\Facades\Auth;
 
 class LogInvoicePaid
 {
@@ -20,5 +23,19 @@ class LogInvoicePaid
             ['amount' => $event->amount, 'status' => $event->invoice->status],
             $event->staffId,
         );
+
+        $admins = Staff::where('admin', 1)->pluck('staffid')->toArray();
+        $staffIds = array_unique(array_filter($admins));
+
+        if (!empty($staffIds)) {
+            $invoice = $event->invoice;
+            Notification::createForMultipleStaff(
+                $staffIds,
+                'Invoice ' . e($invoice->number ?? $invoice->id) . ' fully paid: ' . number_format($event->amount, 2),
+                route('admin.invoices.show', $invoice->id),
+                notificationType: 'payment',
+                groupingKey: 'invoice_paid_' . $invoice->id
+            );
+        }
     }
 }

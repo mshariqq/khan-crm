@@ -348,6 +348,10 @@
                         <input type="checkbox" name="two_factor_enabled" value="1" {{ ($settings['two_factor_enabled'] ?? '') == '1' ? 'checked' : '' }} id="two_factor" class="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
                         <label for="two_factor" class="text-sm font-medium text-slate-700">Enable Two-Factor Authentication</label>
                     </div>
+                    <div class="flex items-center gap-3 py-4">
+                        <input type="checkbox" name="client_2fa_enabled" value="1" {{ ($settings['client_2fa_enabled'] ?? '') == '1' ? 'checked' : '' }} id="client_2fa" class="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
+                        <label for="client_2fa" class="text-sm font-medium text-slate-700">Enable Client Two-Factor Authentication</label>
+                    </div>
                 </div>
             </div>
 

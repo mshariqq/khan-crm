@@ -31,7 +31,7 @@
                     <td class="px-6 py-4">{{ $ms->due_date ? \Carbon\Carbon::parse($ms->due_date)->format('M j, Y') : '-' }}</td>
                     <td class="px-6 py-4">
                         <a href="{{ route('admin.milestones.edit', $ms) }}" data-pane="edit" data-pane-type="milestone" data-pane-id="{{ $ms->id }}" class="text-slate-500 hover:text-blue-600 mr-2"><i class="bi bi-pencil-square"></i></a>
-                        <form action="{{ route('admin.milestones.destroy', $ms) }}" method="POST" class="inline" onsubmit="return confirm('Delete milestone?');">
+                        <form action="{{ route('admin.milestones.destroy', $ms) }}" method="POST" class="inline" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete milestone?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                             @csrf @method('DELETE')
                             <button type="submit" class="text-red-500 hover:text-red-700"><i class="bi bi-trash"></i></button>
                         </form>

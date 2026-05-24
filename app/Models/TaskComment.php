@@ -19,4 +19,9 @@ class TaskComment extends Model
     {
         return $this->belongsTo(Staff::class, 'staffid', 'staffid');
     }
+
+    public function task()
+    {
+        return $this->belongsTo(Task::class, 'taskid', 'id');
+    }
 }

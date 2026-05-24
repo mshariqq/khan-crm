@@ -43,6 +43,7 @@
                                 <option value="1" {{ old('priority', $task->priority) == '1' ? 'selected' : '' }}>Low</option>
                                 <option value="2" {{ old('priority', $task->priority) == '2' ? 'selected' : '' }}>Medium</option>
                                 <option value="3" {{ old('priority', $task->priority) == '3' ? 'selected' : '' }}>High</option>
+                                <option value="4" {{ old('priority', $task->priority) == '4' ? 'selected' : '' }}>Urgent</option>
                             </select>
                         </div>
                         <div class="space-y-1">
@@ -101,7 +102,7 @@
                             </button>
                             <div id="rel-type-dropdown" class="hidden absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg">
                                 <div class="p-2">
-                                    @foreach(['project' => 'Project', 'invoice' => 'Invoice', 'estimate' => 'Estimate', 'proposal' => 'Proposal'] as $key => $label)
+                                    @foreach(['project' => 'Project', 'invoice' => 'Invoice', 'estimate' => 'Estimate', 'proposal' => 'Proposal', 'lead' => 'Lead', 'ticket' => 'Ticket', 'client' => 'Client'] as $key => $label)
                                     <label class="flex items-center gap-2 p-2 rounded hover:bg-slate-50 cursor-pointer">
                                         <input type="radio" name="rel_type" value="{{ $key }}" class="w-4 h-4 border-slate-300 text-blue-600 focus:ring-blue-500" {{ $task->rel_type == $key ? 'checked' : '' }} onchange="updateRelTypeSelection(this.value)">
                                         <span class="text-sm text-slate-700">{{ $label }}</span>
@@ -125,6 +126,12 @@
                                         {{ $task->rel_id && $estimates->find($task->rel_id) ? '#' . $estimates->find($task->rel_id)->number : 'Select...' }}
                                     @elseif($task->rel_type == 'proposal')
                                         {{ $task->rel_id && $proposals->find($task->rel_id) ? '#' . $proposals->find($task->rel_id)->id : 'Select...' }}
+                                    @elseif($task->rel_type == 'lead')
+                                        {{ $task->rel_id && $leads->find($task->rel_id) ? $leads->find($task->rel_id)->name : 'Select...' }}
+                                    @elseif($task->rel_type == 'ticket')
+                                        {{ $task->rel_id && $tickets->find($task->rel_id) ? $tickets->find($task->rel_id)->subject : 'Select...' }}
+                                    @elseif($task->rel_type == 'client')
+                                        {{ $task->rel_id && $clients->find($task->rel_id) ? $clients->find($task->rel_id)->company : 'Select...' }}
                                     @else
                                         Select after choosing type
                                     @endif
@@ -299,6 +306,9 @@ const projectList = @json($projects->map(fn($p) => ['id' => $p->id, 'name' => $p
 const invoiceList = @json($invoices->map(fn($i) => ['id' => $i->id, 'label' => '#' . $i->number]));
 const estimateList = @json($estimates->map(fn($e) => ['id' => $e->id, 'label' => '#' . $e->number]));
 const proposalList = @json($proposals->map(fn($p) => ['id' => $p->id, 'label' => '#' . $p->id]));
+const leadList = @json($leads->map(fn($l) => ['id' => $l->id, 'name' => $l->name]));
+const ticketList = @json($tickets->map(fn($t) => ['id' => $t->ticketid, 'label' => $t->subject]));
+const clientList = @json($clients->map(fn($c) => ['id' => $c->userid, 'name' => $c->company]));
 const projectStaff = @json($projects->mapWithKeys(function($p) { return [$p->id => $p->staff->map(fn($s) => ['id' => $s->staffid, 'name' => $s->firstname . ' ' . $s->lastname])]; }));
 const assignedStaff = @json($task->assignedStaff->pluck('staffid'));
 const currentRelId = {{ $task->rel_id ?? 'null' }};
@@ -326,6 +336,9 @@ function loadRelEntityOptions(type) {
     else if (type === 'invoice') items = invoiceList;
     else if (type === 'estimate') items = estimateList;
     else if (type === 'proposal') items = proposalList;
+    else if (type === 'lead') items = leadList;
+    else if (type === 'ticket') items = ticketList;
+    else if (type === 'client') items = clientList;
     
     if (items.length === 0) {
         container.innerHTML = '<p class="text-xs text-slate-400 p-2">No items found</p>';

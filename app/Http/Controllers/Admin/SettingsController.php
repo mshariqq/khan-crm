@@ -63,6 +63,7 @@ class SettingsController extends Controller
             'use_knowledge_base',
             'knowledge_base_without_registration',
             'two_factor_enabled',
+            'client_2fa_enabled',
             'remove_decimal_on_zero',
             'show_tax_per_item',
             'enable_custom_css',

@@ -13,6 +13,7 @@ use App\Models\Proposal;
 use App\Models\Lead;
 use App\Models\Ticket;
 use App\Models\Client;
+use App\Models\TaskChecklistTemplate;
 use App\Services\FileService;
 use Illuminate\Http\Request;
 
@@ -33,9 +34,10 @@ class TaskPaneController extends Controller
         $leads = Lead::select('id', 'name')->get();
         $tickets = Ticket::select('ticketid', 'subject')->get();
         $clients = Client::select('userid', 'company')->get();
+        $checklistTemplates = TaskChecklistTemplate::all();
 
         return view('admin.tasks.pane.create', compact(
-            'staff', 'milestones', 'projects', 'invoices', 'estimates', 'proposals', 'leads', 'tickets', 'clients'
+            'staff', 'milestones', 'projects', 'invoices', 'estimates', 'proposals', 'leads', 'tickets', 'clients', 'checklistTemplates'
         ));
     }
 
@@ -45,7 +47,7 @@ class TaskPaneController extends Controller
             abort(403);
         }
 
-        $task = Task::with('assignedStaff')->findOrFail($id);
+        $task = Task::with('assignedStaff', 'followers')->findOrFail($id);
         $staff = Staff::all();
         $milestones = Milestone::all();
         $projects = Project::with('staff')->get();
@@ -55,9 +57,10 @@ class TaskPaneController extends Controller
         $leads = Lead::select('id', 'name')->get();
         $tickets = Ticket::select('ticketid', 'subject')->get();
         $clients = Client::select('userid', 'company')->get();
+        $checklistTemplates = TaskChecklistTemplate::all();
 
         return view('admin.tasks.pane.edit', compact(
-            'task', 'staff', 'milestones', 'projects', 'invoices', 'estimates', 'proposals', 'leads', 'tickets', 'clients'
+            'task', 'staff', 'milestones', 'projects', 'invoices', 'estimates', 'proposals', 'leads', 'tickets', 'clients', 'checklistTemplates'
         ));
     }
 

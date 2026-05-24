@@ -187,6 +187,12 @@
                     {{-- Tasks Tab --}}
                     <div id="tab-tasks" class="tab-content hidden">
                         @if($lead->tasks()->count() > 0)
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-slate-500">{{ $lead->tasks()->count() }} tasks</span>
+                                <a href="{{ route('admin.tasks.create') }}?rel_type=lead&rel_id={{ $lead->id }}" data-pane="create" data-pane-type="task" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-all">
+                                    <i class="bi bi-plus-lg mr-1"></i> New Task
+                                </a>
+                            </div>
                             <div class="space-y-2">
                                 @foreach($lead->tasks()->orderBy('dateadded', 'desc')->get() as $task)
                                     <div class="bg-slate-50 rounded-lg p-3 flex justify-between items-center">
@@ -328,7 +334,7 @@
                     @if(!$lead->lost)
                     <form action="{{ route('admin.leads.mark_lost', $lead->id) }}" method="POST">
                         @csrf
-                        <button type="submit" onclick="return confirm('Mark as lost?')" class="w-full px-3 py-2 bg-amber-500 text-white rounded-lg text-sm hover:bg-amber-600 text-left flex items-center gap-2">
+                        <button type="submit" onclick="event.preventDefault(); confirmDelete('Confirm Action', 'Mark as lost?', this.form.action, (this.form.querySelector('[name=_method]')?.value || 'POST'));" class="w-full px-3 py-2 bg-amber-500 text-white rounded-lg text-sm hover:bg-amber-600 text-left flex items-center gap-2">
                             <i class="bi bi-x-circle"></i> Mark as Lost
                         </button>
                     </form>
@@ -336,7 +342,7 @@
                     @if(!$lead->junk)
                     <form action="{{ route('admin.leads.mark_junk', $lead->id) }}" method="POST">
                         @csrf
-                        <button type="submit" onclick="return confirm('Mark as junk?')" class="w-full px-3 py-2 bg-slate-500 text-white rounded-lg text-sm hover:bg-slate-600 text-left flex items-center gap-2">
+                        <button type="submit" onclick="event.preventDefault(); confirmDelete('Confirm Action', 'Mark as junk?', this.form.action, (this.form.querySelector('[name=_method]')?.value || 'POST'));" class="w-full px-3 py-2 bg-slate-500 text-white rounded-lg text-sm hover:bg-slate-600 text-left flex items-center gap-2">
                             <i class="bi bi-trash"></i> Mark as Junk
                         </button>
                     </form>
@@ -349,7 +355,7 @@
                     <form action="{{ route('admin.leads.destroy', $lead->id) }}" method="POST">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" onclick="return confirm('Delete this lead?')" class="w-full px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm hover:bg-red-100 text-left flex items-center gap-2">
+                        <button type="submit" onclick="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete this lead?', this.form.action, (this.form.querySelector('[name=_method]')?.value || 'POST'));" class="w-full px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm hover:bg-red-100 text-left flex items-center gap-2">
                             <i class="bi bi-trash"></i> Delete Lead
                         </button>
                     </form>

@@ -23,16 +23,16 @@
             <i class="bi bi-flag text-slate-400 text-xl mb-1"></i>
             <p class="text-xs text-slate-500 mb-1">Priority</p>
             <p class="text-sm font-bold text-slate-900">
-                {{ is_numeric($task->priority) ? 
-                    ($task->priority == 3 ? 'High' : ($task->priority == 2 ? 'Medium' : 'Low')) 
-                    : ucfirst($task->priority) }}
+{{ is_numeric($task->priority) ? 
+    ($task->priority == 4 ? 'Urgent' : ($task->priority == 3 ? 'High' : ($task->priority == 2 ? 'Medium' : 'Low'))) 
+    : ucfirst($task->priority) }}
             </p>
         </div>
         <div class="text-center p-4 bg-white/70 rounded-xl border border-slate-100">
             <i class="bi bi-hourglass-split text-slate-400 text-xl mb-1"></i>
             <p class="text-xs text-slate-500 mb-1">Status</p>
             <p class="text-sm font-bold text-slate-900">
-                {{ $task->status == 3 ? 'Done' : ($task->status == 2 ? 'In Progress' : 'To Do') }}
+                {{ $task->status == 3 ? 'Done' : ($task->status == 2 ? 'In Progress' : ($task->status == 1 ? 'To Do' : 'Backlog')) }}
             </p>
         </div>
         <div class="text-center p-4 bg-white/70 rounded-xl border border-slate-100">

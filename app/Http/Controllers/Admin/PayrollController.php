@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Helpers\SettingsHelper;
 use App\Http\Controllers\Controller;
+use App\Models\Project;
 use App\Models\Staff;
 use App\Models\StaffSalaryConfig;
 use App\Models\StaffPayslip;
 use App\Models\PayslipItem;
+use App\Models\TaskTimer;
+use App\Services\ProjectService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -207,5 +210,50 @@ class PayrollController extends Controller
         }
 
         return view('admin.payroll.view', compact('payslip'));
+    }
+
+    public function syncFromProjects(Request $request)
+    {
+        if (!Auth::user()->can('hr_payroll_manage')) abort(403);
+
+        $request->validate([
+            'staff_id' => 'required|integer|exists:tblstaff,staffid',
+            'project_id' => 'required|integer|exists:tblprojects,id',
+            'payslip_id' => 'required|integer|exists:tblstaff_payslips,id',
+        ]);
+
+        $project = Project::findOrFail($request->project_id);
+        $projectService = app(ProjectService::class);
+        $data = $projectService->syncBillableHoursToPayroll(
+            $project,
+            $request->staff_id,
+            $request->input('month', date('m')),
+            $request->input('year', date('Y'))
+        );
+
+        if ($data['total_billable_hours'] > 0) {
+            $hourlyRate = $project->project_rate_per_hour ?? 0;
+            $billableAmount = $data['total_billable_hours'] * $hourlyRate;
+
+            PayslipItem::create([
+                'payslip_id' => $request->payslip_id,
+                'type' => 'Addition',
+                'label' => "Billable hours from {$project->name}",
+                'amount' => $billableAmount,
+            ]);
+
+            $payslip = StaffPayslip::find($request->payslip_id);
+            if ($payslip) {
+                $totalAdditions = $payslip->items()->where('type', 'Addition')->sum('amount');
+                $totalDeductions = $payslip->items()->where('type', 'Deduction')->sum('amount');
+                $payslip->update([
+                    'total_additions' => $totalAdditions,
+                    'total_deductions' => $totalDeductions,
+                    'net_amount' => $payslip->basic + $totalAdditions - $totalDeductions,
+                ]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Billable hours synced from project ' . $project->name);
     }
 }

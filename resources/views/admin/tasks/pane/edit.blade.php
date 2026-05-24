@@ -25,6 +25,7 @@
                             <option value="1" {{ old('priority', $task->priority) == 1 ? 'selected' : '' }}>Low</option>
                             <option value="2" {{ old('priority', $task->priority) == 2 ? 'selected' : '' }}>Medium</option>
                             <option value="3" {{ old('priority', $task->priority) == 3 ? 'selected' : '' }}>High</option>
+                            <option value="4" {{ old('priority', $task->priority) == 4 ? 'selected' : '' }}>Urgent</option>
                         </select>
                     </div>
                     <div class="space-y-1">
@@ -128,6 +129,19 @@
                     </select>
                     <p class="text-xs text-slate-400">Ctrl+click to select multiple</p>
                 </div>
+
+                <div class="space-y-1">
+                    <label class="text-sm font-medium text-slate-600">Followers</label>
+                    <select multiple name="followers[]" id="followers-select" class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[80px] text-sm">
+                    </select>
+                    <p class="text-xs text-slate-400">Ctrl+click to select multiple</p>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-sm font-medium text-slate-600">Tags</label>
+                    <input type="text" name="tags" value="{{ old('tags', $task->tags) }}" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="tag1, tag2, tag3">
+                    <p class="text-xs text-slate-400">Comma-separated tags</p>
+                </div>
             </div>
 
             <div class="space-y-4">
@@ -170,7 +184,7 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div class="space-y-1">
                             <label class="text-sm font-medium text-slate-600">Repeat Every</label>
-                            <select name="repeat_every" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                            <select name="repeat_every" onchange="updateRecurringPreview()" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                                 <option value="1" {{ old('repeat_every', $task->repeat_every ?? 1) == 1 ? 'selected' : '' }}>1</option>
                                 <option value="2" {{ old('repeat_every', $task->repeat_every ?? 1) == 2 ? 'selected' : '' }}>2</option>
                                 <option value="3" {{ old('repeat_every', $task->repeat_every ?? 1) == 3 ? 'selected' : '' }}>3</option>
@@ -180,7 +194,7 @@
                         </div>
                         <div class="space-y-1">
                             <label class="text-sm font-medium text-slate-600">Recurring Type</label>
-                            <select name="recurring_type" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                            <select name="recurring_type" onchange="updateRecurringPreview()" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                                 <option value="day" {{ old('recurring_type', $task->recurring_type) == 'day' ? 'selected' : '' }}>Day</option>
                                 <option value="week" {{ old('recurring_type', $task->recurring_type) == 'week' ? 'selected' : '' }}>Week</option>
                                 <option value="month" {{ old('recurring_type', $task->recurring_type) == 'month' ? 'selected' : '' }}>Month</option>
@@ -197,6 +211,9 @@
                             <label class="text-sm font-medium text-slate-600">Total Cycles</label>
                             <input type="number" name="total_cycles" value="{{ old('total_cycles', $task->total_cycles ?? 0) }}" min="0" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="0">
                         </div>
+                    </div>
+                    <div id="recurring-preview" class="text-xs text-blue-600 font-medium {{ $task->recurring ? '' : 'hidden' }}">
+                        Next occurrence: <span id="recurring-next-date"></span>
                     </div>
                 </div>
             </div>
@@ -254,84 +271,65 @@ document.querySelector('form[data-pane-submit]')?.addEventListener('submit', fun
 });
 
 const assignedStaff = @json($task->assignedStaff->pluck('staffid'));
+const followerIds = @json($task->followers->pluck('staffid'));
 
-function updateRelTypeSelection(type) {
-    document.getElementById('rel-type-label').textContent = type.charAt(0).toUpperCase() + type.slice(1);
-    document.getElementById('rel-type-dropdown').classList.add('hidden');
-    document.getElementById('rel_type_input').value = type;
-    const btn = document.getElementById('rel-entity-btn');
-    btn.disabled = !type;
-    document.getElementById('rel-entity-label').textContent = type ? 'Select...' : 'Select after choosing type';
-    document.getElementById('rel_id_input').value = '';
-    loadRelEntityOptions(type);
-    filterMilestones();
-    loadProjectStaff();
-}
+@include('admin.tasks.partials.pane-forms-js')
 
-function loadRelEntityOptions(type) {
-    const container = document.getElementById('rel-entity-options');
-    let items = [];
-    if (type === 'project') items = projectList;
-    else if (type === 'invoice') items = invoiceList;
-    else if (type === 'estimate') items = estimateList;
-    else if (type === 'proposal') items = proposalList;
-    else if (type === 'lead') items = leadList;
-    else if (type === 'ticket') items = ticketList;
-    else if (type === 'client') items = clientList;
-    container.innerHTML = items.length
-        ? items.map(item => `
-            <label class="flex items-center gap-2 p-2 rounded hover:bg-slate-50 cursor-pointer">
-                <input type="radio" name="rel_entity" value="${item.id}" class="w-4 h-4 border-slate-300 text-blue-600 focus:ring-blue-500" onchange="updateRelEntitySelection(this)">
-                <span class="text-sm text-slate-700">${item.name || item.label}</span>
-            </label>`).join('')
-        : '<p class="text-xs text-slate-400 p-2">No items found</p>';
-}
-
-function updateRelEntitySelection(input) {
-    document.getElementById('rel-entity-label').textContent = input.nextElementSibling.textContent;
-    document.getElementById('rel_id_input').value = input.value;
-    document.getElementById('rel-entity-dropdown').classList.add('hidden');
-    filterMilestones();
-    loadProjectStaff();
-}
-
-function toggleRelTypeDropdown() { document.getElementById('rel-type-dropdown').classList.toggle('hidden'); }
-
-function toggleRelEntityDropdown() {
-    const btn = document.getElementById('rel-entity-btn');
-    if (btn.disabled) return;
-    document.getElementById('rel-entity-dropdown').classList.toggle('hidden');
-}
-
-function filterMilestones() {
-    const relType = document.getElementById('rel_type_input').value;
-    const relId = document.getElementById('rel_id_input').value;
-    const sel = document.querySelector('select[name="milestone"]');
-    sel.querySelectorAll('option').forEach(opt => {
-        if (opt.value === '') return;
-        const pid = opt.getAttribute('data-project-id');
-        opt.style.display = (relType === 'project' && relId) ? (pid === relId ? '' : 'none') : '';
-    });
-}
-
+// Override loadProjectStaff to also handle followers
 function loadProjectStaff() {
-    const relType = document.getElementById('rel_type_input').value;
+    const relTypeInput = document.getElementById('rel_type_input') || document.querySelector('input[name="rel_type"]:checked');
+    const relType = relTypeInput ? relTypeInput.value : '';
     const relId = document.getElementById('rel_id_input').value;
     const select = document.getElementById('assignee-select');
     let staffList = allStaff;
     if (relType === 'project' && relId && projectStaff[relId]) {
         staffList = projectStaff[relId];
     }
-    const selectedIds = @json($task->assignedStaff->pluck('staffid'));
-    select.innerHTML = staffList.map(s =>
-        `<option value="${s.id}"${selectedIds.includes(s.id) ? ' selected' : ''}>${s.name}</option>`
-    ).join('');
-    if (!staffList.length) select.innerHTML = '<option disabled>No staff available</option>';
+    select.innerHTML = staffList.length
+        ? staffList.map(s => `<option value="${s.id}"${assignedStaff.includes(s.id) ? ' selected' : ''}>${s.name}</option>`).join('')
+        : '<option disabled>No staff available</option>';
+
+    const followersSelect = document.getElementById('followers-select');
+    if (followersSelect) {
+        followersSelect.innerHTML = allStaff.map(s =>
+            `<option value="${s.id}"${followerIds.includes(s.id) ? ' selected' : ''}>${s.name}</option>`
+        ).join('');
+    }
 }
 
 function toggleRecurring(value) {
-    document.getElementById('recurring-options').classList.toggle('hidden', value !== '1');
+    const opts = document.getElementById('recurring-options');
+    if (opts) opts.classList.toggle('hidden', value !== '1');
+    if (value === '1') updateRecurringPreview();
 }
+
+function updateRecurringPreview() {
+    const recurring = document.querySelector('select[name="recurring"]');
+    if (!recurring) return;
+    const v = recurring.value;
+    if (v !== '1') { document.getElementById('recurring-preview')?.classList.add('hidden'); return; }
+    const startdate = document.querySelector('input[name="startdate"]')?.value;
+    const duedate = document.querySelector('input[name="duedate"]')?.value;
+    const repeatEvery = parseInt(document.querySelector('select[name="repeat_every"]')?.value) || 1;
+    const recurringType = document.querySelector('select[name="recurring_type"]')?.value;
+    const baseDate = duedate || startdate;
+    if (!baseDate) { document.getElementById('recurring-preview')?.classList.add('hidden'); return; }
+    const d = new Date(baseDate);
+    switch (recurringType) {
+        case 'day': d.setDate(d.getDate() + repeatEvery); break;
+        case 'week': d.setDate(d.getDate() + (repeatEvery * 7)); break;
+        case 'month': d.setMonth(d.getMonth() + repeatEvery); break;
+        case 'year': d.setFullYear(d.getFullYear() + repeatEvery); break;
+    }
+    const nextDate = d.toISOString().split('T')[0];
+    const formatted = new Date(nextDate + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    document.getElementById('recurring-next-date').textContent = formatted;
+    document.getElementById('recurring-preview').classList.remove('hidden');
+}
+
+['startdate', 'duedate'].forEach(name => {
+    document.querySelector(`input[name="${name}"]`)?.addEventListener('change', updateRecurringPreview);
+});
 
 (function() {
     loadProjectStaff();
@@ -349,6 +347,7 @@ function toggleRecurring(value) {
             }
         }, 50);
     }
+    if ('{{ $task->recurring }}' === '1') updateRecurringPreview();
 })();
 
 (function() {

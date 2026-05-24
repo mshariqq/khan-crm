@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\TaskTimer;
+use App\Models\TimesheetAuditLog;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -21,7 +23,6 @@ class TaskTimerController extends Controller
         ]);
 
         try {
-            // Check if there's already a running timer for this user
             $runningTimer = TaskTimer::where('staff_id', Auth::id())
                 ->whereNull('end_time')
                 ->first();
@@ -33,7 +34,6 @@ class TaskTimerController extends Controller
                 ], 400);
             }
 
-            // Get the task to check if it's billable
             $task = \App\Models\Task::findOrFail($request->task_id);
 
             $timer = TaskTimer::create([
@@ -42,6 +42,13 @@ class TaskTimerController extends Controller
                 'start_time' => now(),
                 'is_billable' => $task->billable ?? false,
                 'hourly_rate' => $task->hourly_rate ?? 0
+            ]);
+
+            TimesheetAuditLog::create([
+                'timer_id' => $timer->id,
+                'staff_id' => Auth::id(),
+                'action' => 'created',
+                'changes' => ['task_id' => $request->task_id, 'action' => 'timer_started'],
             ]);
 
             return response()->json([
@@ -64,17 +71,20 @@ class TaskTimerController extends Controller
         try {
             $timer = TaskTimer::findOrFail($timerId);
 
-            // Check if you own this timer
             if ($timer->staff_id !== Auth::id()) {
                 return response()->json(['success' => false, 'message' => 'Cannot stop timer you did not start'], 403);
             }
 
-            // Stop the timer
-            $timer->update([
-                'end_time' => now()
+            $oldEnd = $timer->end_time;
+            $timer->update(['end_time' => now()]);
+
+            TimesheetAuditLog::create([
+                'timer_id' => $timer->id,
+                'staff_id' => Auth::id(),
+                'action' => 'stopped',
+                'changes' => ['end_time' => $timer->fresh()->end_time->toIso8601String()],
             ]);
 
-            // Calculate the duration
             $duration = $timer->start_time->diffInMinutes($timer->end_time);
 
             return response()->json([
@@ -101,7 +111,13 @@ class TaskTimerController extends Controller
             'hours' => 'required|integer|min:0|max:23',
             'minutes' => 'required|integer|min:0|max:59',
             'note' => 'nullable|string|max:1000',
+            'is_billable' => 'nullable|boolean',
+            'rounding_minutes' => 'nullable|integer|in:0,5,10,15,30,60',
         ]);
+
+        if ((int)$request->hours === 0 && (int)$request->minutes === 0) {
+            return response()->json(['success' => false, 'message' => 'Duration must be greater than 0'], 422);
+        }
 
         try {
             $task = \App\Models\Task::findOrFail($request->task_id);
@@ -115,6 +131,15 @@ class TaskTimerController extends Controller
                 'end_time' => $endTime,
                 'hourly_rate' => $task->hourly_rate ?? 0,
                 'note' => $request->note,
+                'is_billable' => $request->boolean('is_billable', $task->billable ?? false),
+                'rounding_minutes' => $request->input('rounding_minutes', 0),
+            ]);
+
+            TimesheetAuditLog::create([
+                'timer_id' => $timer->id,
+                'staff_id' => Auth::id(),
+                'action' => 'created',
+                'changes' => $timer->toArray(),
             ]);
 
             return response()->json([
@@ -141,9 +166,12 @@ class TaskTimerController extends Controller
             'hours' => 'required|integer|min:0|max:23',
             'minutes' => 'required|integer|min:0|max:59',
             'note' => 'nullable|string|max:1000',
+            'is_billable' => 'nullable|boolean',
+            'rounding_minutes' => 'nullable|integer|in:0,5,10,15,30,60',
         ]);
 
         try {
+            $oldData = $timer->toArray();
             $startTime = \Carbon\Carbon::parse($request->date . ' 09:00:00');
             $endTime = (clone $startTime)->addHours((int)$request->hours)->addMinutes((int)$request->minutes);
 
@@ -151,6 +179,15 @@ class TaskTimerController extends Controller
                 'start_time' => $startTime,
                 'end_time' => $endTime,
                 'note' => $request->note,
+                'is_billable' => $request->boolean('is_billable', $timer->is_billable),
+                'rounding_minutes' => $request->input('rounding_minutes', $timer->rounding_minutes),
+            ]);
+
+            TimesheetAuditLog::create([
+                'timer_id' => $timer->id,
+                'staff_id' => Auth::id(),
+                'action' => 'updated',
+                'changes' => ['old' => $oldData, 'new' => $timer->fresh()->toArray()],
             ]);
 
             return response()->json([
@@ -173,6 +210,13 @@ class TaskTimerController extends Controller
         }
 
         try {
+            TimesheetAuditLog::create([
+                'timer_id' => $timer->id,
+                'staff_id' => Auth::id(),
+                'action' => 'deleted',
+                'changes' => $timer->toArray(),
+            ]);
+
             $timer->delete();
 
             return response()->json([
@@ -205,5 +249,98 @@ class TaskTimerController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
+    }
+
+    /** Approve a timesheet entry */
+    public function approve($timerId)
+    {
+        if (!Auth::user()->can('projects_edit')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $timer = TaskTimer::findOrFail($timerId);
+        $timer->update([
+            'status' => TaskTimer::STATUS_APPROVED,
+            'approved_by' => Auth::id(),
+            'approved_at' => now(),
+        ]);
+
+        TimesheetAuditLog::create([
+            'timer_id' => $timer->id,
+            'staff_id' => Auth::id(),
+            'action' => 'approved',
+            'changes' => ['approved_by' => Auth::id(), 'approved_at' => now()->toIso8601String()],
+        ]);
+
+        Notification::createForStaff(
+            $timer->staff_id,
+            'Your timesheet entry for <strong>' . e($timer->task->name ?? 'Task') . '</strong> has been approved',
+            route('admin.projects.show', $timer->task->rel_id ?? 0)
+        );
+
+        return response()->json(['success' => true, 'message' => 'Timesheet approved']);
+    }
+
+    /** Reject a timesheet entry */
+    public function reject(Request $request, $timerId)
+    {
+        if (!Auth::user()->can('projects_edit')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate(['reason' => 'nullable|string|max:1000']);
+
+        $timer = TaskTimer::findOrFail($timerId);
+        $timer->update([
+            'status' => TaskTimer::STATUS_REJECTED,
+            'approved_by' => Auth::id(),
+            'approved_at' => now(),
+        ]);
+
+        TimesheetAuditLog::create([
+            'timer_id' => $timer->id,
+            'staff_id' => Auth::id(),
+            'action' => 'rejected',
+            'changes' => ['reason' => $request->reason],
+        ]);
+
+        Notification::createForStaff(
+            $timer->staff_id,
+            'Your timesheet entry for <strong>' . e($timer->task->name ?? 'Task') . '</strong> has been rejected' . ($request->reason ? ': ' . e($request->reason) : ''),
+            route('admin.projects.show', $timer->task->rel_id ?? 0)
+        );
+
+        return response()->json(['success' => true, 'message' => 'Timesheet rejected']);
+    }
+
+    /** Bulk approve timesheet entries */
+    public function bulkApprove(Request $request)
+    {
+        if (!Auth::user()->can('projects_edit')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate(['timer_ids' => 'required|array', 'timer_ids.*' => 'integer|exists:tbltaskstimers,id']);
+
+        $count = 0;
+        foreach ($request->timer_ids as $id) {
+            $timer = TaskTimer::find($id);
+            if ($timer && $timer->status === TaskTimer::STATUS_PENDING) {
+                $timer->update([
+                    'status' => TaskTimer::STATUS_APPROVED,
+                    'approved_by' => Auth::id(),
+                    'approved_at' => now(),
+                ]);
+                TimesheetAuditLog::create([
+                    'timer_id' => $timer->id,
+                    'staff_id' => Auth::id(),
+                    'action' => 'approved',
+                    'changes' => ['bulk_approve' => true],
+                ]);
+                $count++;
+            }
+        }
+
+        return response()->json(['success' => true, 'message' => "$count timesheets approved"]);
     }
 }

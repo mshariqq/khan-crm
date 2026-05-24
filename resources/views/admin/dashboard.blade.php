@@ -424,19 +424,36 @@
         </div>
         <div class="divide-y divide-slate-100">
             @forelse($projects as $project)
-            <a href="{{ route('admin.projects.show', $project->id) }}" class="flex items-center justify-between p-3 hover:bg-slate-50 transition-colors">
-                <div class="flex items-center gap-2 min-w-0">
+            <a href="{{ route('admin.projects.show', $project->id) }}" class="flex items-center justify-between p-3 hover:bg-slate-50 transition-colors gap-2">
+                <div class="flex items-center gap-2 min-w-0 flex-1">
                     <div class="w-6 h-6 rounded bg-blue-50 flex items-center justify-center shrink-0">
                         <i class="bi bi-kanban text-blue-600 text-[10px]"></i>
                     </div>
-                    <div class="min-w-0">
+                    <div class="min-w-0 flex-1">
                         <p class="text-xs font-medium text-slate-800 truncate">{{ $project->name }}</p>
                         <p class="text-[10px] text-slate-400 truncate">{{ $project->client->company ?? 'No client' }}</p>
+                        <div class="w-full bg-slate-100 rounded-full h-1 mt-1">
+                            <div class="h-1 rounded-full @if($project->progress == 100) bg-emerald-500 @elseif($project->progress >= 50) bg-blue-500 @else bg-amber-500 @endif" style="width: {{ $project->progress }}%"></div>
+                        </div>
                     </div>
                 </div>
-                <span class="text-[10px] px-2 py-0.5 rounded-full shrink-0 font-medium {{ $project->status == 1 ? 'bg-emerald-100 text-emerald-700' : ($project->status == 2 ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700') }}">
-                    {{ $project->status == 1 ? 'Active' : ($project->status == 2 ? 'Completed' : 'On Hold') }}
-                </span>
+                <div class="flex flex-col items-end gap-1 shrink-0">
+                    <span class="text-[9px] font-medium text-slate-500">{{ $project->progress }}%</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded-full font-medium
+                        @switch($project->status)
+                            @case(1) bg-emerald-100 text-emerald-700 @break
+                            @case(2) bg-blue-100 text-blue-700 @break
+                            @case(3) bg-amber-100 text-amber-700 @break
+                            @default bg-red-100 text-red-700
+                        @endswitch">
+                        @switch($project->status)
+                            @case(1) Active @break
+                            @case(2) Completed @break
+                            @case(3) On Hold @break
+                            @default Cancelled
+                        @endswitch
+                    </span>
+                </div>
             </a>
             @empty
             <div class="p-6 text-center text-slate-400 text-xs">No projects</div>

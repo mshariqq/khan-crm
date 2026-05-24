@@ -13,6 +13,7 @@ use App\Models\Item;
 use App\Models\Tax;
 use App\Models\Project;
 use App\Models\Itemable;
+use App\Services\InvoiceNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -121,8 +122,7 @@ class CreditNoteController extends Controller
         
         // Find unpaid invoices for this client to apply credit
         $availableInvoices = Invoice::where('clientid', $creditNote->clientid)
-            ->whereIn('status', [Invoice::STATUS_UNPAID, Invoice::STATUS_PARTIALLY_PAID]) // Unpaid
-$invoice->update(['status' => Invoice::STATUS_UNPAID]); or Partially Paid
+            ->whereIn('status', [Invoice::STATUS_UNPAID, Invoice::STATUS_PARTIALLY_PAID])
             ->get();
 
         return view('admin.creditnotes.show', compact('creditNote', 'availableInvoices'));
@@ -197,6 +197,17 @@ $invoice->update(['status' => Invoice::STATUS_UNPAID]); or Partially Paid
             $invoice->update(['status' => Invoice::STATUS_PAID]);
         } elseif ($totalSettled > 0) {
             $invoice->update(['status' => Invoice::STATUS_PARTIALLY_PAID]);
+        }
+
+        try {
+            $invoiceNotification = app(InvoiceNotificationService::class);
+            $invoiceNotification->send('refund-processed', $invoice->id, [
+                'credit_note_number' => $creditNote->number,
+                'refund_amount' => $request->amount,
+                'credit_note_id' => $creditNote->id,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Refund notification failed: ' . $e->getMessage());
         }
 
         return redirect()->route('admin.creditnotes.show', $creditNote->id)->with('success', 'Credit applied to invoice successfully!');

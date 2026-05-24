@@ -40,7 +40,7 @@
             <a href="{{ route('admin.estimates.edit', $estimate->id) }}" class="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 transition-all" title="Edit Estimate" data-pane="edit" data-pane-type="estimate" data-pane-id="{{ $estimate->id }}">
                 <i class="bi bi-pencil-square"></i>
             </a>
-            <form action="{{ route('admin.estimates.destroy', $estimate->id) }}" method="POST" onsubmit="return confirm('Delete this estimate?');" class="inline">
+            <form action="{{ route('admin.estimates.destroy', $estimate->id) }}" method="POST" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete this estimate?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));" class="inline">
                 @csrf @method('DELETE')
                 <button type="submit" class="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-500 transition-all" title="Delete Estimate">
                     <i class="bi bi-trash3"></i>
@@ -241,6 +241,9 @@
                     </div>
                 </div>
                 <div class="space-y-2 pt-2">
+                    <a href="{{ route('admin.tasks.create') }}?rel_type=estimate&rel_id={{ $estimate->id }}" data-pane="create" data-pane-type="task" class="w-full px-4 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center gap-2 justify-center">
+                        <i class="bi bi-plus-lg"></i> Create Task
+                    </a>
                     @if(in_array($estimate->status, [1, 2]))
                     <form action="{{ route('admin.estimates.mark_accepted', $estimate->id) }}" method="POST">
                         @csrf

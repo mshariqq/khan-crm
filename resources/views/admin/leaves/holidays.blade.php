@@ -40,7 +40,7 @@
                         <form action="{{ route('admin.leaves.destroyHoliday', $holiday->id) }}" method="POST" class="inline-block">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="p-2 text-slate-400 hover:text-red-600 transition-colors" onclick="return confirm('Delete this holiday?')">
+                            <button type="submit" class="p-2 text-slate-400 hover:text-red-600 transition-colors" onclick="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete this holiday?', this.form.action, (this.form.querySelector('[name=_method]')?.value || 'POST'));">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </form>

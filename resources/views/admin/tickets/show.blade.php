@@ -52,7 +52,7 @@
             <a href="{{ route('admin.tickets.edit', $ticket->ticketid) }}" data-pane="edit" data-pane-type="ticket" data-pane-id="{{ $ticket->ticketid }}" class="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 transition-all" title="Edit Ticket">
                 <i class="bi bi-pencil-square"></i>
             </a>
-            <form action="{{ route('admin.tickets.destroy', $ticket->ticketid) }}" method="POST" onsubmit="return confirm('Delete ticket?');" class="inline">
+            <form action="{{ route('admin.tickets.destroy', $ticket->ticketid) }}" method="POST" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete ticket?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));" class="inline">
                 @csrf @method('DELETE')
                 <button type="submit" class="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-500 transition-all" title="Delete Ticket">
                     <i class="bi bi-trash3"></i>
@@ -221,6 +221,14 @@
                         <span class="text-xs font-bold text-slate-700">{{ $ticket->lastreply ? \Carbon\Carbon::parse($ticket->lastreply)->diffForHumans() : 'No replies' }}</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Create Task -->
+            <div class="space-y-4">
+                <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Actions</h3>
+                <a href="{{ route('admin.tasks.create') }}?rel_type=ticket&rel_id={{ $ticket->ticketid }}" data-pane="create" data-pane-type="task" class="w-full px-4 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center gap-2 justify-center">
+                    <i class="bi bi-plus-lg"></i> Create Task
+                </a>
             </div>
         </div>
     </div>

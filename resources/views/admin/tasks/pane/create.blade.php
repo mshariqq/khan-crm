@@ -24,6 +24,7 @@
                             <option value="1" {{ old('priority') == 1 ? 'selected' : '' }}>Low</option>
                             <option value="2" {{ old('priority') == 2 ? 'selected' : '' }}>Medium</option>
                             <option value="3" {{ old('priority') == 3 ? 'selected' : '' }}>High</option>
+                            <option value="4" {{ old('priority') == 4 ? 'selected' : '' }}>Urgent</option>
                         </select>
                     </div>
                     <div class="space-y-1">
@@ -127,6 +128,29 @@
                     </select>
                     <p class="text-xs text-slate-400">Ctrl+click to select multiple</p>
                 </div>
+
+                <div class="space-y-1">
+                    <label class="text-sm font-medium text-slate-600">Followers</label>
+                    <select multiple name="followers[]" id="followers-select" class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[80px] text-sm">
+                    </select>
+                    <p class="text-xs text-slate-400">Ctrl+click to select multiple</p>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-sm font-medium text-slate-600">Checklist Template</label>
+                    <select name="checklist_template_id" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                        <option value="">No template</option>
+                        @foreach($checklistTemplates as $tmpl)
+                        <option value="{{ $tmpl->id }}">{{ $tmpl->description }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-sm font-medium text-slate-600">Tags</label>
+                    <input type="text" name="tags" value="{{ old('tags') }}" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="tag1, tag2, tag3">
+                    <p class="text-xs text-slate-400">Comma-separated tags</p>
+                </div>
             </div>
 
             <div class="space-y-4">
@@ -169,7 +193,7 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div class="space-y-1">
                             <label class="text-sm font-medium text-slate-600">Repeat Every</label>
-                            <select name="repeat_every" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                            <select name="repeat_every" onchange="updateRecurringPreview()" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                                 <option value="1" {{ old('repeat_every') == '1' ? 'selected' : '' }}>1</option>
                                 <option value="2" {{ old('repeat_every') == '2' ? 'selected' : '' }}>2</option>
                                 <option value="3" {{ old('repeat_every') == '3' ? 'selected' : '' }}>3</option>
@@ -179,7 +203,7 @@
                         </div>
                         <div class="space-y-1">
                             <label class="text-sm font-medium text-slate-600">Recurring Type</label>
-                            <select name="recurring_type" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                            <select name="recurring_type" onchange="updateRecurringPreview()" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                                 <option value="day" {{ old('recurring_type') == 'day' ? 'selected' : '' }}>Day</option>
                                 <option value="week" {{ old('recurring_type') == 'week' ? 'selected' : '' }}>Week</option>
                                 <option value="month" {{ old('recurring_type') == 'month' ? 'selected' : '' }}>Month</option>
@@ -197,6 +221,9 @@
                             <input type="number" name="total_cycles" value="{{ old('total_cycles', 0) }}" min="0" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="0">
                         </div>
                     </div>
+                    <div id="recurring-preview" class="text-xs text-blue-600 font-medium hidden">
+                        Next occurrence: <span id="recurring-next-date"></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -208,9 +235,15 @@
         </div>
     </div>
 
-    <div class="p-6 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
-        <button type="button" onclick="parent.closeTaskPane()" class="px-6 py-2 text-slate-600 font-semibold rounded-lg hover:bg-slate-200 transition-all">Cancel</button>
-        <button type="submit" class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">Save Task</button>
+    <div class="p-6 bg-slate-50 border-t border-slate-200 flex justify-between items-center gap-3">
+        <div class="flex items-center gap-2">
+            <input type="checkbox" name="create_another" id="create_another" value="1" onchange="toggleCreateAnotherLabel()" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+            <label for="create_another" class="text-sm text-slate-600">Create & Add Another</label>
+        </div>
+        <div class="flex items-center gap-3">
+            <button type="button" onclick="parent.closeTaskPane()" class="px-6 py-2 text-slate-600 font-semibold rounded-lg hover:bg-slate-200 transition-all">Cancel</button>
+            <button type="submit" id="pane-submit-btn" class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">Save Task</button>
+        </div>
     </div>
 </form>
 
@@ -247,83 +280,7 @@ document.querySelector('form[data-pane-submit]')?.addEventListener('submit', fun
     if (paneCreateQuill) document.getElementById('description').value = paneCreateQuill.root.innerHTML;
 });
 
-function updateRelTypeSelection(type) {
-    document.getElementById('rel-type-label').textContent = type.charAt(0).toUpperCase() + type.slice(1);
-    document.getElementById('rel-type-dropdown').classList.add('hidden');
-    document.getElementById('rel_type_input').value = type;
-
-    const btn = document.getElementById('rel-entity-btn');
-    btn.disabled = !type;
-    document.getElementById('rel-entity-label').textContent = type ? 'Select...' : 'Select after choosing type';
-    document.getElementById('rel_id_input').value = '';
-
-    loadRelEntityOptions(type);
-    filterMilestones();
-    loadProjectStaff();
-}
-
-function loadRelEntityOptions(type) {
-    const container = document.getElementById('rel-entity-options');
-    let items = [];
-    if (type === 'project') items = projectList;
-    else if (type === 'invoice') items = invoiceList;
-    else if (type === 'estimate') items = estimateList;
-    else if (type === 'proposal') items = proposalList;
-    else if (type === 'lead') items = leadList;
-    else if (type === 'ticket') items = ticketList;
-    else if (type === 'client') items = clientList;
-    container.innerHTML = items.length
-        ? items.map(item => `
-            <label class="flex items-center gap-2 p-2 rounded hover:bg-slate-50 cursor-pointer">
-                <input type="radio" name="rel_entity" value="${item.id}" class="w-4 h-4 border-slate-300 text-blue-600 focus:ring-blue-500" onchange="updateRelEntitySelection(this)">
-                <span class="text-sm text-slate-700">${item.name || item.label}</span>
-            </label>`).join('')
-        : '<p class="text-xs text-slate-400 p-2">No items found</p>';
-}
-
-function updateRelEntitySelection(input) {
-    document.getElementById('rel-entity-label').textContent = input.nextElementSibling.textContent;
-    document.getElementById('rel_id_input').value = input.value;
-    document.getElementById('rel-entity-dropdown').classList.add('hidden');
-    filterMilestones();
-    loadProjectStaff();
-}
-
-function toggleRelTypeDropdown() { document.getElementById('rel-type-dropdown').classList.toggle('hidden'); }
-
-function toggleRelEntityDropdown() {
-    const btn = document.getElementById('rel-entity-btn');
-    if (btn.disabled) return;
-    document.getElementById('rel-entity-dropdown').classList.toggle('hidden');
-}
-
-function filterMilestones() {
-    const relType = document.getElementById('rel_type_input').value;
-    const relId = document.getElementById('rel_id_input').value;
-    const milestoneSelect = document.querySelector('select[name="milestone"]');
-    milestoneSelect.querySelectorAll('option').forEach(opt => {
-        if (opt.value === '') return;
-        const pid = opt.getAttribute('data-project-id');
-        opt.style.display = (relType === 'project' && relId) ? (pid === relId ? '' : 'none') : '';
-    });
-    if (relType !== 'project' || !relId) milestoneSelect.value = '';
-}
-
-function loadProjectStaff() {
-    const relType = document.getElementById('rel_type_input').value;
-    const relId = document.getElementById('rel_id_input').value;
-    const select = document.getElementById('assignee-select');
-    let staffList = allStaff;
-    if (relType === 'project' && relId && projectStaff[relId]) {
-        staffList = projectStaff[relId];
-    }
-    select.innerHTML = staffList.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-    if (!staffList.length) select.innerHTML = '<option disabled>No staff available</option>';
-}
-
-function toggleRecurring(value) {
-    document.getElementById('recurring-options').classList.toggle('hidden', value !== '1');
-}
+@include('admin.tasks.partials.pane-forms-js')
 
 (function() {
     loadProjectStaff();
@@ -331,20 +288,5 @@ function toggleRecurring(value) {
     if (relType) {
         loadRelEntityOptions(relType);
     }
-})();
-
-(function() {
-    const pane = document.getElementById('taskPaneContent');
-    if (!pane) return;
-    pane.addEventListener('click', function(e) {
-        ['rel-type-dropdown', 'rel-entity-dropdown'].forEach(id => {
-            const dd = document.getElementById(id);
-            if (!dd || dd.classList.contains('hidden')) return;
-            const btn = dd.previousElementSibling;
-            if (!dd.contains(e.target) && (!btn || !btn.contains(e.target))) {
-                dd.classList.add('hidden');
-            }
-        });
-    });
 })();
 </script>

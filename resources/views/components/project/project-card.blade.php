@@ -66,8 +66,8 @@
                 <div class="flex justify-between mt-1">
                     <span class="text-xs text-slate-500">{{ $completedTasks }}/{{ $totalTasks }} tasks</span>
                     @if($project->deadline)
-                        <span class="text-xs {{ \Carbon\Carbon::parse($project->deadline)->isPast() ? 'text-red-600 font-semibold' : 'text-slate-500' }}">
-                            Due {{ \Carbon\Carbon::parse($project->deadline)->format('M d') }}
+                        <span class="text-xs {{ $project->deadline->isPast() ? 'text-red-600 font-semibold' : 'text-slate-500' }}">
+                            Due {{ $project->deadline->format('M d') }}
                         </span>
                     @endif
                 </div>

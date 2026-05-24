@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Project;
-use App\Models\Task;
 use App\Models\EmailTemplate;
 use App\Models\Staff;
 use App\Helpers\SettingsHelper;
@@ -131,6 +130,12 @@ class ProjectNotificationService
         }
 
         $data = $this->buildData($project, $options);
+        if ($project->client) {
+            $data['_rate_limit_type'] = 'client';
+            $data['_rate_limit_id'] = $project->client->userid;
+            $data['_rate_recipient_type'] = 'client';
+            $data['_rate_max_per_hour'] = (int)\App\Helpers\SettingsHelper::get('email_rate_limit_per_client', 50);
+        }
         $parsed = $template->parse($data);
 
         $globalSubject = str_replace(
@@ -199,42 +204,56 @@ class ProjectNotificationService
             return ['success' => false, 'message' => 'No client associated with project', 'recipient' => 'client'];
         }
 
-        $contact = $client->primaryContact;
-        $toEmail = $contact->email ?? $client->email ?? null;
-        $toName = $contact ? ($contact->firstname . ' ' . $contact->lastname) : $client->company;
-
-        if (!$toEmail) {
-            return ['success' => false, 'message' => 'No client contact email found', 'recipient' => 'client'];
+        if (!$project->contact_notification) {
+            return ['success' => false, 'message' => 'Contact notifications disabled for this project', 'recipient' => 'client'];
         }
 
-        try {
-            $viewData = [
-                'subject' => $subject,
-                'body' => $message,
-                'logo' => $this->getLogo(),
-                'company_name' => SettingsHelper::get('companyname', ''),
-                'company_address' => SettingsHelper::get('companyaddress', ''),
-            ];
-
-            Mail::send('emails.base', $viewData, function ($mail) use ($toEmail, $toName, $template, $subject, $options) {
-                $mail->to($toEmail, $toName);
-                $mail->subject($subject);
-                $mail->from(
-                    $template->fromemail ?: SettingsHelper::get('smtp_email', config('mail.from.address')),
-                    $template->fromname ? str_replace('{companyname}', SettingsHelper::get('companyname', ''), $template->fromname) : SettingsHelper::get('companyname', config('mail.from.name'))
-                );
-                if (!empty($options['reply_to'])) {
-                    $mail->replyTo($options['reply_to']);
-                }
-            });
-
-            $this->logActivity($project->id, 'Email sent to <b>' . $toEmail . '</b> — ' . $template->name);
-
-            return ['success' => true, 'recipient' => 'client', 'email' => $toEmail];
-        } catch (\Exception $e) {
-            Log::error("Project notification failed for {$toEmail}: " . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage(), 'recipient' => 'client', 'email' => $toEmail];
+        $contacts = $client->contacts;
+        if ($contacts->isEmpty()) {
+            return ['success' => false, 'message' => 'No client contacts found', 'recipient' => 'client'];
         }
+
+        $sent = [];
+        foreach ($contacts as $contact) {
+            if (!$contact->email) continue;
+
+            if (!empty($project->notify_contacts) && is_array($project->notify_contacts)) {
+                if (!in_array($contact->id, $project->notify_contacts)) continue;
+            }
+
+            try {
+                $viewData = [
+                    'subject' => $subject,
+                    'body' => $message,
+                    'logo' => $this->getLogo(),
+                    'company_name' => SettingsHelper::get('companyname', ''),
+                    'company_address' => SettingsHelper::get('companyaddress', ''),
+                ];
+
+                Mail::send('emails.base', $viewData, function ($mail) use ($contact, $template, $subject, $options) {
+                    $mail->to($contact->email, $contact->firstname . ' ' . $contact->lastname);
+                    $mail->subject($subject);
+                    $mail->from(
+                        $template->fromemail ?: SettingsHelper::get('smtp_email', config('mail.from.address')),
+                        $template->fromname ? str_replace('{companyname}', SettingsHelper::get('companyname', ''), $template->fromname) : SettingsHelper::get('companyname', config('mail.from.name'))
+                    );
+                    if (!empty($options['reply_to'])) {
+                        $mail->replyTo($options['reply_to']);
+                    }
+                });
+
+                $this->logActivity($project->id, 'Email sent to <b>' . $contact->email . '</b> — ' . $template->name);
+                $sent[] = $contact->email;
+            } catch (\Exception $e) {
+                Log::error("Project client notification failed for {$contact->email}: " . $e->getMessage());
+            }
+        }
+
+        return [
+            'success' => !empty($sent),
+            'recipient' => 'client',
+            'emails' => $sent,
+        ];
     }
 
     protected function sendToStaff(
@@ -266,11 +285,14 @@ class ProjectNotificationService
             }
         }
 
+        $staffMembers = $staffMembers->unique('staffid');
+
         if ($staffMembers->isEmpty()) {
             return ['success' => false, 'message' => 'No staff recipients found', 'recipient' => 'staff'];
         }
 
         $sent = [];
+        $errors = [];
         foreach ($staffMembers as $staff) {
             try {
                 $viewData = [
@@ -293,6 +315,7 @@ class ProjectNotificationService
                 $sent[] = $staff->email;
             } catch (\Exception $e) {
                 Log::error("Project staff notification failed for {$staff->email}: " . $e->getMessage());
+                $errors[] = $staff->email;
             }
         }
 
@@ -300,7 +323,12 @@ class ProjectNotificationService
             $this->logActivity($project->id, 'Staff notification sent to ' . implode(', ', $sent) . ' — ' . $template->name);
         }
 
-        return ['success' => !empty($sent), 'recipient' => 'staff', 'emails' => $sent];
+        return [
+            'success' => !empty($sent),
+            'recipient' => 'staff',
+            'emails' => $sent,
+            'errors' => $errors,
+        ];
     }
 
     public function sendToOneStaff(string $slug, int $projectId, Staff $staffMember, array $options = []): array
@@ -314,6 +342,11 @@ class ProjectNotificationService
             return ['success' => false, 'message' => 'Staff member has no email'];
         }
 
+        $types = static::types();
+        if (!isset($types[$slug])) {
+            return ['success' => false, 'message' => "Unknown notification slug: {$slug}"];
+        }
+
         $template = EmailTemplate::where('slug', $slug)->where('active', 1)->first();
         if (!$template) {
             return ['success' => false, 'message' => "Email template '{$slug}' is inactive or not found"];
@@ -324,12 +357,20 @@ class ProjectNotificationService
 
         $globalSubject = str_replace(
             ['{companyname}', '{crm_url}', '{email_signature}'],
-            [SettingsHelper::get('companyname', ''), config('app.url'), SettingsHelper::get('email_signature', '')],
+            [
+                SettingsHelper::get('companyname', ''),
+                config('app.url'),
+                SettingsHelper::get('email_signature', ''),
+            ],
             $parsed['subject']
         );
         $globalMessage = str_replace(
             ['{companyname}', '{crm_url}', '{email_signature}'],
-            [SettingsHelper::get('companyname', ''), config('app.url'), SettingsHelper::get('email_signature', '')],
+            [
+                SettingsHelper::get('companyname', ''),
+                config('app.url'),
+                SettingsHelper::get('email_signature', ''),
+            ],
             $parsed['message']
         );
 
@@ -351,106 +392,76 @@ class ProjectNotificationService
                 );
             });
 
-            $this->logActivity($project->id, 'Email sent to <b>' . $staffMember->email . '</b> — ' . $template->name);
-            return ['success' => true, 'email' => $staffMember->email];
+            return ['success' => true, 'recipient' => $staffMember->email];
         } catch (\Exception $e) {
-            Log::error("Project staff notification failed: " . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
+            Log::error("Project one-to-one notification failed for {$staffMember->email}: " . $e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage(), 'recipient' => $staffMember->email];
         }
     }
 
     protected function buildData(Project $project, array $options = []): array
     {
-        $client = $project->client;
-        $contact = $client ? $client->primaryContact : null;
-
-        $statusMap = [Project::STATUS_ACTIVE => 'Active', Project::STATUS_COMPLETED => 'Completed', Project::STATUS_ON_HOLD => 'On Hold', Project::STATUS_CANCELLED => 'Cancelled'];
-        $billingTypes = [1 => 'Fixed Rate', 2 => 'Project Hours', 3 => 'Task Hours'];
-
-        $completedTasks = $project->tasks->where('status', Task::STATUS_COMPLETED)->count();
-        $totalTasks = $project->tasks->count();
-
-        $staffNames = $project->staff->pluck('firstname')->implode(', ');
+        $creator = $project->creator;
+        $creatorName = $creator ? trim(($creator->firstname ?? '') . ' ' . ($creator->lastname ?? '')) : 'System';
+        $companyName = SettingsHelper::get('companyname', config('app.name'));
 
         return array_merge([
+            'project_id' => $project->id,
             'project_name' => $project->name,
             'project_description' => $project->description ?? '',
-            'project_status' => $statusMap[$project->status] ?? 'Unknown',
-            'project_status_code' => (string)$project->status,
-            'project_id' => (string)$project->id,
-            'client_name' => $client->company ?? '',
-            'client_company' => $client->company ?? '',
-            'contact_firstname' => $contact->firstname ?? $client->company ?? '',
-            'contact_lastname' => $contact->lastname ?? '',
-            'start_date' => $project->start_date ? \Carbon\Carbon::parse($project->start_date)->format('d M, Y') : '',
-            'deadline' => $project->deadline ? \Carbon\Carbon::parse($project->deadline)->format('d M, Y') : '',
-            'old_deadline' => $options['old_deadline'] ?? '',
-            'new_deadline' => $options['new_deadline'] ?? '',
-            'billing_type' => $billingTypes[$project->billing_type] ?? 'N/A',
-            'project_cost' => number_format($project->project_cost ?? 0, 2),
-            'hourly_rate' => number_format($project->project_rate_per_hour ?? 0, 2),
-            'estimated_hours' => (string)($project->estimated_hours ?? '0'),
-            'progress' => (string)$project->progress . '%',
-            'progress_number' => (string)($project->progress ?? 0),
+            'project_status' => $project->status,
+            'project_status_text' => Project::statusLabels()[$project->status] ?? 'Unknown',
+            'project_start_date' => $project->start_date ? $project->start_date->format('d M, Y') : 'Not set',
+            'project_deadline' => $project->deadline ? $project->deadline->format('d M, Y') : 'Not set',
+            'project_progress' => $project->progress . '%',
+            'project_cost' => $project->project_cost ? number_format($project->project_cost, 2) : '0.00',
+            'billing_type' => $project->billing_type,
+            'estimated_hours' => $project->estimated_hours ?? '0',
+            'client_company' => $project->client->company ?? 'N/A',
+            'client_email' => $project->client->email ?? '',
+            'client_phonenumber' => $project->client->phonenumber ?? '',
             'project_link' => route('admin.projects.show', $project->id),
-            'client_project_link' => $client ? (config('app.url') . '/client/projects/' . $project->id) : '',
-            'staff_names' => $staffNames,
-            'staff_count' => (string)$project->staff->count(),
-            'task_count' => (string)$totalTasks,
-            'completed_tasks' => (string)$completedTasks,
-            'milestone_count' => (string)$project->milestones->count(),
-            'member_name' => $options['member_name'] ?? '',
-            'member_email' => $options['member_email'] ?? '',
-            'added_by' => $options['added_by'] ?? '',
-            'task_name' => $options['task_name'] ?? '',
-            'task_priority' => $options['task_priority'] ?? '',
-            'task_duedate' => $options['task_duedate'] ?? '',
-            'task_status' => $options['task_status'] ?? '',
-            'task_link' => $options['task_link'] ?? '',
-            'milestone_name' => $options['milestone_name'] ?? '',
-            'milestone_duedate' => $options['milestone_duedate'] ?? '',
-            'comment_author' => $options['comment_author'] ?? '',
-            'comment_content' => $options['comment_content'] ?? '',
-            'budget_percent' => $options['budget_percent'] ?? '',
-            'budget_spent' => $options['budget_spent'] ?? '',
-            'budget_total' => $options['budget_total'] ?? '',
-            'company_name' => SettingsHelper::get('companyname', ''),
-            'company_logo' => $this->getLogo(),
-            'company_address' => SettingsHelper::get('companyaddress', ''),
-            'old_status' => $options['old_status'] ?? '',
-            'new_status' => $options['new_status'] ?? '',
-        ], $this->getCreatorData($project));
+            'client_portal_link' => $project->client ? route('client.projects.show', $project->id) : '',
+            'creator_name' => $creatorName,
+            'creator_email' => $creator->email ?? '',
+            'company_name' => $companyName,
+            'crm_url' => config('app.url'),
+        ], $options);
     }
 
     protected function getCreatorData(Project $project): array
     {
+        $creator = $project->creator;
+        $firstName = $creator->firstname ?? '';
+        $lastName = $creator->lastname ?? '';
         return [
-            'created_by_name' => $project->creator->firstname ?? '' . ' ' . $project->creator->lastname ?? '',
-            'created_by_email' => $project->creator->email ?? '',
+            'full_name' => trim($firstName . ' ' . $lastName) ?: 'System',
+            'email' => $creator->email ?? '',
         ];
     }
 
     protected function getLogo(): string
     {
-        $logo = SettingsHelper::get('company_logo', '');
-        if ($logo && file_exists(public_path('uploads/' . $logo))) {
-            return asset('uploads/' . $logo);
+        $logoPath = SettingsHelper::get('company_logo', '');
+        if ($logoPath && file_exists(public_path('uploads/' . $logoPath))) {
+            return asset('uploads/' . $logoPath);
         }
         return '';
     }
 
-    protected function logActivity(int $projectId, string $description): void
+    protected function logActivity(int $projectId, string $message): void
     {
         try {
             \App\Models\ProjectActivity::create([
                 'project_id' => $projectId,
-                'staff_id' => auth()->id() ?? 0,
-                'description_key' => 'notification_sent',
-                'additional_data' => json_encode(['description' => $description]),
+                'staff_id' => 0,
+                'description_key' => 'project_activity_email_sent',
+                'additional_data' => json_encode(['message' => $message]),
                 'dateadded' => now(),
+                'visible_to_customer' => 0,
             ]);
         } catch (\Exception $e) {
-            Log::warning("Failed to log project activity: " . $e->getMessage());
+            Log::warning('Failed to log notification activity: ' . $e->getMessage());
         }
     }
 }

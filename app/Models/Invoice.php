@@ -10,6 +10,7 @@ class Invoice extends Model
     const STATUS_PARTIALLY_PAID = 2;
     const STATUS_PAID = 3;
     const STATUS_CANCELLED = 4;
+    const STATUS_OVERDUE = 5;
 
     protected $table = 'tblinvoices';
     public $timestamps = true;

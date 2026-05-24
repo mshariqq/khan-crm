@@ -49,7 +49,7 @@
                             <a href="{{ route('admin.roles.edit', $role->roleid) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Edit Role">
                                 <i class="bi bi-pencil-square text-lg"></i>
                             </a>
-                            <form action="{{ route('admin.roles.destroy', $role->roleid) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this role?');">
+                            <form action="{{ route('admin.roles.destroy', $role->roleid) }}" method="POST" class="inline-block" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Are you sure you want to delete this role?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="p-2 text-slate-400 hover:text-red-600 transition-colors" title="Delete Role">

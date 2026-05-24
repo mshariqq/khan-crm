@@ -35,7 +35,7 @@
                             <td class="px-6 py-4 text-sm text-slate-600">{{ $note->creator->firstname ?? '—' }} {{ $note->creator->lastname ?? '' }}</td>
                             <td class="px-6 py-4 text-sm text-slate-600">{{ \Carbon\Carbon::parse($note->dateadded)->format('M j, Y H:i') }}</td>
                             <td class="px-6 py-4 text-right">
-                                <form action="{{ route('admin.notes.destroy', $note->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Delete this note?');">
+                                <form action="{{ route('admin.notes.destroy', $note->id) }}" method="POST" class="inline-block" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete this note?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="p-2 text-slate-400 hover:text-red-600 transition-colors" title="Delete Note">
                                         <i class="bi bi-trash text-lg"></i>

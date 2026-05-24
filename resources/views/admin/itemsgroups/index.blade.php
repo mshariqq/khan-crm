@@ -44,7 +44,7 @@
                                     <a href="{{ route('admin.itemsgroups.edit', $group->id) }}" data-pane="edit" data-pane-type="itemsgroup" data-pane-id="{{ $group->id }}" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <form action="{{ route('admin.itemsgroups.destroy', $group->id) }}" method="POST" onsubmit="return confirm('Delete this group?');">
+                                    <form action="{{ route('admin.itemsgroups.destroy', $group->id) }}" method="POST" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete this group?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
                                             <i class="bi bi-trash"></i>

@@ -56,7 +56,7 @@ $order = [4, 3, 2, 1];
                                 @endif
                             </div>
                             <div class="flex items-center gap-2 text-[10px] text-slate-400">
-                                <span>{{ $ticket->date ? \Carbon\Carbon::parse($ticket->date)->format('M j, Y') : '' }}</span>
+                                <span>{{ $ticket->date?->format('M j, Y') ?? '' }}</span>
                                 @if($ticket->department && is_object($ticket->department))
                                 <span class="px-1.5 py-0.5 bg-slate-100 rounded">{{ $ticket->department->name }}</span>
                                 @elseif($ticket->department)
@@ -85,7 +85,7 @@ $order = [4, 3, 2, 1];
                         <a href="{{ route('admin.tickets.edit', $ticket->ticketid) }}" data-pane="edit" data-pane-type="ticket" data-pane-id="{{ $ticket->ticketid }}" class="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-200" title="Edit">
                             <i class="bi bi-pencil text-xs"></i>
                         </a>
-                        <form action="{{ route('admin.tickets.destroy', $ticket->ticketid) }}" method="POST" class="inline" onsubmit="return confirm('Delete this ticket?');">
+                        <form action="{{ route('admin.tickets.destroy', $ticket->ticketid) }}" method="POST" class="inline" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete this ticket?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                             @csrf @method('DELETE')
                             <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 rounded hover:bg-slate-200" title="Delete">
                                 <i class="bi bi-trash text-xs"></i>

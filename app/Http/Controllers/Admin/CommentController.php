@@ -31,8 +31,7 @@ class CommentController extends Controller
 
         $request->validate([
             'content' => 'required|string|max:2000',
-            'task_id' => 'required_without:project_discussion_id|integer|exists:tbltasks,id',
-            'project_discussion_id' => 'required_without:task_id|integer|exists:tblprojectdiscussions,id'
+            'task_id' => 'required|integer|exists:tbltasks,id',
         ]);
 
         try {
@@ -45,7 +44,6 @@ class CommentController extends Controller
             $comment = TaskComment::create([
                 'content' => $request->content,
                 'taskid' => $request->task_id,
-                'project_discussion_id' => $request->project_discussion_id,
                 'staffid' => Auth::id(),
                 'dateadded' => now()
             ]);
@@ -60,7 +58,7 @@ class CommentController extends Controller
                                 'staff_firstname' => $staffMember->firstname,
                                 'task_name' => $task->name,
                                 'task_comment' => $request->content,
-                                'task_link' => config('app.url') . '/admin/tasks/' . $task->id,
+                                'task_link' => route('admin.tasks.show', $task->id),
                             ]);
                         }
                     }

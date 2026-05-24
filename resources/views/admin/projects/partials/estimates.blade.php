@@ -23,7 +23,7 @@
             </div>
             <div>
                 <a href="{{ route('admin.estimates.show', $estimate->id) }}" data-pane="show" data-pane-type="estimate" data-pane-id="{{ $estimate->id }}" class="text-sm font-medium text-slate-700 hover:text-blue-600">#{{ $estimate->number }}</a>
-                <span class="text-[10px] text-slate-400 ml-2">{{ $estimate->date ? \Carbon\Carbon::parse($estimate->date)->format('M j, Y') : '' }}</span>
+                <span class="text-[10px] text-slate-400 ml-2">{{ $estimate->date?->format('M j, Y') }}</span>
             </div>
         </div>
         <div class="flex items-center gap-3">
@@ -47,7 +47,7 @@
                 <a href="{{ route('admin.estimates.edit', $estimate->id) }}" data-pane="edit" data-pane-type="estimate" data-pane-id="{{ $estimate->id }}" class="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-200" title="Edit">
                     <i class="bi bi-pencil text-xs"></i>
                 </a>
-                <form action="{{ route('admin.estimates.destroy', $estimate->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this estimate?');">
+                <form action="{{ route('admin.estimates.destroy', $estimate->id) }}" method="POST" class="inline" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete this estimate?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                     @csrf @method('DELETE')
                     <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 rounded hover:bg-slate-200" title="Delete">
                         <i class="bi bi-trash text-xs"></i>

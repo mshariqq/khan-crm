@@ -50,6 +50,10 @@
                     </select>
                 </div>
 
+                <a href="{{ route('admin.settings.email_templates.preview', $template->slug) }}" target="_blank" class="w-full py-2.5 bg-slate-700 text-white rounded-xl font-bold hover:bg-slate-600 transition flex items-center justify-center gap-2 mb-3">
+                    <i class="bi bi-eye"></i> Preview Template
+                </a>
+
                 <button type="submit" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2">
                     <i class="bi bi-save"></i> Save Template
                 </button>

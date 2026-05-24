@@ -44,6 +44,10 @@
                 <a href="{{ route('client.tickets.index') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-all {{ request()->routeIs('client.tickets.*') ? 'active' : '' }}">
                     <i class="bi bi-ticket-perforated"></i> <span class="text-sm font-semibold">Support Tickets</span>
                 </a>
+                <div class="border-t border-slate-100 my-2"></div>
+                <a href="{{ route('client.profile.edit') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-all {{ request()->routeIs('client.profile.*') ? 'active' : '' }}">
+                    <i class="bi bi-person-circle"></i> <span class="text-sm font-semibold">My Profile</span>
+                </a>
             </nav>
 
             <div class="p-4 border-t border-slate-100">

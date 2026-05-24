@@ -12,7 +12,11 @@ use App\Models\ProjectActivity;
 use App\Models\Notification;
 use App\Models\Estimate;
 use App\Models\Proposal;
+use App\Models\Lead;
+use App\Models\Ticket;
+use App\Models\Client;
 use App\Models\File;
+use App\Events\TaskCompleted;
 use App\Services\TaskService;
 use App\Services\EmailService;
 use App\Services\FileService;
@@ -21,6 +25,7 @@ use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class TaskController extends Controller
 {
@@ -43,7 +48,7 @@ class TaskController extends Controller
         }
 
         $request->validate([
-            'file' => 'required|file|max:25600',
+            'file' => 'required|file|max:25600|mimes:jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,csv,txt,zip,rar,mp4,avi,mov,mp3,wav',
         ]);
 
         try {
@@ -112,8 +117,26 @@ class TaskController extends Controller
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
+        if ($request->filled('rel_type')) {
+            $query->where('rel_type', $request->rel_type);
+        }
+
+        if ($request->filled('assigned_to')) {
+            $query->whereHas('assignedStaff', fn($q) => $q->where('staffid', $request->assigned_to));
+        }
+
+        $sort = $request->get('sort', 'newest');
+        match ($sort) {
+            'oldest' => $query->orderBy('id', 'asc'),
+            'due_date_asc' => $query->orderBy('duedate', 'asc'),
+            'due_date_desc' => $query->orderBy('duedate', 'desc'),
+            'priority_high' => $query->orderBy('priority', 'desc'),
+            'priority_low' => $query->orderBy('priority', 'asc'),
+            default => $query->orderBy('id', 'desc'),
+        };
+
         $total = $query->count();
-        $tasks = $query->orderBy('milestone', 'asc')->orderBy('id', 'desc')->paginate(15)->withQueryString();
+        $tasks = $query->orderBy('milestone', 'asc')->paginate(15)->withQueryString();
 
         $groupedTasks = $tasks->groupBy(function($task) {
             if ($task->milestone && $task->milestoneRelation) {
@@ -123,8 +146,9 @@ class TaskController extends Controller
         });
 
         $milestones = Milestone::with('project')->get()->keyBy('id');
+        $allStaff = Staff::all();
 
-        return view('admin.tasks.index', compact('tasks', 'total', 'groupedTasks', 'milestones'));
+        return view('admin.tasks.index', compact('tasks', 'total', 'groupedTasks', 'milestones', 'allStaff'));
     }
 
     public function kanban(Request $request)
@@ -134,27 +158,29 @@ class TaskController extends Controller
         }
         
         $projectId = $request->get('project');
+        $relType = $request->get('rel_type');
         $project = null;
         $milestones = collect();
-        $tasks = collect();
+        
+        $query = Task::with(['creator', 'relatable', 'assignedStaff', 'timers', 'checklistItems', 'comments', 'attachments'])
+            ->withCount('comments');
         
         if ($projectId) {
             $project = Project::findOrFail($projectId);
             $milestones = Milestone::where('project_id', $projectId)->get();
-            
-            // Get tasks for this project grouped by status column
-            $tasks = Task::with(['creator', 'relatable', 'assignedStaff', 'timers', 'checklistItems', 'comments', 'attachments'])
-                ->withCount('comments')
-                ->where('rel_type', 'project')
-                ->where('rel_id', $projectId)
-                ->orderByRaw("CASE WHEN status IS NULL OR status = '' THEN 1 ELSE 0 END")
-                ->orderBy('status')
-                ->get()
-                ->groupBy(function($task) {
-                    $statusMap = [Task::STATUS_BACKLOG => 'backlog', Task::STATUS_PENDING => 'pending', Task::STATUS_IN_PROGRESS => 'in_progress', Task::STATUS_COMPLETED => 'completed'];
-                    return $statusMap[(int)$task->status] ?? 'backlog';
-                });
+            $query->where('rel_type', 'project')->where('rel_id', $projectId);
+        } elseif ($relType) {
+            $query->where('rel_type', $relType);
         }
+        
+        $tasks = $query
+            ->orderByRaw("CASE WHEN status IS NULL OR status = '' THEN 1 ELSE 0 END")
+            ->orderBy('status')
+            ->get()
+            ->groupBy(function($task) {
+                $statusMap = [Task::STATUS_BACKLOG => 'backlog', Task::STATUS_PENDING => 'pending', Task::STATUS_IN_PROGRESS => 'in_progress', Task::STATUS_COMPLETED => 'completed'];
+                return $statusMap[(int)$task->status] ?? 'backlog';
+            });
         
         $projects = Project::orderBy('name')->get();
         
@@ -198,13 +224,21 @@ class TaskController extends Controller
         $invoices = Invoice::all();
         $estimates = Estimate::all();
         $proposals = Proposal::all();
+        $leads = Lead::select('id', 'name')->get();
+        $tickets = Ticket::select('ticketid', 'subject')->get();
+        $clients = Client::select('userid', 'company')->get();
 
-        return view('admin.tasks.create', compact('staff', 'milestones', 'projects', 'invoices', 'estimates', 'proposals'));
+        return view('admin.tasks.create', compact('staff', 'milestones', 'projects', 'invoices', 'estimates', 'proposals', 'leads', 'tickets', 'clients'));
     }
 
     public function store(StoreTaskRequest $request)
     {
         $validated = $request->validated();
+
+        $tags = $request->tags;
+        if (is_array($tags)) {
+            $validated['tags'] = implode(',', $tags);
+        }
 
         $taskData = $this->taskService->prepareTaskData($validated, $request);
         $task = Task::create($taskData);
@@ -215,10 +249,27 @@ class TaskController extends Controller
             $this->taskService->notifyAssignedStaff($task, $staffIds);
         }
 
+        if ($request->filled('checklist_template_id')) {
+            $this->taskService->applyChecklistTemplate($task, $request->checklist_template_id);
+        }
+
+        if ($request->filled('followers')) {
+            $followerIds = is_array($request->followers) ? $request->followers : explode(',', $request->followers);
+            $task->followers()->sync(array_map('trim', $followerIds));
+        }
+
         $this->taskService->logProjectActivity($task, 'project_activity_task_created');
 
         if ($request->wantsJson() || $request->ajax()) {
-            return response()->json(['success' => true, 'message' => 'Task created successfully!', 'task' => $task, 'reload' => true]);
+            $createAnother = $request->boolean('create_another');
+            return response()->json([
+                'success' => true,
+                'message' => 'Task created successfully!',
+                'task' => $task,
+                'reload' => true,
+                'create_another' => $createAnother,
+                'pane_refresh_url' => route('admin.tasks.pane.show', $task->id),
+            ]);
         }
 
         if ($request->filled('referer')) {
@@ -241,8 +292,11 @@ class TaskController extends Controller
         $invoices = Invoice::all();
         $estimates = Estimate::all();
         $proposals = Proposal::all();
+        $leads = Lead::select('id', 'name')->get();
+        $tickets = Ticket::select('ticketid', 'subject')->get();
+        $clients = Client::select('userid', 'company')->get();
 
-        return view('admin.tasks.edit', compact('task', 'staff', 'milestones', 'projects', 'invoices', 'estimates', 'proposals'));
+        return view('admin.tasks.edit', compact('task', 'staff', 'milestones', 'projects', 'invoices', 'estimates', 'proposals', 'leads', 'tickets', 'clients'));
     }
 
     public function update(UpdateTaskRequest $request, $id)
@@ -253,6 +307,15 @@ class TaskController extends Controller
 
         $oldTaskStatus = $task->status;
 
+        $tags = $request->tags;
+        if (is_array($tags)) {
+            $validated['tags'] = implode(',', $tags);
+        } elseif (is_string($tags)) {
+            $validated['tags'] = $tags;
+        }
+
+        $request->merge(['tags' => $validated['tags'] ?? $task->tags]);
+
         $updateData = $this->taskService->prepareUpdateData($request);
         $task->update($updateData);
 
@@ -261,7 +324,12 @@ class TaskController extends Controller
             $this->taskService->syncAssignedStaff($task, $staffIds);
         }
 
+        if ($request->filled('followers')) {
+            $task->followers()->sync(is_array($request->followers) ? $request->followers : explode(',', $request->followers));
+        }
+
         $this->taskService->handleTaskCompleted($task, (int)$oldTaskStatus);
+        $this->taskService->updateDateFinished($task, (int)$oldTaskStatus, (int)$task->status);
 
         $this->taskService->logProjectActivity($task, 'project_activity_task_updated', [
             'old_status' => $oldTaskStatus,
@@ -269,7 +337,13 @@ class TaskController extends Controller
         ]);
 
         if ($request->wantsJson() || $request->ajax()) {
-            return response()->json(['success' => true, 'message' => 'Task updated successfully!', 'task' => $task, 'reload' => true]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Task created successfully!',
+                'task' => $task,
+                'reload' => true,
+                'pane_refresh_url' => route('admin.tasks.pane.show', $task->id)
+            ]);
         }
 
         return redirect()->route('admin.tasks.index')->with('success', 'Task updated successfully!');
@@ -310,7 +384,27 @@ class TaskController extends Controller
         }
 
         $task = Task::findOrFail($id);
-        $task->delete();
+
+        DB::transaction(function () use ($task) {
+            DB::table('tbltask_assigned')->where('taskid', $task->id)->delete();
+            DB::table('tbltask_followers')->where('taskid', $task->id)->delete();
+            DB::table('tbltask_comments')->where('taskid', $task->id)->delete();
+            DB::table('tbltaskstimers')->where('task_id', $task->id)->delete();
+            DB::table('tbltask_checklist_items')->where('taskid', $task->id)->delete();
+
+            $files = File::where('rel_type', 'task')->where('rel_id', $task->id)->get();
+            $fileService = app(FileService::class);
+            foreach ($files as $file) {
+                $fileService->delete($file->file_name);
+                $file->delete();
+            }
+
+            $task->delete();
+        });
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Task deleted successfully']);
+        }
 
         return redirect()->route('admin.tasks.index')->with('success', 'Task deleted successfully!');
     }
@@ -357,10 +451,12 @@ class TaskController extends Controller
         $task->status = $statusMap[$newStatus] ?? $newStatus;
         $task->save();
 
-        // Log activity (optional)
-        // Activity::log('updated task status', 'task', $task->id);
+        $this->taskService->updateDateFinished($task, (int)$oldStatus, (int)$task->status);
 
-        // Log activity for task status update
+        if ((int)$task->status === Task::STATUS_COMPLETED && (int)$oldStatus !== Task::STATUS_COMPLETED) {
+            TaskCompleted::dispatch($task);
+        }
+
         if ($task->rel_type === 'project' && $task->rel_id) {
             ProjectActivity::create([
                 'project_id' => $task->rel_id,
@@ -383,12 +479,76 @@ class TaskController extends Controller
     }
 
     /**
+     * Update task priority via AJAX
+     */
+    public function updatePriority(Request $request, $id)
+    {
+        if (!Auth::user()->can('tasks_edit')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate(['priority' => 'required|integer|in:1,2,3,4']);
+
+        $task = Task::findOrFail($id);
+        $task->priority = $request->priority;
+        $task->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Priority updated successfully'
+        ]);
+    }
+
+    /**
+     * Toggle follow/unfollow for current user
+     */
+    public function toggleFollow(Request $request, $id)
+    {
+        if (!Auth::user()->can('tasks_view')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $task = Task::findOrFail($id);
+        $following = $this->taskService->toggleFollower($task, Auth::id());
+
+        return response()->json([
+            'success' => true,
+            'message' => $following ? 'Now following this task' : 'No longer following this task',
+            'following' => $following
+        ]);
+    }
+
+    /**
+     * Duplicate a task
+     */
+    public function duplicate($id)
+    {
+        if (!Auth::user()->can('tasks_create')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $task = Task::findOrFail($id);
+        $newTask = $this->taskService->duplicateTask($task);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Task duplicated successfully',
+            'new_task_id' => $newTask->id
+        ]);
+    }
+
+    /**
      * Quick create task via AJAX
      */
     public function quickCreate(Request $request)
     {
         if (!Auth::user()->can('tasks_create')) {
             abort(403, 'Unauthorized action.');
+        }
+
+        $token = $request->header('X-CSRF-TOKEN') ?: $request->input('_token');
+        if ($token && $token !== csrf_token()) {
+            return response()->json(['success' => false, 'message' => 'CSRF token mismatch'], 419);
         }
 
         $request->validate([

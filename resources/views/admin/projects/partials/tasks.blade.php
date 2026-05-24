@@ -48,12 +48,12 @@
                 @endforeach
             </div>
             @endif
-            <span class="text-[10px] text-slate-400">{{ $task->duedate ? \Carbon\Carbon::parse($task->duedate)->format('M j') : '' }}</span>
+            <span class="text-[10px] text-slate-400">{{ $task->duedate?->format('M j') }}</span>
             <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <a href="{{ route('admin.tasks.edit', $task->id) }}" data-pane="edit" data-pane-type="task" data-pane-id="{{ $task->id }}" class="p-1 text-slate-400 hover:text-blue-600" title="Edit">
                     <i class="bi bi-pencil text-xs"></i>
                 </a>
-                <form action="{{ route('admin.tasks.destroy', $task->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete task?');">
+                <form action="{{ route('admin.tasks.destroy', $task->id) }}" method="POST" class="inline" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete task?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                     @csrf @method('DELETE')
                     <button type="submit" class="p-1 text-slate-400 hover:text-red-600" title="Delete">
                         <i class="bi bi-trash text-xs"></i>
@@ -96,12 +96,12 @@
                 @endforeach
             </div>
             @endif
-            <span class="text-[10px] text-slate-400">{{ $task->duedate ? \Carbon\Carbon::parse($task->duedate)->format('M j') : '' }}</span>
+            <span class="text-[10px] text-slate-400">{{ $task->duedate?->format('M j') }}</span>
             <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <a href="{{ route('admin.tasks.edit', $task->id) }}" data-pane="edit" data-pane-type="task" data-pane-id="{{ $task->id }}" class="p-1 text-slate-400 hover:text-blue-600" title="Edit">
                     <i class="bi bi-pencil text-xs"></i>
                 </a>
-                <form action="{{ route('admin.tasks.destroy', $task->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete task?');">
+                <form action="{{ route('admin.tasks.destroy', $task->id) }}" method="POST" class="inline" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete task?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                     @csrf @method('DELETE')
                     <button type="submit" class="p-1 text-slate-400 hover:text-red-600" title="Delete">
                         <i class="bi bi-trash text-xs"></i>

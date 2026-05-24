@@ -40,7 +40,7 @@
                         <form action="{{ route('admin.expense-categories.destroy', $category->id) }}" method="POST" class="inline-block">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="p-2 text-slate-400 hover:text-red-600 transition-colors" onclick="return confirm('Are you sure you want to delete this category?')">
+                            <button type="submit" class="p-2 text-slate-400 hover:text-red-600 transition-colors" onclick="event.preventDefault(); confirmDelete('Confirm Delete', 'Are you sure you want to delete this category?', this.form.action, (this.form.querySelector('[name=_method]')?.value || 'POST'));">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </form>

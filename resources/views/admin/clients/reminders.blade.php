@@ -43,7 +43,7 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <form action="{{ route('admin.reminders.destroy', $reminder->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Delete this reminder?');">
+                                <form action="{{ route('admin.reminders.destroy', $reminder->id) }}" method="POST" class="inline-block" onsubmit="event.preventDefault(); confirmDelete('Confirm Delete', 'Delete this reminder?', this.action, (this.querySelector('[name=_method]')?.value || 'POST'));">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="p-2 text-slate-400 hover:text-red-600 transition-colors" title="Delete Reminder">
                                         <i class="bi bi-trash text-lg"></i>

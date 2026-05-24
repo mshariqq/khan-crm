@@ -53,8 +53,29 @@
                             <option value="1" {{ old('status') == '1' ? 'selected' : '' }}>Active</option>
                             <option value="2" {{ old('status') == '2' ? 'selected' : '' }}>Completed</option>
                             <option value="3" {{ old('status') == '3' ? 'selected' : '' }}>On Hold</option>
+                            <option value="4" {{ old('status') == '4' ? 'selected' : '' }}>Cancelled</option>
                         </select>
                         @error('status') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-sm font-medium text-slate-600">Priority</label>
+                        <select name="priority" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                            <option value="low" {{ old('priority') == 'low' ? 'selected' : '' }}>Low</option>
+                            <option value="medium" {{ old('priority') == 'medium' ? 'selected' : '' }}>Medium</option>
+                            <option value="high" {{ old('priority') == 'high' ? 'selected' : '' }}>High</option>
+                            <option value="urgent" {{ old('priority') == 'urgent' ? 'selected' : '' }}>Urgent</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-sm font-medium text-slate-600">Category</label>
+                        <select name="category_id" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                            <option value="">No Category</option>
+                            @foreach(\App\Models\ProjectCategory::all() as $cat)
+                                <option value="{{ $cat->id }}" {{ old('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <div class="space-y-1">
@@ -103,6 +124,11 @@
                         <input type="number" name="estimated_hours" value="{{ old('estimated_hours') }}" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="0">
                         @error('estimated_hours') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
+
+                    <div class="flex items-center gap-2 mt-2">
+                        <input type="checkbox" name="progress_from_tasks" value="1" {{ old('progress_from_tasks') ? 'checked' : '' }} class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        <label class="text-sm text-slate-600">Auto-calculate progress from task completion</label>
+                    </div>
                 </div>
             </div>
 
@@ -143,11 +169,41 @@
             theme: 'snow',
             placeholder: 'Project scope and objectives...',
             modules: {
-                toolbar: [
-                    ['bold', 'italic', 'underline'],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    ['link', 'clean']
-                ]
+                toolbar: {
+                    container: [
+                        ['bold', 'italic', 'underline'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['image', 'link', 'clean']
+                    ],
+                    handlers: {
+                        image: function() {
+                            const input = document.createElement('input');
+                            input.setAttribute('type', 'file');
+                            input.setAttribute('accept', 'image/*');
+                            input.click();
+                            input.onchange = function() {
+                                const file = input.files[0];
+                                if (!file) return;
+                                const formData = new FormData();
+                                formData.append('image', file);
+                                formData.append('_token', '{{ csrf_token() }}');
+                                fetch('/admin/projects/upload-editor-image', {
+                                    method: 'POST',
+                                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                                    body: formData
+                                })
+                                .then(r => r.json())
+                                .then(data => {
+                                    if (data.url) {
+                                        const range = quill.getSelection(true);
+                                        quill.insertEmbed(range.index, 'image', data.url);
+                                    }
+                                })
+                                .catch(() => alert('Image upload failed'));
+                            };
+                        }
+                    }
+                }
             }
         });
 
