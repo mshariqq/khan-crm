@@ -29,7 +29,7 @@ class EstimateController extends ClientBaseController
     public function show($id)
     {
         $client = $this->getClient();
-        $estimate = $client->estimates()->with(['items', 'currencyRel'])->findOrFail($id);
+        $estimate = $client->estimates()->with(['items', 'currency'])->findOrFail($id);
         
         return view('client.estimates.show', compact('estimate'));
     }
@@ -60,16 +60,16 @@ class EstimateController extends ClientBaseController
 
         foreach ($estimates as $estimate) {
             $statusLabel = 'Unknown';
-            if($estimate->status == 1) $statusLabel = 'Draft';
-            elseif($estimate->status == 2) $statusLabel = 'Sent';
-            elseif($estimate->status == 3) $statusLabel = 'Accepted';
-            elseif($estimate->status == 4) $statusLabel = 'Declined';
+            if($estimate->status == Estimate::STATUS_DRAFT) $statusLabel = 'Draft';
+            elseif($estimate->status == Estimate::STATUS_SENT) $statusLabel = 'Sent';
+            elseif($estimate->status == Estimate::STATUS_ACCEPTED) $statusLabel = 'Accepted';
+            elseif($estimate->status == Estimate::STATUS_DECLINED) $statusLabel = 'Declined';
 
             fputcsv($handle, [
                 $estimate->number,
                 $estimate->date,
                 $estimate->expirydate,
-                ($estimate->currencyRel->symbol ?? '$') . number_format($estimate->total, 2),
+                app_format_money($estimate->total, $estimate->currency),
                 $statusLabel,
                 $estimate->created_at,
             ]);

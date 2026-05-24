@@ -13,6 +13,13 @@ class ProjectDiscussion extends Model
         'datecreated', 'last_activity', 'staff_id', 'contact_id'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'datecreated' => 'datetime',
+        'last_activity' => 'datetime',
+        'show_to_customer' => 'boolean'
+    ];
     public function project()
     {
         return $this->belongsTo(Project::class, 'project_id', 'id');

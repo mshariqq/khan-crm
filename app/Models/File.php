@@ -14,6 +14,11 @@ class File extends Model
         'thumbnail_link', 'staffid', 'contact_id', 'task_comment_id', 'dateadded'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'dateadded' => 'datetime'
+    ];
     public function staff()
     {
         return $this->belongsTo(Staff::class, 'staffid', 'staffid');

@@ -38,7 +38,11 @@ class ItemsGroupController extends Controller
             'name' => 'required|string|max:255',
         ]);
 
-        ItemsGroup::create($request->all());
+        $group = ItemsGroup::create($request->only(['name']));
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Items Group created successfully!', 'pane_refresh_url' => route('admin.itemsgroups.pane.show', $group->id)]);
+        }
 
         return redirect()->route('admin.itemsgroups.index')->with('success', 'Items Group created successfully!');
     }
@@ -64,7 +68,11 @@ class ItemsGroupController extends Controller
         ]);
 
         $group = ItemsGroup::findOrFail($id);
-        $group->update($request->all());
+        $group->update($request->only(['name']));
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Items Group updated successfully!']);
+        }
 
         return redirect()->route('admin.itemsgroups.index')->with('success', 'Items Group updated successfully!');
     }

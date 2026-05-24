@@ -60,11 +60,11 @@
                                     {{ $item->qty }}
                                 </td>
                                 <td class="px-6 py-4 text-right text-sm text-slate-600">
-                                    {{ $proposal->currencyRel->symbol ?? '$' }}{{ number_format($item->rate, 2) }}
+                                    {{ app_format_money($item->rate, $proposal->currency) }}
                                 </td>
                                 <td class="px-6 py-4 text-right">
                                     <span class="text-sm font-bold text-slate-800">
-                                        {{ $proposal->currencyRel->symbol ?? '$' }}{{ number_format($item->amount, 2) }}
+                                        {{ app_format_money($item->amount, $proposal->currency) }}
                                     </span>
                                 </td>
                             </tr>
@@ -73,23 +73,23 @@
                         <tfoot class="bg-slate-50/50">
                             <tr>
                                 <td colspan="3" class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Subtotal</td>
-                                <td class="px-6 py-3 text-right text-sm font-bold text-slate-800">{{ $proposal->currencyRel->symbol ?? '$' }}{{ number_format($proposal->subtotal, 2) }}</td>
+                                <td class="px-6 py-3 text-right text-sm font-bold text-slate-800">{{ app_format_money($proposal->subtotal, $proposal->currency) }}</td>
                             </tr>
                             @if($proposal->total_tax > 0)
                             <tr>
                                 <td colspan="3" class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Tax</td>
-                                <td class="px-6 py-3 text-right text-sm font-bold text-slate-800">{{ $proposal->currencyRel->symbol ?? '$' }}{{ number_format($proposal->total_tax, 2) }}</td>
+                                <td class="px-6 py-3 text-right text-sm font-bold text-slate-800">{{ app_format_money($proposal->total_tax, $proposal->currency) }}</td>
                             </tr>
                             @endif
                             @if($proposal->discount_total > 0)
                             <tr>
                                 <td colspan="3" class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Discount</td>
-                                <td class="px-6 py-3 text-right text-sm font-bold text-rose-600">-{{ $proposal->currencyRel->symbol ?? '$' }}{{ number_format($proposal->discount_total, 2) }}</td>
+                                <td class="px-6 py-3 text-right text-sm font-bold text-rose-600">-{{ app_format_money($proposal->discount_total, $proposal->currency) }}</td>
                             </tr>
                             @endif
                             <tr class="bg-slate-100/50">
                                 <td colspan="3" class="px-6 py-4 text-right text-sm font-bold text-slate-800 uppercase tracking-wider">Total Amount</td>
-                                <td class="px-6 py-4 text-right text-xl font-black text-blue-600">{{ $proposal->currencyRel->symbol ?? '$' }}{{ number_format($proposal->total, 2) }}</td>
+                                <td class="px-6 py-4 text-right text-xl font-black text-blue-600">{{ app_format_money($proposal->total, $proposal->currency) }}</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -110,7 +110,7 @@
         <div class="space-y-6">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 text-center">
                 <h3 class="text-sm font-bold text-slate-800 mb-6 uppercase tracking-wider">Total Value</h3>
-                <p class="text-3xl font-black text-blue-600 mb-8">{{ $proposal->currencyRel->symbol ?? '$' }}{{ number_format($proposal->total, 2) }}</p>
+                <p class="text-3xl font-black text-blue-600 mb-8">{{ app_format_money($proposal->total, $proposal->currency) }}</p>
                 
                 @if($proposal->status == 1)
                 <div class="space-y-3">

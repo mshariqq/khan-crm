@@ -115,12 +115,12 @@ class TicketController extends Controller
             $this->emailService->send($ticket->email, 'new-ticket-opened-admin', [
                 'contact_firstname' => $ticket->name,
                 'contact_lastname' => '',
-                'ticket_subject' => '[#' . $ticket->id . '] ' . $ticket->subject,
+                'ticket_subject' => '[#' . $ticket->ticketid . '] ' . $ticket->subject,
                 'ticket_department' => $ticket->departmentRel->name ?? 'Support',
                 'ticket_priority' => $ticket->priorityRel->name ?? 'Medium',
                 'ticket_message' => $ticket->message,
-                'ticket_id' => $ticket->id,
-                'ticket_public_url' => config('app.url') . '/client/tickets/' . $ticket->id,
+                'ticket_id' => $ticket->ticketid,
+                'ticket_public_url' => config('app.url') . '/client/tickets/' . $ticket->ticketid,
             ]);
         }
 
@@ -265,10 +265,16 @@ class TicketController extends Controller
             'references' => $references
         ]);
 
+        $newReferences = $references
+            ? $references . ' ' . ($ticket->message_id ?? '')
+            : ($ticket->message_id ?? '');
+
         $ticket->update([
             'lastreply' => now(),
             'adminreplying' => 1,
-            'staff_id_replying' => Auth::id()
+            'staff_id_replying' => Auth::id(),
+            'message_id' => $newMessageId,
+            'references' => trim($newReferences),
         ]);
 
         // Notify Customer about the reply

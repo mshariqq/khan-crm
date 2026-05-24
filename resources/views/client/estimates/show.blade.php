@@ -61,11 +61,11 @@
                                     {{ $item->qty }}
                                 </td>
                                 <td class="px-6 py-4 text-right text-sm text-slate-600">
-                                    {{ $estimate->currencyRel->symbol ?? '$' }}{{ number_format($item->rate, 2) }}
+                                    {{ app_format_money($item->rate, $estimate->currency) }}
                                 </td>
                                 <td class="px-6 py-4 text-right">
                                     <span class="text-sm font-bold text-slate-800">
-                                        {{ $estimate->currencyRel->symbol ?? '$' }}{{ number_format($item->amount, 2) }}
+                                        {{ app_format_money($item->amount, $estimate->currency) }}
                                     </span>
                                 </td>
                             </tr>
@@ -74,23 +74,23 @@
                         <tfoot class="bg-slate-50/50">
                             <tr>
                                 <td colspan="3" class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Subtotal</td>
-                                <td class="px-6 py-3 text-right text-sm font-bold text-slate-800">{{ $estimate->currencyRel->symbol ?? '$' }}{{ number_format($estimate->subtotal, 2) }}</td>
+                                <td class="px-6 py-3 text-right text-sm font-bold text-slate-800">{{ app_format_money($estimate->subtotal, $estimate->currency) }}</td>
                             </tr>
                             @if($estimate->total_tax > 0)
                             <tr>
                                 <td colspan="3" class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Tax</td>
-                                <td class="px-6 py-3 text-right text-sm font-bold text-slate-800">{{ $estimate->currencyRel->symbol ?? '$' }}{{ number_format($estimate->total_tax, 2) }}</td>
+                                <td class="px-6 py-3 text-right text-sm font-bold text-slate-800">{{ app_format_money($estimate->total_tax, $estimate->currency) }}</td>
                             </tr>
                             @endif
                             @if($estimate->discount_total > 0)
                             <tr>
                                 <td colspan="3" class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Discount</td>
-                                <td class="px-6 py-3 text-right text-sm font-bold text-rose-600">-{{ $estimate->currencyRel->symbol ?? '$' }}{{ number_format($estimate->discount_total, 2) }}</td>
+                                <td class="px-6 py-3 text-right text-sm font-bold text-rose-600">-{{ app_format_money($estimate->discount_total, $estimate->currency) }}</td>
                             </tr>
                             @endif
                             <tr class="bg-slate-100/50">
                                 <td colspan="3" class="px-6 py-4 text-right text-sm font-bold text-slate-800 uppercase tracking-wider">Total Amount</td>
-                                <td class="px-6 py-4 text-right text-xl font-black text-blue-600">{{ $estimate->currencyRel->symbol ?? '$' }}{{ number_format($estimate->total, 2) }}</td>
+                                <td class="px-6 py-4 text-right text-xl font-black text-blue-600">{{ app_format_money($estimate->total, $estimate->currency) }}</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -109,7 +109,7 @@
         <div class="space-y-6">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 text-center">
                 <h3 class="text-sm font-bold text-slate-800 mb-6 uppercase tracking-wider text-center">Total Value</h3>
-                <p class="text-3xl font-black text-blue-600 mb-8">{{ $estimate->currencyRel->symbol ?? '$' }}{{ number_format($estimate->total, 2) }}</p>
+                <p class="text-3xl font-black text-blue-600 mb-8">{{ app_format_money($estimate->total, $estimate->currency) }}</p>
                 
                 @if($estimate->status == 2)
                 <div class="space-y-3">

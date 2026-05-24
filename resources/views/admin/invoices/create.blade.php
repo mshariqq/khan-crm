@@ -80,9 +80,9 @@
                     </div>
                     <div>
                         <label class="text-xs font-medium text-slate-500 mb-1 block">Currency</label>
-                        <select name="currency" class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm" required>
+                        <select name="currency" id="currency-select" class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm" required onchange="updateCurrencySymbol()">
                             @foreach($currencies as $currency)
-                                <option value="{{ $currency->id }}" {{ old('currency') == $currency->id ? 'selected' : '' }}>{{ $currency->symbol }} {{ $currency->name }}</option>
+                                <option value="{{ $currency->id }}" data-symbol="{{ $currency->symbol }}" data-placement="{{ $currency->placement ?? 'before' }}" {{ old('currency') == $currency->id ? 'selected' : '' }}>{{ $currency->symbol }} {{ $currency->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -189,6 +189,9 @@
                                             <option value="{{ $item->id }}" data-description="{{ $item->description }}" data-rate="{{ $item->rate }}" data-tax="{{ $item->tax }}">{{ Str::limit($item->description, 20) }}</option>
                                         @endforeach
                                     </select>
+                                    <button type="button" onclick="openItemPane('{{ route('admin.items.pane.create') }}')" class="px-2 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-xs" title="Add New Item">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </button>
                                     <input type="text" name="item_description[]" class="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Item name or description">
                                 </div>
                             </td>
@@ -207,7 +210,7 @@
                                 </select>
                             </td>
                             <td class="px-4 py-2">
-                                <div class="amount-display text-right font-medium text-slate-800 bg-slate-50 px-3 py-2 rounded-lg">$0.00</div>
+                                <div class="amount-display text-right font-medium text-slate-800 bg-slate-50 px-3 py-2 rounded-lg"><span class="currency-symbol">$</span>0.00</div>
                                 <input type="hidden" name="item_amount[]" class="amount-input" value="0">
                             </td>
                             <td class="px-2 py-2">
@@ -226,12 +229,12 @@
                     <div class="w-full lg:w-72 space-y-3">
                         <div class="flex justify-between items-center">
                             <span class="text-sm text-slate-600">Subtotal</span>
-                            <span class="font-medium text-slate-800" id="display-subtotal">$0.00</span>
+                            <span class="font-medium text-slate-800" id="display-subtotal"><span class="currency-symbol">$</span>0.00</span>
                             <input type="hidden" name="subtotal" value="0">
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-sm text-slate-600">Tax</span>
-                            <span class="font-medium text-slate-800" id="display-tax">$0.00</span>
+                            <span class="font-medium text-slate-800" id="display-tax"><span class="currency-symbol">$</span>0.00</span>
                             <input type="hidden" name="total_tax" value="0">
                         </div>
                         <div class="flex justify-between items-center">
@@ -243,7 +246,7 @@
                         </div>
                         <div class="flex justify-between items-center border-t border-slate-200 pt-3">
                             <span class="text-lg font-bold text-slate-800">Total</span>
-                            <span class="text-lg font-bold text-blue-600" id="display-total">$0.00</span>
+                            <span class="text-lg font-bold text-blue-600" id="display-total"><span class="currency-symbol">$</span>0.00</span>
                             <input type="hidden" name="total" value="0">
                         </div>
                     </div>
@@ -333,7 +336,7 @@ function addLineItem() {
             </select>
         </td>
         <td class="px-4 py-2">
-            <div class="amount-display text-right font-medium text-slate-800 bg-slate-50 px-3 py-2 rounded-lg">$0.00</div>
+            <div class="amount-display text-right font-medium text-slate-800 bg-slate-50 px-3 py-2 rounded-lg"><span class="currency-symbol">$</span>0.00</div>
             <input type="hidden" name="item_amount[]" class="amount-input" value="0">
         </td>
         <td class="px-2 py-2">
@@ -359,13 +362,26 @@ function removeLineItem(btn) {
     }
 }
 
+function getCurrencySymbol() {
+    const select = document.getElementById('currency-select');
+    const option = select.options[select.selectedIndex];
+    return option ? option.dataset.symbol || '$' : '$';
+}
+
+function updateCurrencySymbol() {
+    const symbol = getCurrencySymbol();
+    document.querySelectorAll('.currency-symbol').forEach(el => {
+        el.textContent = symbol;
+    });
+}
+
 function calculateTotal(element) {
     const row = element.closest('.line-item');
     const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
     const rate = parseFloat(row.querySelector('.rate-input').value) || 0;
     
     const amount = qty * rate;
-    row.querySelector('.amount-display').textContent = '$' + amount.toFixed(2);
+    row.querySelector('.amount-display').innerHTML = '<span class="currency-symbol">' + getCurrencySymbol() + '</span>' + amount.toFixed(2);
     row.querySelector('.amount-input').value = amount.toFixed(2);
     
     recalculateAll();
@@ -388,11 +404,12 @@ function recalculateAll() {
     const discount = subtotal * (discountPercent / 100);
     
     const total = subtotal + totalTax - discount;
+    const symbol = getCurrencySymbol();
     
     // Update display
-    document.getElementById('display-subtotal').textContent = '$' + subtotal.toFixed(2);
-    document.getElementById('display-tax').textContent = '$' + totalTax.toFixed(2);
-    document.getElementById('display-total').textContent = '$' + total.toFixed(2);
+    document.getElementById('display-subtotal').innerHTML = '<span class="currency-symbol">' + symbol + '</span>' + subtotal.toFixed(2);
+    document.getElementById('display-tax').innerHTML = '<span class="currency-symbol">' + symbol + '</span>' + totalTax.toFixed(2);
+    document.getElementById('display-total').innerHTML = '<span class="currency-symbol">' + symbol + '</span>' + total.toFixed(2);
     
     // Update hidden inputs
     document.querySelector('input[name="subtotal"]').value = subtotal.toFixed(2);
@@ -448,6 +465,7 @@ function selectItem(select) {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
+    updateCurrencySymbol();
     recalculateAll();
 });
 </script>

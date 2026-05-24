@@ -8,6 +8,8 @@
     .ql-editor { font-size: 14px; padding: 15px; min-height: 200px; }
     .ql-toolbar { border: 1px solid #e2e8f0 !important; border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; background: #f8fafc; }
     .ql-container { border: 1px solid #e2e8f0 !important; border-top: none !important; border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
+    .line-item { transition: all 0.2s ease; }
+    .line-item:hover { background: #f8fafc; }
 </style>
 @endpush
 
@@ -184,17 +186,42 @@
                                 <th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase w-28 text-right">Amount</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-200">
-                            @for($i = 0; $i < 5; $i++)
-                            <tr>
+                        <tbody id="items-body" class="divide-y divide-slate-200">
+                            @forelse($proposal->items as $i => $item)
+                            <tr class="line-item">
                                 <td class="px-4 py-2">
-                                    <input type="text" name="items[{{ $i }}][description]" value="{{ old('items.' . $i . '.description') }}" class="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Item description">
+                                    <input type="text" name="items[{{ $i }}][description]" value="{{ $item->description }}" class="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Item description">
                                 </td>
                                 <td class="px-4 py-2">
-                                    <input type="number" name="items[{{ $i }}][qty]" value="{{ old('items.' . $i . '.qty', 1) }}" step="0.01" class="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <input type="number" name="items[{{ $i }}][qty]" value="{{ $item->qty }}" step="0.01" class="item-qty w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                                 </td>
                                 <td class="px-4 py-2">
-                                    <input type="number" name="items[{{ $i }}][rate]" value="{{ old('items.' . $i . '.rate') }}" step="0.01" class="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0.00">
+                                    <input type="number" name="items[{{ $i }}][rate]" value="{{ $item->rate }}" step="0.01" class="item-rate w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0.00">
+                                </td>
+                                <td class="px-4 py-2">
+                                    <select name="items[{{ $i }}][tax]" class="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                                        <option value="">None</option>
+                                        @foreach($taxes as $tax)
+                                            <option value="{{ $tax->id }}" {{ $item->tax_rate == $tax->taxrate ? 'selected' : '' }}>{{ $tax->name }} ({{ $tax->taxrate }}%)</option>
+                                        @endforeach
+                                    </select>
+                                </td>
+                                <td class="px-4 py-2 text-right">
+                                    <input type="hidden" name="items[{{ $i }}][amount]" class="item-amount-input" value="{{ $item->amount }}">
+                                    <span class="item-amount-display text-sm font-medium text-slate-700">{{ number_format($item->amount, 2) }}</span>
+                                </td>
+                            </tr>
+                            @empty
+                            @for($i = 0; $i < 3; $i++)
+                            <tr class="line-item">
+                                <td class="px-4 py-2">
+                                    <input type="text" name="items[{{ $i }}][description]" value="" class="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Item description">
+                                </td>
+                                <td class="px-4 py-2">
+                                    <input type="number" name="items[{{ $i }}][qty]" value="1" step="0.01" class="item-qty w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                                </td>
+                                <td class="px-4 py-2">
+                                    <input type="number" name="items[{{ $i }}][rate]" value="0" step="0.01" class="item-rate w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0.00">
                                 </td>
                                 <td class="px-4 py-2">
                                     <select name="items[{{ $i }}][tax]" class="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
@@ -205,10 +232,12 @@
                                     </select>
                                 </td>
                                 <td class="px-4 py-2 text-right">
-                                    <span class="text-sm font-medium text-slate-700">0.00</span>
+                                    <input type="hidden" name="items[{{ $i }}][amount]" class="item-amount-input" value="0">
+                                    <span class="item-amount-display text-sm font-medium text-slate-700">0.00</span>
                                 </td>
                             </tr>
                             @endfor
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -256,10 +285,25 @@
             </div>
         </div>
 
-        <div class="p-6 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
-            <a href="{{ route('admin.proposals.index') }}" class="px-6 py-2 text-slate-600 font-semibold rounded-lg hover:bg-slate-200 transition-all">Cancel</a>
-            <button type="submit" class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">Update Proposal</button>
+        {{-- Admin Notes & Terms --}}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-slate-800 border-b pb-2">Admin Notes</h3>
+                <div id="adminnote-editor" class="mt-1">{!! old('adminnote', $proposal->adminnote) !!}</div>
+                <input type="hidden" name="adminnote" id="adminnote-input">
+            </div>
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-slate-800 border-b pb-2">Terms & Conditions</h3>
+                <div id="terms-editor" class="mt-1">{!! old('terms', $proposal->terms) !!}</div>
+                <input type="hidden" name="terms" id="terms-input">
+            </div>
         </div>
+    </div>
+
+    <div class="p-6 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
+        <a href="{{ route('admin.proposals.index') }}" class="px-6 py-2 text-slate-600 font-semibold rounded-lg hover:bg-slate-200 transition-all">Cancel</a>
+        <button type="submit" class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">Update Proposal</button>
+    </div>
     </form>
 </div>
 @endsection
@@ -268,24 +312,63 @@
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const toolbarOptions = [
+            ['bold', 'italic', 'underline'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            ['link', 'clean']
+        ];
+
         const quill = new Quill('#editor', {
             theme: 'snow',
             placeholder: 'Proposal content...',
-            modules: {
-                toolbar: [
-                    ['bold', 'italic', 'underline'],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    ['link', 'clean']
-                ]
-            }
+            modules: { toolbar: toolbarOptions }
         });
 
-        const form = document.querySelector('form');
-        const contentInput = document.querySelector('#content-input');
+        const adminnoteQuill = new Quill('#adminnote-editor', {
+            theme: 'snow',
+            placeholder: 'Internal notes...',
+            modules: { toolbar: toolbarOptions }
+        });
 
-        form.onsubmit = function() {
-            contentInput.value = quill.root.innerHTML;
+        const termsQuill = new Quill('#terms-editor', {
+            theme: 'snow',
+            placeholder: 'Terms and conditions...',
+            modules: { toolbar: toolbarOptions }
+        });
+
+        document.querySelector('form').onsubmit = function() {
+            document.querySelector('#content-input').value = quill.root.innerHTML;
+            document.querySelector('#adminnote-input').value = adminnoteQuill.root.innerHTML;
+            document.querySelector('#terms-input').value = termsQuill.root.innerHTML;
         };
     });
+
+    document.querySelectorAll('.item-qty, .item-rate').forEach(el => {
+        el.addEventListener('change', function() { recalculateRow(this); });
+        el.addEventListener('keyup', function() { recalculateRow(this); });
+    });
+
+    function recalculateRow(element) {
+        const row = element.closest('.line-item');
+        const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+        const rate = parseFloat(row.querySelector('.item-rate').value) || 0;
+        const amount = qty * rate;
+        row.querySelector('.item-amount-input').value = amount.toFixed(2);
+        row.querySelector('.item-amount-display').textContent = amount.toFixed(2);
+        recalculateAll();
+    }
+
+    function recalculateAll() {
+        let subtotal = 0;
+        document.querySelectorAll('.line-item').forEach(row => {
+            subtotal += parseFloat(row.querySelector('.item-amount-input').value) || 0;
+        });
+        const subtotalField = document.querySelector('input[name="subtotal"]');
+        const totalField = document.querySelector('input[name="total"]');
+        if (subtotalField) subtotalField.value = subtotal.toFixed(2);
+        if (totalField) totalField.value = subtotal.toFixed(2);
+    }
+
+    recalculateAll();
 </script>
 @endpush

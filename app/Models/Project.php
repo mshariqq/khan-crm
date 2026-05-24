@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Project extends Model
 {
+    const STATUS_ACTIVE = 1;
+    const STATUS_COMPLETED = 2;
+    const STATUS_ON_HOLD = 3;
+    const STATUS_CANCELLED = 4;
+
     protected $table = 'tblprojects';
     public $timestamps = true;
     protected $fillable = [
@@ -15,6 +20,21 @@ class Project extends Model
         'contact_notification', 'notify_contacts'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'start_date' => 'datetime',
+        'deadline' => 'datetime',
+        'project_created' => 'datetime',
+        'date_finished' => 'datetime',
+        'progress_from_tasks' => 'boolean',
+        'contact_notification' => 'boolean',
+        'notify_contacts' => 'boolean'
+    ];
+
+    protected $attributes = [
+        'status' => 1
+    ];
     public function client()
     {
         return $this->belongsTo(Client::class, 'clientid', 'userid');

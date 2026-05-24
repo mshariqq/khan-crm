@@ -15,6 +15,20 @@ class Subscription extends Model
         'date_subscribed', 'last_sent_at'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'date' => 'datetime',
+        'next_billing_cycle' => 'datetime',
+        'ends_at' => 'datetime',
+        'created' => 'datetime',
+        'date_subscribed' => 'datetime',
+        'last_sent_at' => 'datetime'
+    ];
+
+    protected $attributes = [
+        'status' => 1
+    ];
     public function client()
     {
         return $this->belongsTo(Client::class, 'clientid', 'userid');

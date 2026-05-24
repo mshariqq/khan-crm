@@ -10,6 +10,11 @@ class SalesActivity extends Model
     public $timestamps = true;
     protected $fillable = ['id', 'rel_type', 'rel_id', 'description', 'additional_data', 'staffid', 'full_name', 'date'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'date' => 'datetime'
+    ];
     public function staff()
     {
         return $this->belongsTo(Staff::class, 'staffid', 'staffid');

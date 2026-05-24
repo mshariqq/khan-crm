@@ -72,7 +72,7 @@
                         @endif
                         <tr class="bg-slate-100/50">
                             <td colspan="3" class="px-6 py-4 text-right text-sm font-bold text-slate-800">Total Amount</td>
-                            <td class="px-6 py-4 text-right text-xl font-black text-blue-600">{{ $creditNote->currencyRel->symbol ?? '$' }}{{ number_format($creditNote->total, 2) }}</td>
+                            <td class="px-6 py-4 text-right text-xl font-black text-blue-600">{{ app_format_money($creditNote->total, $creditNote->currency) }}</td>
                         </tr>
                     </tfoot>
                 </table>

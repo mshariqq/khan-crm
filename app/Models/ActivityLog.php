@@ -9,4 +9,10 @@ class ActivityLog extends Model
     protected $table = 'tblactivity_log';
     public $timestamps = true;
     protected $fillable = ['id', 'description', 'date', 'staffid'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'date' => 'datetime'
+    ];
 }

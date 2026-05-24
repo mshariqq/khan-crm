@@ -4,9 +4,27 @@
 
 @section('content')
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <style>
         @keyframes slideDown { from { opacity:0; transform: translateY(-20px); } to { opacity:1; transform: translateY(0); } }
         .animate-slide-down { animation: slideDown 0.3s ease-out; }
+        @keyframes fadeInUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+        .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+        .animate-fade-in-up-delay-1 { animation-delay: 0.1s; opacity: 0; }
+        .animate-fade-in-up-delay-2 { animation-delay: 0.2s; opacity: 0; }
+        .animate-fade-in-up-delay-3 { animation-delay: 0.3s; opacity: 0; }
+        .animate-fade-in-up-delay-4 { animation-delay: 0.4s; opacity: 0; }
+        .animate-fade-in-up-delay-5 { animation-delay: 0.5s; opacity: 0; }
+        @keyframes pulse-soft { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+        .stat-card-gradient-1 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .stat-card-gradient-2 { background: linear-gradient(135deg, #f093fb 0%, #f5577b 100%); }
+        .stat-card-gradient-3 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .stat-card-gradient-4 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .stat-card-gradient-5 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .stat-card-gradient-6 { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); }
+        .glass-card { background: rgba(255,255,255,0.85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
     </style>
     
     @include('partials.admin.sidebar')
@@ -170,6 +188,12 @@
 
     function openTicketPane(url) { openTaskPane(url, 'Ticket'); }
     function openMilestonePane(url) { openTaskPane(url, 'Milestone'); }
+    function openEstimatePane(url) { openTaskPane(url, 'Estimate'); }
+    function openProposalPane(url) { openTaskPane(url, 'Proposal'); }
+    function openContactPane(url) { openTaskPane(url, 'Contact'); }
+    function openExpensePane(url) { openTaskPane(url, 'Expense'); }
+    function openItemPane(url) { openTaskPane(url, 'Item'); }
+    function openItemsGroupPane(url) { openTaskPane(url, 'Item Group'); }
 
     function closeTaskPane() {
         const pane = document.getElementById('taskPane');
@@ -197,10 +221,11 @@
                     btn.innerHTML = originalText;
                     if (data.success) {
                         showToast(data.message || 'Saved successfully!', 'success');
+                        const currentTitle = document.getElementById('taskPaneTitle').textContent;
                         closeTaskPane();
                         const refreshUrl = form.getAttribute('data-pane-refresh') || data.pane_refresh_url;
                         if (refreshUrl) {
-                            setTimeout(() => openTaskPane(refreshUrl, 'Task'), 350);
+                            setTimeout(() => openTaskPane(refreshUrl, currentTitle), 350);
                         }
                     } else {
                         const msg = data.message || data.error || 'An error occurred';
@@ -232,6 +257,18 @@
                 url = '{{ route('admin.tickets.pane.create') }}' + (params.toString() ? '?' + params.toString() : '');
             } else if (type === 'milestone') {
                 url = '{{ route('admin.milestones.pane.create') }}' + (params.toString() ? '?' + params.toString() : '');
+            } else if (type === 'estimate') {
+                url = '{{ route('admin.estimates.pane.create') }}' + (params.toString() ? '?' + params.toString() : '');
+            } else if (type === 'proposal') {
+                url = '{{ route('admin.proposals.pane.create') }}' + (params.toString() ? '?' + params.toString() : '');
+            } else if (type === 'contact') {
+                url = '{{ route('admin.contacts.pane.create') }}' + (params.toString() ? '?' + params.toString() : '');
+            } else if (type === 'expense') {
+                url = '{{ route('admin.expenses.pane.create') }}' + (params.toString() ? '?' + params.toString() : '');
+            } else if (type === 'item') {
+                url = '{{ route('admin.items.pane.create') }}' + (params.toString() ? '?' + params.toString() : '');
+            } else if (type === 'itemsgroup') {
+                url = '{{ route('admin.itemsgroups.pane.create') }}' + (params.toString() ? '?' + params.toString() : '');
             }
         } else if (action === 'edit' && id) {
             if (type === 'task') {
@@ -240,6 +277,18 @@
                 url = '{{ route('admin.tickets.pane.edit', '__ID__') }}'.replace('__ID__', id);
             } else if (type === 'milestone') {
                 url = '{{ route('admin.milestones.pane.edit', '__ID__') }}'.replace('__ID__', id);
+            } else if (type === 'estimate') {
+                url = '{{ route('admin.estimates.pane.edit', '__ID__') }}'.replace('__ID__', id);
+            } else if (type === 'proposal') {
+                url = '{{ route('admin.proposals.pane.edit', '__ID__') }}'.replace('__ID__', id);
+            } else if (type === 'contact') {
+                url = '{{ route('admin.contacts.pane.edit', '__ID__') }}'.replace('__ID__', id);
+            } else if (type === 'expense') {
+                url = '{{ route('admin.expenses.pane.edit', '__ID__') }}'.replace('__ID__', id);
+            } else if (type === 'item') {
+                url = '{{ route('admin.items.pane.edit', '__ID__') }}'.replace('__ID__', id);
+            } else if (type === 'itemsgroup') {
+                url = '{{ route('admin.itemsgroups.pane.edit', '__ID__') }}'.replace('__ID__', id);
             }
         } else if (action === 'show' && id) {
             if (type === 'task') {
@@ -248,9 +297,21 @@
                 url = '{{ route('admin.tickets.pane.show', '__ID__') }}'.replace('__ID__', id);
             } else if (type === 'milestone') {
                 url = '{{ route('admin.milestones.pane.show', '__ID__') }}'.replace('__ID__', id);
+            } else if (type === 'estimate') {
+                url = '{{ route('admin.estimates.pane.show', '__ID__') }}'.replace('__ID__', id);
+            } else if (type === 'proposal') {
+                url = '{{ route('admin.proposals.pane.show', '__ID__') }}'.replace('__ID__', id);
+            } else if (type === 'contact') {
+                url = '{{ route('admin.contacts.pane.show', '__ID__') }}'.replace('__ID__', id);
+            } else if (type === 'expense') {
+                url = '{{ route('admin.expenses.pane.show', '__ID__') }}'.replace('__ID__', id);
+            } else if (type === 'item') {
+                url = '{{ route('admin.items.pane.show', '__ID__') }}'.replace('__ID__', id);
+            } else if (type === 'itemsgroup') {
+                url = '{{ route('admin.itemsgroups.pane.show', '__ID__') }}'.replace('__ID__', id);
             }
         }
-        const titles = { task: 'Task', ticket: 'Ticket', milestone: 'Milestone' };
+            const titles = { task: 'Task', ticket: 'Ticket', milestone: 'Milestone', estimate: 'Estimate', proposal: 'Proposal', contact: 'Contact', expense: 'Expense', item: 'Item', itemsgroup: 'Item Group' };
         if (url) openTaskPane(url, titles[type] || 'Task');
     });
     </script>

@@ -9,7 +9,7 @@
             <h1 class="text-2xl font-bold text-slate-800">Estimates</h1>
             <p class="text-slate-500 text-sm">Manage project estimates and quotations.</p>
         </div>
-        <a href="{{ route('admin.estimates.create') }}" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
+        <a href="{{ route('admin.estimates.create') }}" data-pane="create" data-pane-type="estimate" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
             <i class="bi bi-plus-lg"></i> Add Estimate
         </a>
     </div>
@@ -135,7 +135,7 @@
                             {{ $estimate->expirydate ? \Carbon\Carbon::parse($estimate->expirydate)->format('M j Y') : 'N/A' }}
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-600 font-medium">
-                            {{ $estimate->currencyRel->symbol ?? '' }}{{ number_format($estimate->total, 2) }}
+                            {{ app_format_money($estimate->total, $estimate->currency) }}
                         </td>
                         <td class="px-6 py-4">
                             @php
@@ -145,10 +145,10 @@
                             <span class="px-2 py-1 rounded-full text-xs font-bold {{ $s['class'] }}">{{ $s['label'] }}</span>
                         </td>
                         <td class="px-6 py-4 text-right space-x-2">
-                            <a href="{{ route('admin.estimates.show', $estimate->id) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View">
+                            <a href="{{ route('admin.estimates.show', $estimate->id) }}" data-pane="show" data-pane-type="estimate" data-pane-id="{{ $estimate->id }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View">
                                 <i class="bi bi-eye text-lg"></i>
                             </a>
-                            <a href="{{ route('admin.estimates.edit', $estimate->id) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Edit">
+                            <a href="{{ route('admin.estimates.edit', $estimate->id) }}" data-pane="edit" data-pane-type="estimate" data-pane-id="{{ $estimate->id }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Edit">
                                 <i class="bi bi-pencil-square text-lg"></i>
                             </a>
                             <form action="{{ route('admin.estimates.destroy', $estimate->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this estimate?');">

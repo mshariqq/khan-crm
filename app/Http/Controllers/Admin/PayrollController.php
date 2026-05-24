@@ -191,7 +191,9 @@ class PayrollController extends Controller
 
     public function myPayslips()
     {
-        $payslips = StaffPayslip::where('staffid', Auth::id())->orderBy('year', 'desc')->orderBy('month', 'desc')->get();
+        if (!Auth::user()->can('hr_payroll_view')) abort(403);
+        $perPage = SettingsHelper::get('tables_pagination_limit', 25);
+        $payslips = StaffPayslip::where('staffid', Auth::id())->orderBy('year', 'desc')->orderBy('month', 'desc')->paginate($perPage);
         return view('admin.payroll.my_payslips', compact('payslips'));
     }
 
@@ -199,8 +201,8 @@ class PayrollController extends Controller
     {
         $payslip = StaffPayslip::with(['staff', 'items'])->findOrFail($id);
         
-        // Authorization: Only owner or Admin
-        if ($payslip->staffid !== Auth::id() && !Auth::user()->admin) {
+        // Authorization: Only owner or has permission
+        if ($payslip->staffid !== Auth::id() && !Auth::user()->can('hr_payroll_manage')) {
             abort(403);
         }
 

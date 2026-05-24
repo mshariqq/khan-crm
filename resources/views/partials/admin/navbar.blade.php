@@ -204,6 +204,23 @@
                 </div>
             </div>
 
+            @php $isHRActive = request()->is('admin/attendance*') || request()->is('admin/leaves*') || request()->is('admin/payroll*'); @endphp
+            <div class="relative">
+                <button type="button" class="sidebar-dropdown w-full flex items-center justify-between px-2 py-2 rounded-md transition-all group {{ $isHRActive ? 'bg-blue-600/20 text-blue-400' : 'hover:bg-slate-800 hover:text-white' }}">
+                    <div class="flex items-center gap-2">
+                        <i class="bi bi-person-heart {{ $isHRActive ? 'text-blue-400' : 'text-slate-400' }}"></i>
+                        <span class="font-medium">HR Management</span>
+                    </div>
+                    <i class="bi bi-chevron-right transition-transform duration-200 {{ $isHRActive ? 'rotate-90' : '' }}"></i>
+                </button>
+                <div class="sidebar-menu pl-3 mt-0.5 overflow-hidden transition-all duration-200 {{ $isHRActive ? '' : 'hidden' }}">
+                    <a href="{{ route('admin.attendance.index') }}" class="block py-1.5 px-2 text-sm rounded-md hover:bg-slate-800">Attendance</a>
+                    <a href="{{ route('admin.leaves.index') }}" class="block py-1.5 px-2 text-sm rounded-md hover:bg-slate-800">Leaves & Holidays</a>
+                    <a href="{{ route('admin.payroll.index') }}" class="block py-1.5 px-2 text-sm rounded-md hover:bg-slate-800">Payroll Management</a>
+                    <a href="{{ route('admin.payroll.my-payslips') }}" class="block py-1.5 px-2 text-sm rounded-md hover:bg-slate-800">My Payslips</a>
+                </div>
+            </div>
+
             @php $isKBActive = request()->is('admin/knowledge-base*') || request()->is('admin/knowledge-base-groups*'); @endphp
             <div class="relative">
                 <button type="button" class="sidebar-dropdown w-full flex items-center justify-between px-2 py-2 rounded-md transition-all group {{ $isKBActive ? 'bg-blue-600/20 text-blue-400' : 'hover:bg-slate-800 hover:text-white' }}">
@@ -238,7 +255,7 @@
                     </div>
                 </div>
 
-                @php $isLookupsActive = request()->is('admin/countries*') || request()->is('admin/currencies*') || request()->is('admin/services*') || request()->is('admin/payment-modes*') || request()->is('admin/taxes*') || request()->is('admin/item-groups*') || request()->is('admin/items*'); @endphp
+                @php $isLookupsActive = request()->is('admin/countries*') || request()->is('admin/currencies*') || request()->is('admin/services*') || request()->is('admin/payment-modes*') || request()->is('admin/paymentmodes*') || request()->is('admin/taxes*') || request()->is('admin/item-groups*') || request()->is('admin/itemsgroups*') || request()->is('admin/items*') || request()->is('admin/expense-categories*') || request()->is('admin/leave-types*'); @endphp
                 <div class="relative">
                     <button type="button" class="sidebar-dropdown w-full flex items-center justify-between px-2 py-2 rounded-md transition-all group {{ $isLookupsActive ? 'bg-blue-600/20 text-blue-400' : 'hover:bg-slate-800 hover:text-white' }}">
                         <div class="flex items-center gap-2">
@@ -250,8 +267,13 @@
                     <div class="sidebar-menu pl-3 mt-0.5 overflow-hidden transition-all duration-200 {{ $isLookupsActive ? '' : 'hidden' }}">
                         <a href="{{ route('admin.items.index') }}" class="block py-1.5 px-2 text-sm rounded-md hover:bg-slate-800">Items</a>
                         <a href="{{ route('admin.countries.index') }}" class="block py-1.5 px-2 text-sm rounded-md hover:bg-slate-800">Countries</a>
+                        <a href="{{ route('admin.currencies.index') }}" class="block py-1.5 px-2 text-sm rounded-md hover:bg-slate-800">Currencies</a>
                         <a href="{{ route('admin.services.index') }}" class="block py-1.5 px-2 text-sm rounded-md hover:bg-slate-800">Services</a>
+                        <a href="{{ route('admin.paymentmodes.index') }}" class="block py-1.5 px-2 text-sm rounded-md hover:bg-slate-800">Payment Modes</a>
                         <a href="{{ route('admin.taxes.index') }}" class="block py-1.5 px-2 text-sm rounded-md hover:bg-slate-800">Taxes</a>
+                        <a href="{{ route('admin.itemsgroups.index') }}" class="block py-1.5 px-2 text-sm rounded-md hover:bg-slate-800">Item Groups</a>
+                        <a href="{{ route('admin.expense-categories.index') }}" class="block py-1.5 px-2 text-sm rounded-md hover:bg-slate-800">Expense Categories</a>
+                        <a href="{{ route('admin.leave-types.index') }}" class="block py-1.5 px-2 text-sm rounded-md hover:bg-slate-800">Leave Types</a>
                     </div>
                 </div>
 
@@ -268,6 +290,7 @@
                         <a href="{{ route('admin.settings.index') }}" class="block py-1.5 px-2 text-sm rounded-md hover:bg-slate-800">System</a>
                         <a href="{{ route('admin.roles.index') }}" class="block py-1.5 px-2 text-sm rounded-md hover:bg-slate-800">Roles</a>
                         <a href="{{ route('admin.permissions.index') }}" class="block py-1.5 px-2 text-sm rounded-md hover:bg-slate-800">Permissions</a>
+                        <a href="{{ route('admin.emailtemplates.index') }}" class="block py-1.5 px-2 text-sm rounded-md hover:bg-slate-800">Email Templates</a>
                     </div>
                 </div>
             </div>

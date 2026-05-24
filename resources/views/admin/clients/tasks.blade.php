@@ -17,7 +17,7 @@
                     <p class="text-xs text-slate-500">{{ $data->total() }} records</p>
                 </div>
             </div>
-            <a href="{{ route('admin.tasks.create', ['rel_id' => $client->userid, 'rel_type' => 'client']) }}" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2">
+            <a href="{{ route('admin.tasks.create', ['rel_id' => $client->userid, 'rel_type' => 'client']) }}" data-pane="create" data-pane-type="task" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2">
                 <i class="bi bi-plus-lg"></i> New Task
             </a>
         </div>
@@ -54,7 +54,7 @@
                         @endphp
                         <tr class="hover:bg-slate-50 transition-colors">
                             <td class="px-6 py-4">
-                                <a href="{{ route('admin.tasks.show', $task->id) }}" class="text-sm font-semibold text-slate-800 hover:text-indigo-600">{{ $task->name }}</a>
+                                <a href="{{ route('admin.tasks.show', $task->id) }}" data-pane="show" data-pane-type="task" data-pane-id="{{ $task->id }}" class="text-sm font-semibold text-slate-800 hover:text-indigo-600">{{ $task->name }}</a>
                             </td>
                             <td class="px-6 py-4">
                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold {{ $tp['class'] }}">{{ $tp['label'] }}</span>
@@ -66,10 +66,10 @@
                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold {{ $ts['class'] }}">{{ $ts['label'] }}</span>
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <a href="{{ route('admin.tasks.show', $task->id) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View Task">
+                                <a href="{{ route('admin.tasks.show', $task->id) }}" data-pane="show" data-pane-type="task" data-pane-id="{{ $task->id }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View Task">
                                     <i class="bi bi-eye text-lg"></i>
                                 </a>
-                                <a href="{{ route('admin.tasks.edit', $task->id) }}" class="p-2 text-slate-400 hover:text-amber-600 transition-colors" title="Edit Task">
+                                <a href="{{ route('admin.tasks.edit', $task->id) }}" data-pane="edit" data-pane-type="task" data-pane-id="{{ $task->id }}" class="p-2 text-slate-400 hover:text-amber-600 transition-colors" title="Edit Task">
                                     <i class="bi bi-pencil-square text-lg"></i>
                                 </a>
                             </td>

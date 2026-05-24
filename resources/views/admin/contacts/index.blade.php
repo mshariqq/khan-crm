@@ -9,7 +9,7 @@
             <h1 class="text-2xl font-bold text-slate-800">Contacts</h1>
             <p class="text-slate-500 text-sm">Manage individual contacts associated with your clients.</p>
         </div>
-        <a href="{{ route('admin.contacts.create') }}" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
+        <a href="{{ route('admin.contacts.create') }}" data-pane="create" data-pane-type="contact" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
             <i class="bi bi-plus-lg"></i> Add Contact
         </a>
     </div>
@@ -44,7 +44,7 @@
                                 <img src="https://ui-avatars.com/api/?name={{ urlencode($contact->firstname . ' ' . $contact->lastname) }}&background=random" 
                                      alt="Profile" class="w-8 h-8 rounded-full">
                                 <div>
-                                    <span class="font-medium text-slate-800">{{ $contact->firstname }} {{ $contact->lastname }}</span>
+                                    <a href="{{ route('admin.contacts.edit', $contact->id) }}" data-pane="edit" data-pane-type="contact" data-pane-id="{{ $contact->id }}" class="font-medium text-slate-800 hover:text-blue-600 transition-colors">{{ $contact->firstname }} {{ $contact->lastname }}</a>
                                     @if($contact->is_primary)
                                         <span class="ml-2 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-bold uppercase">Primary</span>
                                     @endif
@@ -69,7 +69,7 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 text-right space-x-2">
-                            <a href="{{ route('admin.contacts.edit', $contact->id) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Edit Contact">
+                            <a href="{{ route('admin.contacts.edit', $contact->id) }}" data-pane="edit" data-pane-type="contact" data-pane-id="{{ $contact->id }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Edit Contact">
                                 <i class="bi bi-pencil-square text-lg"></i>
                             </a>
                             <form action="{{ route('admin.contacts.destroy', $contact->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this contact?');">

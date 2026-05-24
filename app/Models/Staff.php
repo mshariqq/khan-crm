@@ -20,6 +20,25 @@ class Staff extends Authenticatable
         'email_signature', 'google_auth_secret'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'datecreated' => 'datetime',
+        'last_login' => 'datetime',
+        'last_activity' => 'datetime',
+        'last_password_change' => 'datetime',
+        'new_pass_key_requested' => 'datetime',
+        'two_factor_auth_code_requested' => 'datetime',
+        'active' => 'boolean',
+        'is_not_staff' => 'boolean',
+        'two_factor_auth_enabled' => 'boolean'
+    ];
+
+    protected $attributes = [
+        'active' => true,
+        'admin' => false,
+        'is_not_staff' => false
+    ];
     protected $hidden = ['password'];
 
     public function staffRole()

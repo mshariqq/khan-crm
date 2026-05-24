@@ -11,6 +11,13 @@ class NewsfeedPost extends Model
     public $timestamps = true;
     protected $fillable = ['postid', 'creator', 'datecreated', 'visibility', 'content', 'pinned', 'datepinned'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'datecreated' => 'datetime',
+        'datepinned' => 'datetime',
+        'pinned' => 'boolean'
+    ];
     public function creator()
     {
         return $this->belongsTo(Staff::class, 'creator', 'staffid');

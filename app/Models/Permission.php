@@ -10,4 +10,9 @@ class Permission extends Model
     protected $primaryKey = 'id';
     public $timestamps = true;
     protected $fillable = ['id', 'name', 'slug'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 }

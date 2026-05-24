@@ -22,7 +22,7 @@
             </span>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ route('admin.expenses.edit', $expense->id) }}" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
+            <a href="{{ route('admin.expenses.edit', $expense->id) }}" data-pane="edit" data-pane-type="expense" data-pane-id="{{ $expense->id }}" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
                 <i class="bi bi-pencil-square"></i> Edit
             </a>
             <form action="{{ route('admin.expenses.destroy', $expense->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this expense?');">
@@ -42,7 +42,7 @@
                 <div class="grid grid-cols-2 gap-6">
                     <div>
                         <p class="text-sm text-slate-500">Amount</p>
-                        <p class="text-2xl font-bold text-slate-800">{{ number_format($expense->amount, 2) }}</p>
+                        <p class="text-2xl font-bold text-slate-800">{{ app_format_money($expense->amount, $expense->currency) }}</p>
                     </div>
                     <div>
                         <p class="text-sm text-slate-500">Category</p>

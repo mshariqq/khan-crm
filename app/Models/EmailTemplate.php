@@ -15,6 +15,9 @@ class EmailTemplate extends Model
         'fromname', 'fromemail', 'plaintext', 'active', 'order'
     ];
 
+    protected $casts = [
+        'active' => 'boolean'
+    ];
     /**
      * Parse the template with dynamic data
      */

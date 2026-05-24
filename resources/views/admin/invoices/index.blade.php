@@ -137,7 +137,7 @@
                             {{ $invoice->duedate ? \Carbon\Carbon::parse($invoice->duedate)->format('M j, Y') : '-' }}
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-800 font-semibold">
-                            {{ $invoice->currencyRel->symbol ?? '' }}{{ number_format($invoice->total, 2) }}
+                            {{ app_format_money($invoice->total, $invoice->currency) }}
                         </td>
                         <td class="px-6 py-4">
                             @php

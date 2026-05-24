@@ -11,6 +11,11 @@ class Notification extends Model
     public $timestamps = true;
     protected $fillable = ['id', 'isread', 'isread_inline', 'date', 'description', 'fromuserid', 'fromclientid', 'from_fullname', 'touserid', 'fromcompany', 'link', 'additional_data'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'date' => 'datetime'
+    ];
     public function receiver()
     {
         return $this->belongsTo(Staff::class, 'touserid', 'staffid');

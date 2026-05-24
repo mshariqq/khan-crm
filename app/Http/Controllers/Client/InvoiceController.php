@@ -32,7 +32,7 @@ class InvoiceController extends ClientBaseController
     public function show($id)
     {
         $client = $this->getClient();
-        $invoice = $client->invoices()->with(['items', 'payments', 'currencyRel'])->findOrFail($id);
+        $invoice = $client->invoices()->with(['items', 'payments', 'currency'])->findOrFail($id);
         
         return view('client.invoices.show', compact('invoice'));
     }
@@ -66,16 +66,16 @@ class InvoiceController extends ClientBaseController
 
         foreach ($invoices as $invoice) {
             $statusLabel = 'Unknown';
-            if($invoice->status == 1) $statusLabel = 'Unpaid';
-            elseif($invoice->status == 2) $statusLabel = 'Partially Paid';
-            elseif($invoice->status == 3) $statusLabel = 'Paid';
-            elseif($invoice->status == 4) $statusLabel = 'Cancelled';
+            if($invoice->status == Invoice::STATUS_UNPAID) $statusLabel = 'Unpaid';
+            elseif($invoice->status == Invoice::STATUS_PARTIALLY_PAID) $statusLabel = 'Partially Paid';
+            elseif($invoice->status == Invoice::STATUS_PAID) $statusLabel = 'Paid';
+            elseif($invoice->status == Invoice::STATUS_CANCELLED) $statusLabel = 'Cancelled';
 
             fputcsv($handle, [
                 ($invoice->prefix ?? '') . $invoice->number,
                 $invoice->date,
                 $invoice->duedate,
-                ($invoice->currencyRel->symbol ?? '$') . number_format($invoice->total, 2),
+                app_format_money($invoice->total, $invoice->currency),
                 $statusLabel,
                 $invoice->created_at,
             ]);

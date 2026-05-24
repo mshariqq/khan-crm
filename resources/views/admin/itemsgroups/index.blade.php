@@ -9,7 +9,7 @@
             <h1 class="text-2xl font-bold text-slate-800">Item Groups</h1>
             <p class="text-slate-500 text-sm mt-1">Categorize your items into groups</p>
         </div>
-        <a href="{{ route('admin.itemsgroups.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+        <a href="{{ route('admin.itemsgroups.create') }}" data-pane="create" data-pane-type="itemsgroup" class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
             <i class="bi bi-plus-lg"></i>
             Add Group
         </a>
@@ -36,12 +36,12 @@
                                     <span class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm font-bold">
                                         {{ strtoupper(substr($group->name, 0, 1)) }}
                                     </span>
-                                    <span class="font-medium text-slate-800">{{ $group->name }}</span>
+                                    <span data-pane="show" data-pane-type="itemsgroup" data-pane-id="{{ $group->id }}" class="font-medium text-slate-800 hover:text-blue-600 transition-colors cursor-pointer">{{ $group->name }}</span>
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="flex items-center justify-end gap-1">
-                                    <a href="{{ route('admin.itemsgroups.edit', $group->id) }}" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                                    <a href="{{ route('admin.itemsgroups.edit', $group->id) }}" data-pane="edit" data-pane-type="itemsgroup" data-pane-id="{{ $group->id }}" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     <form action="{{ route('admin.itemsgroups.destroy', $group->id) }}" method="POST" onsubmit="return confirm('Delete this group?');">

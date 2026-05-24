@@ -10,4 +10,9 @@ class Country extends Model
     protected $primaryKey = 'country_id';
     public $timestamps = true;
     protected $fillable = ['country_id', 'iso2', 'short_name', 'long_name', 'iso3', 'numcode', 'un_member', 'calling_code', 'cctld'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 }

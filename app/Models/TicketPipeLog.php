@@ -9,4 +9,10 @@ class TicketPipeLog extends Model
     protected $table = 'tbltickets_pipe_log';
     public $timestamps = true;
     protected $fillable = ['id', 'date', 'email_to', 'name', 'subject', 'message', 'email', 'status'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'date' => 'datetime'
+    ];
 }

@@ -14,4 +14,10 @@ class EstimateRequestForm extends Model
         'success_submit_msg', 'submit_action', 'submit_redirect_url', 'language', 
         'dateadded', 'notify_type', 'notify_ids', 'responsible', 'notify_request_submitted'
     ];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'dateadded' => 'datetime'
+    ];
 }

@@ -9,7 +9,7 @@
             <h1 class="text-2xl font-bold text-slate-800">Items</h1>
             <p class="text-slate-500 text-sm mt-1">Manage products and services items</p>
         </div>
-        <a href="{{ route('admin.items.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+        <a href="{{ route('admin.items.create') }}" data-pane="create" data-pane-type="item" class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
             <i class="bi bi-plus-lg"></i>
             Add Item
         </a>
@@ -88,10 +88,10 @@
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="flex items-center justify-end gap-1">
-                                    <a href="{{ route('admin.items.show', $item->id) }}" class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors" title="View">
+                                    <a href="{{ route('admin.items.show', $item->id) }}" data-pane="show" data-pane-type="item" data-pane-id="{{ $item->id }}" class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors" title="View">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a href="{{ route('admin.items.edit', $item->id) }}" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                                    <a href="{{ route('admin.items.edit', $item->id) }}" data-pane="edit" data-pane-type="item" data-pane-id="{{ $item->id }}" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     <form action="{{ route('admin.items.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Delete this item?');">

@@ -38,7 +38,7 @@ class ServiceController extends Controller
             'name' => 'required|string|max:255',
         ]);
 
-        Service::create($request->all());
+        Service::create($request->only(['name']));
 
         return redirect()->route('admin.services.index')->with('success', 'Service created successfully!');
     }
@@ -64,7 +64,7 @@ class ServiceController extends Controller
         ]);
 
         $service = Service::findOrFail($id);
-        $service->update($request->all());
+        $service->update($request->only(['name']));
 
         return redirect()->route('admin.services.index')->with('success', 'Service updated successfully!');
     }

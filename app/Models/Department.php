@@ -14,6 +14,10 @@ class Department extends Model
         'password', 'encryption', 'folder', 'delete_after_import', 'calendar_id', 'hidefromclient'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
     public function staff()
     {
         return $this->belongsToMany(Staff::class, 'tblstaff_departments', 'departmentid', 'staffid');

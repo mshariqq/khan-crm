@@ -10,4 +10,9 @@ class TicketStatus extends Model
     protected $primaryKey = 'ticketstatusid';
     public $timestamps = true;
     protected $fillable = ['ticketstatusid', 'name', 'isdefault', 'statuscolor', 'statusorder'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 }

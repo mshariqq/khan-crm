@@ -5,16 +5,20 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Option;
 use App\Services\FileService;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class SettingsController extends Controller
 {
     protected $fileService;
+    protected $auditService;
 
-    public function __construct(FileService $fileService)
+    public function __construct(FileService $fileService, AuditService $auditService)
     {
         $this->fileService = $fileService;
+        $this->auditService = $auditService;
     }
 
     public function index()
@@ -84,7 +88,9 @@ class SettingsController extends Controller
         }
 
         // Clear settings cache so changes are reflected immediately
-        \Illuminate\Support\Facades\Cache::forget('settings_autoload');
+        Cache::forget('settings_autoload');
+
+        $this->auditService->settingsUpdated($settings, $request);
 
         return redirect()->back()->with('success', 'Settings updated successfully!');
     }

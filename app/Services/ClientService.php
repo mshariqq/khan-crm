@@ -3,14 +3,16 @@
 namespace App\Services;
 
 use App\Models\Client;
+use App\Models\Invoice;
+use App\Models\Project;
 
 class ClientService extends BaseService
 {
     public function getClientDashboardData(Client $client)
     {
         return [
-            'active_projects' => $client->projects()->where('status', 1)->get(),
-            'unpaid_invoices' => $client->invoices()->where('status', 1)->get(),
+            'active_projects' => $client->projects()->where('status', Project::STATUS_ACTIVE)->get(),
+            'unpaid_invoices' => $client->invoices()->where('status', Invoice::STATUS_UNPAID)->get(),
         ];
     }
 

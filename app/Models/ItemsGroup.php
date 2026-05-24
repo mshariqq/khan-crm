@@ -9,4 +9,9 @@ class ItemsGroup extends Model
     protected $table = 'tblitems_groups';
     public $timestamps = true;
     protected $fillable = ['id', 'name'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 }

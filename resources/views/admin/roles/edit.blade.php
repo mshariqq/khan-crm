@@ -25,7 +25,7 @@
                 <label class="text-sm font-medium text-slate-700 mb-4 block">Permissions</label>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     @php
-                        $currentPermissions = explode(',', $role->permissions);
+                        $currentPermissions = $role->getPermissionSlugs();
                     @endphp
                     @foreach($availablePermissions as $permission)
                         <label class="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:bg-slate-50 cursor-pointer transition-all group">

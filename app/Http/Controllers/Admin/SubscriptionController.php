@@ -18,7 +18,7 @@ class SubscriptionController extends Controller
     {
         if (!Auth::user()->can('subscriptions_view')) abort(403);
 
-        $query = Subscription::with(['client', 'currencyRel', 'invoices']);
+        $query = Subscription::with(['client', 'currency', 'invoices']);
 
         if ($request->filled('client')) {
             $query->where('clientid', $request->client);
@@ -115,7 +115,7 @@ class SubscriptionController extends Controller
         ]);
 
         $subscription = Subscription::findOrFail($id);
-        $subscription->update($request->all());
+        $subscription->update($validated);
 
         return redirect()->route('admin.subscriptions.index')->with('success', 'Subscription updated successfully!');
     }

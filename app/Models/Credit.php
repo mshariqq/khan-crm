@@ -10,6 +10,12 @@ class Credit extends Model
     public $timestamps = true;
     protected $fillable = ['invoice_id', 'credit_id', 'staff_id', 'date', 'date_applied', 'amount'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'date' => 'datetime',
+        'date_applied' => 'datetime'
+    ];
     public function invoice()
     {
         return $this->belongsTo(Invoice::class, 'invoice_id', 'id');

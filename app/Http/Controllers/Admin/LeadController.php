@@ -3,27 +3,32 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreLeadRequest;
+use App\Http\Requests\UpdateLeadRequest;
 use App\Models\Lead;
 use App\Models\Staff;
-use App\Models\LeadStatus;
-use App\Models\LeadSource;
 use App\Models\Client;
+use App\Models\LeadSource;
+use App\Models\LeadStatus;
 use App\Models\Country;
 use App\Models\Note;
 use App\Models\Reminder;
 use App\Models\GdprRequest;
-use App\Services\EmailService;
 use App\Services\LeadActivityLogService;
+use App\Services\LeadService;
+use App\Services\EmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class LeadController extends Controller
 {
+    protected $leadService;
     protected $emailService;
 
-    public function __construct(EmailService $emailService)
+    public function __construct(LeadService $leadService, EmailService $emailService)
     {
+        $this->leadService = $leadService;
         $this->emailService = $emailService;
     }
 
@@ -75,38 +80,22 @@ class LeadController extends Controller
         return view('admin.leads.create', compact('staff', 'statuses', 'sources', 'countries', 'clients', 'default_status', 'default_source'));
     }
 
-    public function store(Request $request)
+    public function store(StoreLeadRequest $request)
     {
-        if (!Auth::user()->can('leads_create')) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|email',
-            'phonenumber' => 'nullable|string|max:30',
-            'company' => 'nullable|string|max:255',
-            'status' => 'required|integer',
-            'source' => 'required|integer',
-            'country' => 'nullable|integer',
-            'assigned' => 'nullable|integer',
-            'client_id' => 'nullable|integer',
-            'lead_value' => 'nullable|numeric',
-            'description' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $lead = Lead::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'phonenumber' => $request->phonenumber,
-            'company' => $request->company,
-            'status' => $request->status,
-            'source' => $request->source,
-            'country' => $request->country,
-            'assigned' => $request->assigned,
-            'client_id' => $request->client_id,
-            'lead_value' => $request->lead_value,
-            'description' => $request->description,
+            'name' => $validated['name'],
+            'email' => $validated['email'] ?? null,
+            'phonenumber' => $validated['phonenumber'] ?? null,
+            'company' => $validated['company'] ?? null,
+            'status' => $validated['status'],
+            'source' => $validated['source'],
+            'country' => $validated['country'] ?? null,
+            'assigned' => $validated['assigned'] ?? null,
+            'client_id' => $validated['client_id'] ?? null,
+            'lead_value' => $validated['lead_value'] ?? null,
+            'description' => $validated['description'] ?? null,
             'dateadded' => now(),
             'addedfrom' => Auth::id(),
         ]);
@@ -149,29 +138,13 @@ class LeadController extends Controller
         return view('admin.leads.edit', compact('lead', 'staff', 'statuses', 'sources', 'countries', 'clients'));
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateLeadRequest $request, $id)
     {
-        if (!Auth::user()->can('leads_edit')) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|email',
-            'phonenumber' => 'nullable|string|max:30',
-            'company' => 'nullable|string|max:255',
-            'status' => 'required|integer',
-            'source' => 'required|integer',
-            'country' => 'nullable|integer',
-            'assigned' => 'nullable|integer',
-            'client_id' => 'nullable|integer',
-            'lead_value' => 'nullable|numeric',
-            'description' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $lead = Lead::findOrFail($id);
         $oldAssigned = $lead->assigned;
-        $lead->update($request->all());
+        $lead->update($validated);
 
         LeadActivityLogService::leadUpdated($lead, $request->only(['name', 'status', 'assigned', 'lead_value']));
 
@@ -259,7 +232,7 @@ class LeadController extends Controller
             'rel_id' => $lead->id,
             'rel_type' => 'lead',
             'staff' => $request->staff ?? Auth::id(),
-            'isnotify' => 1,
+            'isnotified' => 1,
             'creator' => Auth::id(),
         ]);
 
@@ -281,37 +254,33 @@ class LeadController extends Controller
             'email' => 'required|email',
         ]);
 
-        $client = Client::create([
-            'company' => $request->company,
-            'email' => $request->email,
-            'phonenumber' => $lead->phonenumber ?? '',
-            'address' => $lead->address ?? '',
-            'city' => $lead->city ?? '',
-            'state' => $lead->state ?? '',
-            'zip' => $lead->zip ?? '',
-            'country' => $lead->country ?? 0,
-            'datecreated' => now(),
-            'active' => 1,
-        ]);
-
-        $lead->update([
-            'client_id' => $client->userid,
-            'date_converted' => now(),
-            'status' => 5,
-        ]);
-
-        LeadActivityLogService::convertedToClient($lead, $client->userid, $client->company);
-
-        // Send Welcome Email to the new client
-        if ($client->email) {
-            $this->emailService->send($client->email, 'new-client-created', [
-                'contact_firstname' => $client->company,
-                'contact_lastname' => '',
-                'crm_url' => config('app.url') . '/login/client',
-            ]);
+        $existing = $this->leadService->checkExistingClient($request->company, $request->email);
+        if ($existing) {
+            return redirect()->route('admin.leads.show', $lead->id)
+                ->with('warning', $existing['message'] . ' <a href="' . route('admin.clients.show', $existing['client']->userid) . '" class="underline">View existing client</a> or choose a different company name.')
+                ->withInput();
         }
 
-        return redirect()->route('admin.clients.show', $client->userid)->with('success', 'Lead converted to client successfully!');
+        try {
+            DB::beginTransaction();
+
+            $client = $this->leadService->convertToClient($lead, $request->company, $request->email);
+
+            $nameParts = explode(' ', trim($lead->name), 2);
+            $firstname = $nameParts[0] ?? $lead->name;
+            $lastname = $nameParts[1] ?? '';
+
+            DB::commit();
+
+            LeadActivityLogService::convertedToClient($lead, $client->userid, $client->company);
+
+            $this->leadService->sendWelcomeEmail($client, $request->email, $firstname, $lastname);
+
+            return redirect()->route('admin.clients.show', $client->userid)->with('success', 'Lead converted to client successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Error converting lead to client: ' . $e->getMessage())->withInput();
+        }
     }
 
     public function markAsLost($id)

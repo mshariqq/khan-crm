@@ -23,7 +23,13 @@ class SettingsHelper
                 ->toArray();
         });
 
-        return $settings[$key] ?? $default;
+        if (array_key_exists($key, $settings)) {
+            return $settings[$key];
+        }
+
+        // Fallback: query individually for non-autoloaded settings
+        $option = Option::where('name', $key)->first();
+        return $option ? $option->value : $default;
     }
 
     /**

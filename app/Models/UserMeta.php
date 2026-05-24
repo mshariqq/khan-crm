@@ -11,6 +11,10 @@ class UserMeta extends Model
     public $timestamps = true;
     protected $fillable = ['umeta_id', 'staff_id', 'client_id', 'contact_id', 'meta_key', 'meta_value'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
     public function staff()
     {
         return $this->belongsTo(Staff::class, 'staff_id', 'staffid');

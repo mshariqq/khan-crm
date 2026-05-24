@@ -6,6 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Estimate extends Model
 {
+    const STATUS_DRAFT = 1;
+    const STATUS_SENT = 2;
+    const STATUS_ACCEPTED = 3;
+    const STATUS_DECLINED = 4;
+    const STATUS_INVOICED = 5;
+
     protected $table = 'tblestimates';
     public $timestamps = true;
     protected $fillable = [
@@ -21,6 +27,25 @@ class Estimate extends Model
         'acceptance_date', 'acceptance_ip', 'signature', 'short_link'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'datesend' => 'datetime',
+        'datecreated' => 'datetime',
+        'date' => 'datetime',
+        'expirydate' => 'datetime',
+        'invoiced_date' => 'datetime',
+        'acceptance_date' => 'datetime',
+        'sent' => 'boolean',
+        'include_shipping' => 'boolean',
+        'show_shipping_on_estimate' => 'boolean',
+        'show_quantity_as' => 'boolean',
+        'is_expiry_notified' => 'boolean'
+    ];
+
+    protected $attributes = [
+        'status' => 1
+    ];
     public function client()
     {
         return $this->belongsTo(Client::class, 'clientid', 'userid');

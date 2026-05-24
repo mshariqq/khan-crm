@@ -9,4 +9,9 @@ class Tax extends Model
     protected $table = 'tbltaxes';
     public $timestamps = true;
     protected $fillable = ['id', 'name', 'taxrate'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 }

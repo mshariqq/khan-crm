@@ -13,6 +13,10 @@ class Milestone extends Model
         'due_date', 'project_id', 'color', 'milestone_order', 'datecreated', 'hide_from_customer'
     ];
 
+    protected $casts = [
+        'start_date' => 'datetime',
+        'datecreated' => 'datetime'
+    ];
     // Relationships
     public function project()
     {

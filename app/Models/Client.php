@@ -20,6 +20,18 @@ class Client extends Authenticatable
         'registration_confirmed', 'addedfrom', 'customer_group_id'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'datecreated' => 'datetime',
+        'active' => 'boolean',
+        'show_primary_contact' => 'boolean',
+        'registration_confirmed' => 'boolean'
+    ];
+
+    protected $attributes = [
+        'active' => true
+    ];
     protected $hidden = ['password'];
 
 

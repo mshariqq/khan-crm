@@ -128,7 +128,7 @@
                             <div class="flex items-center justify-between mb-1">
                                 <i class="bi bi-cash text-amber-500 text-sm"></i>
                             </div>
-                            <p class="text-xl font-bold text-amber-700">{{ number_format($project->project_cost ?? 0, 0) }}</p>
+                            <p class="text-xl font-bold text-amber-700">{{ app_format_money($project->project_cost ?? 0) }}</p>
                             <p class="text-[10px] text-amber-600">Budget</p>
                         </div>
                     </div>
@@ -188,7 +188,7 @@
                                 </div>
                                 <div class="flex items-center justify-between py-2 border-b border-slate-200/50">
                                     <span class="text-xs text-slate-500">Rate/Hour</span>
-                                    <span class="text-xs font-medium text-slate-700">${{ number_format($project->project_rate_per_hour ?? 0, 2) }}</span>
+                                    <span class="text-xs font-medium text-slate-700">{{ app_format_money($project->project_rate_per_hour ?? 0) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between py-2">
                                     <span class="text-xs text-slate-500">Estimated Hours</span>
@@ -233,20 +233,20 @@
                             <div class="space-y-3">
                                 <div class="flex items-center justify-between py-2 border-b border-slate-200/50">
                                     <span class="text-xs text-slate-500">Project Cost</span>
-                                    <span class="text-xs font-bold text-slate-700">${{ number_format($project->project_cost ?? 0, 2) }}</span>
+                                    <span class="text-xs font-bold text-slate-700">{{ app_format_money($project->project_cost ?? 0) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between py-2 border-b border-slate-200/50">
                                     <span class="text-xs text-slate-500">Total Invoiced</span>
-                                    <span class="text-xs font-medium text-slate-700">${{ number_format($project->invoices->sum('total'), 2) }}</span>
+                                    <span class="text-xs font-medium text-slate-700">{{ app_format_money($project->invoices->sum('total')) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between py-2 border-b border-slate-200/50">
                                     <span class="text-xs text-slate-500">Total Expenses</span>
-                                    <span class="text-xs font-medium text-slate-700">${{ number_format($project->expenses->sum('amount'), 2) }}</span>
+                                    <span class="text-xs font-medium text-slate-700">{{ app_format_money($project->expenses->sum('amount')) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between py-2">
                                     <span class="text-xs text-slate-500">Profit Margin</span>
                                     <span class="text-xs font-medium text-emerald-600">
-                                        ${{ number_format(($project->project_cost ?? 0) - $project->expenses->sum('amount'), 2) }}
+                                        {{ app_format_money(($project->project_cost ?? 0) - $project->expenses->sum('amount')) }}
                                     </span>
                                 </div>
                             </div>
@@ -286,9 +286,9 @@
                                 <h3 class="text-sm font-semibold text-slate-800">Quick Actions</h3>
                             </div>
                             <div class="grid grid-cols-2 gap-2">
-                                <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}" data-pane="create" class="px-3 py-2 bg-blue-600 text-white text-xs rounded-lg text-center hover:bg-blue-700">Add Task</a>
+                                <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}" data-pane="create" data-pane-type="task" class="px-3 py-2 bg-blue-600 text-white text-xs rounded-lg text-center hover:bg-blue-700">Add Task</a>
                                 <a href="{{ route('admin.invoices.create') }}?project_id={{ $project->id }}" class="px-3 py-2 bg-emerald-600 text-white text-xs rounded-lg text-center hover:bg-emerald-700">New Invoice</a>
-                                <a href="{{ route('admin.expenses.create') }}?project_id={{ $project->id }}" class="px-3 py-2 bg-amber-600 text-white text-xs rounded-lg text-center hover:bg-amber-700">Add Expense</a>
+                                <a href="{{ route('admin.expenses.create') }}?project_id={{ $project->id }}" data-pane="create" data-pane-type="expense" class="px-3 py-2 bg-amber-600 text-white text-xs rounded-lg text-center hover:bg-amber-700">Add Expense</a>
                                 <a href="{{ route('admin.projects.edit', $project->id) }}" class="px-3 py-2 bg-slate-600 text-white text-xs rounded-lg text-center hover:bg-slate-700">Edit Project</a>
                             </div>
                         </div>

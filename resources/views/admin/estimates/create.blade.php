@@ -70,9 +70,9 @@
                     </div>
                     <div>
                         <label class="text-xs font-medium text-slate-500 mb-1 block">Currency</label>
-                        <select name="currency" class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm" required>
+                        <select name="currency" onchange="updateCurrencySymbol()" class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm" required>
                             @foreach($currencies as $currency)
-                                <option value="{{ $currency->id }}" {{ old('currency') == $currency->id ? 'selected' : '' }}>{{ $currency->symbol }} {{ $currency->name }}</option>
+                                <option value="{{ $currency->id }}" data-symbol="{{ $currency->symbol }}" {{ old('currency') == $currency->id ? 'selected' : '' }}>{{ $currency->symbol }} {{ $currency->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -204,6 +204,15 @@
 <script>
 let lineItemCount = 1;
 
+function getCurrencySymbol() {
+    const sel = document.querySelector('select[name="currency"]');
+    if (!sel) return '$';
+    const opt = sel.options[sel.selectedIndex];
+    return opt ? opt.getAttribute('data-symbol') || '$' : '$';
+}
+
+function updateCurrencySymbol() { recalculateAll(); }
+
 function addLineItem() {
     const tbody = document.getElementById('line-items-body');
     const row = document.createElement('tr');
@@ -221,7 +230,7 @@ function addLineItem() {
             <input type="number" name="item_rate[]" value="0" min="0" step="0.01" class="rate-input w-full px-2 py-2 rounded-lg border border-slate-200 text-sm text-right focus:ring-2 focus:ring-blue-500 outline-none" onchange="calculateTotal(this)">
         </td>
         <td class="px-4 py-2">
-            <div class="amount-display text-right font-medium text-slate-800 bg-slate-50 px-3 py-2 rounded-lg">$0.00</div>
+            <div class="amount-display text-right font-medium text-slate-800 bg-slate-50 px-3 py-2 rounded-lg">${getCurrencySymbol()}0.00</div>
             <input type="hidden" name="item_amount[]" class="amount-input" value="0">
         </td>
         <td class="px-2 py-2">
@@ -251,7 +260,7 @@ function calculateTotal(element) {
     const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
     const rate = parseFloat(row.querySelector('.rate-input').value) || 0;
     const amount = qty * rate;
-    row.querySelector('.amount-display').textContent = '$' + amount.toFixed(2);
+    row.querySelector('.amount-display').textContent = getCurrencySymbol() + amount.toFixed(2);
     row.querySelector('.amount-input').value = amount.toFixed(2);
     recalculateAll();
 }
@@ -261,8 +270,8 @@ function recalculateAll() {
     document.querySelectorAll('.line-item').forEach(row => {
         subtotal += parseFloat(row.querySelector('.amount-input').value) || 0;
     });
-    document.getElementById('display-subtotal').textContent = '$' + subtotal.toFixed(2);
-    document.getElementById('display-total').textContent = '$' + subtotal.toFixed(2);
+    document.getElementById('display-subtotal').textContent = getCurrencySymbol() + subtotal.toFixed(2);
+    document.getElementById('display-total').textContent = getCurrencySymbol() + subtotal.toFixed(2);
     document.querySelector('input[name="subtotal"]').value = subtotal.toFixed(2);
     document.querySelector('input[name="total"]').value = subtotal.toFixed(2);
 }

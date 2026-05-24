@@ -11,6 +11,11 @@ class KnowledgeBaseArticleFeedback extends Model
     public $timestamps = true;
     protected $fillable = ['articleanswerid', 'articleid', 'answer', 'ip', 'date'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'date' => 'datetime'
+    ];
     public function article()
     {
         return $this->belongsTo(KnowledgeBase::class, 'articleid', 'articleid');

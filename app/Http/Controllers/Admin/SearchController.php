@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Project;
+use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -10,6 +12,7 @@ class SearchController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('search_view')) abort(403);
         $search = $request->get('q', '');
         
         if (strlen($search) < 2) {
@@ -67,13 +70,14 @@ class SearchController extends Controller
                     'icon' => 'bi-kanban',
                     'icon_bg' => 'bg-emerald-50 text-emerald-600',
                     'title' => $p->name,
-                    'subtitle' => $p->status == 1 ? 'Active' : 'Inactive',
+                    'subtitle' => $p->status == Project::STATUS_ACTIVE ? 'Active' : 'Inactive',
                     'url' => route('admin.projects.show', $p->id),
                 ];
             }
 
             // Tasks (uses 'name' not 'title')
-            $tasks = \App\Models\Task::where('name', 'like', "%{$search}%")
+            $tasks = \App\Models\Task::with(['assignedStaff', 'creator'])
+                ->where('name', 'like', "%{$search}%")
                 ->limit($limit)
                 ->get();
             
@@ -83,13 +87,14 @@ class SearchController extends Controller
                     'icon' => 'bi-check2-square',
                     'icon_bg' => 'bg-purple-50 text-purple-600',
                     'title' => $t->name,
-                    'subtitle' => $t->status == 2 ? 'Done' : 'Pending',
+                    'subtitle' => $t->status == Task::STATUS_IN_PROGRESS ? 'Done' : 'Pending',
                     'url' => route('admin.tasks.show', $t->id),
                 ];
             }
 
             // Tickets
-            $tickets = \App\Models\Ticket::where('subject', 'like', "%{$search}%")
+            $tickets = \App\Models\Ticket::with(['client', 'statusRel', 'priorityRel'])
+                ->where('subject', 'like', "%{$search}%")
                 ->limit($limit)
                 ->get();
             

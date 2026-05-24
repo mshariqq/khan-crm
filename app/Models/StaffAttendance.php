@@ -17,6 +17,13 @@ class StaffAttendance extends Model
         'ip_address',
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'date' => 'datetime',
+        'clock_in' => 'datetime',
+        'clock_out' => 'datetime'
+    ];
     public function staff()
     {
         return $this->belongsTo(Staff::class, 'staffid', 'staffid');

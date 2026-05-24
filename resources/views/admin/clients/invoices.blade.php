@@ -52,7 +52,7 @@
                             <td class="px-6 py-4 text-sm {{ $invoice->duedate && \Carbon\Carbon::parse($invoice->duedate)->isPast() && $invoice->status == 1 ? 'text-red-600 font-medium' : 'text-slate-600' }}">
                                 {{ $invoice->duedate ? \Carbon\Carbon::parse($invoice->duedate)->format('M j, Y') : '—' }}
                             </td>
-                            <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ ($invoice->currencyRel->symbol ?? '$') . number_format($invoice->total, 2) }}</td>
+                            <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ app_format_money($invoice->total, $invoice->currency) }}</td>
                             <td class="px-6 py-4">
                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold {{ $s['class'] }}">{{ $s['label'] }}</span>
                             </td>

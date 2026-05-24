@@ -15,16 +15,17 @@ class EmailTemplateController extends Controller
             abort(403);
         }
 
-        $query = EmailTemplate::orderBy('type');
+        $type = $request->type ?? 'client';
 
-        if ($request->filled('type')) {
-            $query->where('type', $request->type);
+        $templates = EmailTemplate::where('type', $type)->orderBy('name')->get();
+        $types = EmailTemplate::select('type')->distinct()->pluck('type');
+        $currentType = $type;
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return view('admin.settings.email_templates_table', compact('templates', 'currentType'));
         }
 
-        $templates = $query->paginate(50);
-        $types = EmailTemplate::select('type')->distinct()->pluck('type');
-
-        return view('admin.settings.email_templates', compact('templates', 'types'));
+        return view('admin.settings.email_templates', compact('templates', 'types', 'currentType'));
     }
 
     public function edit($id)

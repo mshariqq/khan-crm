@@ -11,6 +11,10 @@ class FormResult extends Model
     public $timestamps = true;
     protected $fillable = ['resultid', 'boxid', 'boxdescriptionid', 'rel_id', 'rel_type', 'questionid', 'answer', 'resultsetid'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
     public function question()
     {
         return $this->belongsTo(FormQuestion::class, 'questionid', 'questionid');

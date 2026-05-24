@@ -9,4 +9,10 @@ class ProposalComment extends Model
     protected $table = 'tblproposal_comments';
     public $timestamps = true;
     protected $fillable = ['id', 'content', 'proposalid', 'staffid', 'dateadded'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'dateadded' => 'datetime'
+    ];
 }

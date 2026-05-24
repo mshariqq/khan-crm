@@ -10,6 +10,10 @@ class CustomFieldValue extends Model
     public $timestamps = true;
     protected $fillable = ['id', 'relid', 'fieldid', 'fieldto', 'value'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
     public function field()
     {
         return $this->belongsTo(CustomField::class, 'fieldid', 'id');

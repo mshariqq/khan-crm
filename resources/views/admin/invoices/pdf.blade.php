@@ -74,7 +74,7 @@
             <div class="bg-blue-50 rounded-2xl p-6 border border-blue-100 flex flex-col justify-center">
                 <h3 class="text-xs font-black uppercase tracking-widest text-blue-600 mb-2">Total Balance Due</h3>
                 <div class="text-4xl font-black text-blue-900">
-                    {{ $invoice->currency->symbol ?? '$' }}{{ number_format($invoice->total, 2) }}
+                    {{ app_format_money($invoice->total, $invoice->currency) }}
                 </div>
                 @if($invoice->status == 3)
                     <div class="mt-4 inline-flex items-center gap-2 px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded-full uppercase tracking-wider w-fit">
@@ -109,8 +109,8 @@
                             @endif
                         </td>
                         <td class="px-8 py-6 text-center text-slate-600">{{ $item->qty }}</td>
-                        <td class="px-8 py-6 text-right text-slate-600">{{ $invoice->currency->symbol ?? '$' }}{{ number_format($item->rate, 2) }}</td>
-                        <td class="px-8 py-6 text-right font-bold text-slate-800">{{ $invoice->currency->symbol ?? '$' }}{{ number_format($item->amount, 2) }}</td>
+                        <td class="px-8 py-6 text-right text-slate-600">{{ app_format_money($item->rate, $invoice->currency) }}</td>
+                        <td class="px-8 py-6 text-right font-bold text-slate-800">{{ app_format_money($item->amount, $invoice->currency) }}</td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -136,29 +136,29 @@
             <div class="w-full md:w-80 space-y-4">
                 <div class="flex justify-between text-slate-500">
                     <span class="text-sm">Subtotal</span>
-                    <span class="font-bold">{{ $invoice->currency->symbol ?? '$' }}{{ number_format($invoice->subtotal, 2) }}</span>
+                    <span class="font-bold">{{ app_format_money($invoice->subtotal, $invoice->currency) }}</span>
                 </div>
                 @if($invoice->total_tax > 0)
                 <div class="flex justify-between text-slate-500">
                     <span class="text-sm">Total Tax</span>
-                    <span class="font-bold">{{ $invoice->currency->symbol ?? '$' }}{{ number_format($invoice->total_tax, 2) }}</span>
+                    <span class="font-bold">{{ app_format_money($invoice->total_tax, $invoice->currency) }}</span>
                 </div>
                 @endif
                 @if($invoice->discount_total > 0)
                 <div class="flex justify-between text-emerald-600 font-medium">
                     <span class="text-sm">Discount</span>
-                    <span>-{{ $invoice->currency->symbol ?? '$' }}{{ number_format($invoice->discount_total, 2) }}</span>
+                    <span>-{{ app_format_money($invoice->discount_total, $invoice->currency) }}</span>
                 </div>
                 @endif
                 @if($invoice->adjustment != 0)
                 <div class="flex justify-between text-slate-500">
                     <span class="text-sm">Adjustment</span>
-                    <span class="font-bold">{{ $invoice->adjustment > 0 ? '+' : '' }}{{ $invoice->currency->symbol ?? '$' }}{{ number_format($invoice->adjustment, 2) }}</span>
+                    <span class="font-bold">{{ $invoice->adjustment > 0 ? '+' : '' }}{{ app_format_money($invoice->adjustment, $invoice->currency) }}</span>
                 </div>
                 @endif
                 <div class="pt-4 border-t border-slate-200 flex justify-between items-center">
                     <span class="text-lg font-black text-slate-900">Total</span>
-                    <span class="text-3xl font-black text-blue-600">{{ $invoice->currency->symbol ?? '$' }}{{ number_format($invoice->total, 2) }}</span>
+                    <span class="text-3xl font-black text-blue-600">{{ app_format_money($invoice->total, $invoice->currency) }}</span>
                 </div>
             </div>
         </div>

@@ -47,7 +47,7 @@
                 <div class="p-3 bg-purple-50 rounded-xl"><i class="bi bi-cash-stack text-purple-600 text-xl"></i></div>
                 <div>
                     <p class="text-xs font-semibold text-slate-500 uppercase">Total Revenue</p>
-                    <p class="text-2xl font-bold text-slate-800">{{ number_format($totalRevenue, 2) }}</p>
+                    <p class="text-2xl font-bold text-slate-800">{{ app_format_money($totalRevenue) }}</p>
                 </div>
             </div>
         </div>
@@ -119,7 +119,7 @@
                             {{ $subscription->next_billing_cycle ? \Carbon\Carbon::parse($subscription->next_billing_cycle)->format('M j, Y') : 'N/A' }}
                         </td>
                         <td class="px-6 py-4 text-sm font-medium text-slate-800">
-                            {{ number_format($subscription->invoices->sum('total'), 2) }}
+                            {{ app_format_money($subscription->invoices->sum('total'), $subscription->currency) }}
                         </td>
                         <td class="px-6 py-4 text-right space-x-2">
                             <a href="{{ route('admin.subscriptions.show', $subscription->id) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View"><i class="bi bi-eye text-lg"></i></a>

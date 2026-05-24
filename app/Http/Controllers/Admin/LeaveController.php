@@ -18,7 +18,7 @@ class LeaveController extends Controller
         if (!Auth::user()->can('hr_leaves_view')) abort(403);
 
         $staffId = Auth::id();
-        $isAdmin = Auth::user()->admin;
+        $isAdmin = Auth::user()->can('hr_leaves_manage');
 
         $query = StaffLeave::with(['staff', 'type', 'approver']);
 
@@ -165,7 +165,8 @@ class LeaveController extends Controller
     public function holidays()
     {
         if (!Auth::user()->can('hr_leaves_view')) abort(403);
-        $holidays = CompanyHoliday::orderBy('date', 'asc')->get();
+        $perPage = SettingsHelper::get('tables_pagination_limit', 25);
+        $holidays = CompanyHoliday::orderBy('date', 'asc')->paginate($perPage);
         return view('admin.leaves.holidays', compact('holidays'));
     }
 
@@ -179,7 +180,7 @@ class LeaveController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        CompanyHoliday::create($request->all());
+        CompanyHoliday::create($request->only(['name', 'date', 'description']));
 
         return redirect()->route('admin.leaves.holidays')->with('success', 'Holiday added successfully!');
     }

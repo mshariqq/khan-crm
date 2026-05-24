@@ -9,7 +9,7 @@
             <h1 class="text-2xl font-bold text-slate-800">Proposals</h1>
             <p class="text-slate-500 text-sm">Manage your client proposals and quotes.</p>
         </div>
-        <a href="{{ route('admin.proposals.create') }}" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
+        <a href="{{ route('admin.proposals.create') }}" data-pane="create" data-pane-type="proposal" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
             <i class="bi bi-plus-lg"></i> Add Proposal
         </a>
     </div>
@@ -114,7 +114,7 @@
                             {{ $proposal->open_till ? \Carbon\Carbon::parse($proposal->open_till)->format('M j Y') : 'N/A' }}
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-600 font-medium">
-                            {{ $proposal->currencyRel->symbol ?? '' }}{{ number_format($proposal->total, 2) }}
+                            {{ app_format_money($proposal->total, $proposal->currency) }}
                         </td>
                         <td class="px-6 py-4">
                             @php
@@ -124,10 +124,10 @@
                             <span class="px-2 py-1 rounded-full text-xs font-bold {{ $ps['class'] }}">{{ $ps['label'] }}</span>
                         </td>
                         <td class="px-6 py-4 text-right space-x-2">
-                            <a href="{{ route('admin.proposals.show', $proposal->id) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View">
+                            <a href="{{ route('admin.proposals.show', $proposal->id) }}" data-pane="show" data-pane-type="proposal" data-pane-id="{{ $proposal->id }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View">
                                 <i class="bi bi-eye text-lg"></i>
                             </a>
-                            <a href="{{ route('admin.proposals.edit', $proposal->id) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Edit">
+                            <a href="{{ route('admin.proposals.edit', $proposal->id) }}" data-pane="edit" data-pane-type="proposal" data-pane-id="{{ $proposal->id }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Edit">
                                 <i class="bi bi-pencil-square text-lg"></i>
                             </a>
                             <form action="{{ route('admin.proposals.destroy', $proposal->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this proposal?');">

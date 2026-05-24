@@ -11,6 +11,10 @@ class StaffDepartment extends Model
     public $timestamps = true;
     protected $fillable = ['staffdepartmentid', 'staffid', 'departmentid'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
     public function staff()
     {
         return $this->belongsTo(Staff::class, 'staffid', 'staffid');

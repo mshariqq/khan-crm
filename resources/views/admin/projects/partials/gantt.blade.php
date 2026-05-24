@@ -130,6 +130,6 @@ $weeks = ceil($totalDays / 7);
         <i class="bi bi-bar-chart-steps text-slate-400 text-xl"></i>
     </div>
     <p class="text-sm text-slate-500">No tasks to display</p>
-    <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}" data-pane="create" class="mt-3 inline-block px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">Add Task</a>
+    <a href="{{ route('admin.tasks.create') }}?rel_type=project&rel_id={{ $project->id }}" data-pane="create" data-pane-type="task" class="mt-3 inline-block px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">Add Task</a>
 </div>
 @endif

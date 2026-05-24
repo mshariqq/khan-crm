@@ -65,14 +65,14 @@
                                                 {{ $status }}
                                             </span>
                                         </td>
-                                        <td class="px-4 py-3 text-sm text-slate-800 font-medium text-right">{{ number_format($invoice->total, 2) }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-800 font-medium text-right">{{ app_format_money($invoice->total, $invoice->currency) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
                             <tfoot class="bg-slate-50 border-t border-slate-200">
                                 <tr>
                                     <td colspan="3" class="px-4 py-3 text-sm font-semibold text-slate-700 text-right">Total</td>
-                                    <td class="px-4 py-3 text-sm font-bold text-slate-800 text-right">{{ number_format($subscription->invoices->sum('total'), 2) }}</td>
+                                    <td class="px-4 py-3 text-sm font-bold text-slate-800 text-right">{{ app_format_money($subscription->invoices->sum('total'), $subscription->currency) }}</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -127,7 +127,7 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-slate-500">Total Invoiced</span>
-                        <span class="text-slate-800 font-bold">{{ number_format($subscription->invoices->sum('total'), 2) }}</span>
+                        <span class="text-slate-800 font-bold">{{ app_format_money($subscription->invoices->sum('total'), $subscription->currency) }}</span>
                     </div>
                 </div>
             </div>

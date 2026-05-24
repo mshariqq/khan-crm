@@ -11,18 +11,23 @@ use App\Models\Note;
 use App\Models\Notification;
 use App\Models\ProjectDiscussion;
 use App\Models\ProjectDiscussionComment;
+use App\Services\ProjectService;
 use App\Services\EmailService;
 use App\Services\ProjectNotificationService;
+use App\Http\Requests\StoreProjectRequest;
+use App\Http\Requests\UpdateProjectRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ProjectController extends Controller
 {
+    protected $projectService;
     protected $emailService;
     protected $projectNotification;
 
-    public function __construct(EmailService $emailService, ProjectNotificationService $projectNotification)
+    public function __construct(ProjectService $projectService, EmailService $emailService, ProjectNotificationService $projectNotification)
     {
+        $this->projectService = $projectService;
         $this->emailService = $emailService;
         $this->projectNotification = $projectNotification;
     }
@@ -40,9 +45,9 @@ class ProjectController extends Controller
         $total = $query->count();
         $projects = $query->paginate(15)->withQueryString();
         $clients = Client::all();
-        $activeCount = Project::where('status', 1)->count();
-        $completedCount = Project::where('status', 2)->count();
-        $onHoldCount = Project::where('status', 3)->count();
+        $activeCount = Project::where('status', Project::STATUS_ACTIVE)->count();
+        $completedCount = Project::where('status', Project::STATUS_COMPLETED)->count();
+        $onHoldCount = Project::where('status', Project::STATUS_ON_HOLD)->count();
 
         return view('admin.projects.index', compact('projects', 'total', 'clients', 'activeCount', 'completedCount', 'onHoldCount'));
     }
@@ -55,24 +60,9 @@ class ProjectController extends Controller
         return view('admin.projects.create', compact('clients', 'staff'));
     }
 
-    public function store(Request $request)
+    public function store(StoreProjectRequest $request)
     {
-        if (!Auth::user()->can('projects_create')) abort(403);
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'status' => 'required|integer',
-            'clientid' => 'required|integer',
-            'billing_type' => 'nullable|integer',
-            'start_date' => 'nullable|date',
-            'deadline' => 'nullable|date',
-            'project_cost' => 'nullable|numeric',
-            'project_rate_per_hour' => 'nullable|numeric',
-            'estimated_hours' => 'nullable|numeric',
-            'staff_ids' => 'nullable|array',
-            'staff_ids.*' => 'integer|exists:tblstaff,staffid',
-        ]);
+        $validated = $request->validated();
 
         $project = Project::create([
             'name' => $request->name,
@@ -115,28 +105,12 @@ class ProjectController extends Controller
         return view('admin.projects.edit', compact('project', 'clients', 'staff'));
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateProjectRequest $request, $id)
     {
-        if (!Auth::user()->can('projects_edit')) abort(403);
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'status' => 'required|integer',
-            'clientid' => 'required|integer',
-            'billing_type' => 'nullable|integer',
-            'start_date' => 'nullable|date',
-            'deadline' => 'nullable|date',
-            'project_cost' => 'nullable|numeric',
-            'project_rate_per_hour' => 'nullable|numeric',
-            'estimated_hours' => 'nullable|numeric',
-            'staff_ids' => 'nullable|array',
-            'staff_ids.*' => 'integer|exists:tblstaff,staffid',
-        ]);
+        $validated = $request->validated();
 
         $project = Project::findOrFail($id);
 
-        // Capture old attributes before update
         $oldAttributes = $project->getOriginal();
 
         $project->update($request->only([
@@ -144,111 +118,28 @@ class ProjectController extends Controller
             'start_date', 'deadline', 'project_cost', 'project_rate_per_hour', 'estimated_hours'
         ]));
 
+        $notified = false;
+
         if ($request->has('staff_ids')) {
-            $oldStaff = $project->staff()->pluck('staffid')->toArray();
-            $newStaff = $request->staff_ids ?? [];
-            
-            $project->staff()->sync($newStaff);
-
-            // Notify newly assigned staff members via ProjectNotificationService
-            $addedStaff = array_diff($newStaff, $oldStaff);
-            foreach ($addedStaff as $staffId) {
-                $staffMember = Staff::find($staffId);
-                if ($staffMember) {
-                    $this->projectNotification->sendToOneStaff('project-member-added', $project->id, $staffMember, [
-                        'member_name' => $staffMember->firstname . ' ' . $staffMember->lastname,
-                        'member_email' => $staffMember->email,
-                        'added_by' => (Auth::user()->firstname ?? '') . ' ' . (Auth::user()->lastname ?? ''),
-                    ]);
-
-                    Notification::createForStaff($staffMember->staffid, Auth::user()->full_name . ' added you to project <strong>' . e($project->name) . '</strong>', route('admin.projects.show', $project->id));
-                }
-            }
-
-            // Log activity for team member changes
-            if ($oldStaff !== $newStaff) {
-                ProjectActivity::create([
-                    'project_id' => $project->id,
-                    'staff_id' => Auth::id(),
-                    'description_key' => 'project_activity_team_updated',
-                    'additional_data' => json_encode([
-                        'old_staff_count' => count($oldStaff),
-                        'new_staff_count' => count($newStaff),
-                    ]),
-                    'dateadded' => now(),
-                ]);
-            }
+            $this->projectService->syncStaffAndNotify($project, $request->staff_ids ?? []);
+            $notified = true;
         }
 
         $oldStatus = (int)($oldAttributes['status'] ?? $project->status);
-        $notified = !empty($addedStaff);
-
         if ($oldStatus !== (int)$project->status) {
-            $statusLabels = [1 => 'Active', 2 => 'Completed', 3 => 'On Hold', 4 => 'Cancelled'];
-            $statusSlugs = [2 => 'project-completed', 3 => 'project-on-hold', 4 => 'project-cancelled'];
-            if (isset($statusSlugs[(int)$project->status])) {
-                $this->projectNotification->send($statusSlugs[(int)$project->status], $project->id);
-                $notified = true;
-            } elseif ((int)$project->status === 1 && in_array($oldStatus, [3, 4])) {
-                $this->projectNotification->send('project-resumed', $project->id);
-                $notified = true;
-            }
-
-            $oldLabel = $statusLabels[$oldStatus] ?? 'Unknown';
-            $newLabel = $statusLabels[(int)$project->status] ?? 'Unknown';
-            $staffIds = $project->staff()->pluck('staffid')->toArray();
-            $exclude = [(int)Auth::id()];
-            $recipients = array_values(array_diff($staffIds, $exclude));
-            if (!empty($recipients)) {
-                Notification::createForMultipleStaff($recipients, 'Project <strong>' . e($project->name) . '</strong> moved from ' . $oldLabel . ' to ' . $newLabel, route('admin.projects.show', $project->id));
-            }
+            $notified = $this->projectService->handleStatusChange($project, $oldStatus, (int)$project->status) || $notified;
         }
 
         if (!$notified) {
             $oldDeadline = $oldAttributes['deadline'] ?? null;
-            if ($oldDeadline !== $project->deadline) {
-                $this->projectNotification->send('project-deadline-changed', $project->id);
-                $notified = true;
-
-                $staffIds = $project->staff()->pluck('staffid')->toArray();
-                $exclude = [(int)Auth::id()];
-                $recipients = array_values(array_diff($staffIds, $exclude));
-                if (!empty($recipients)) {
-                    $newDate = $project->deadline ? \Carbon\Carbon::parse($project->deadline)->format('M j, Y') : 'Not set';
-                    Notification::createForMultipleStaff($recipients, 'Deadline for <strong>' . e($project->name) . '</strong> changed to ' . $newDate, route('admin.projects.show', $project->id));
-                }
-            }
+            $notified = $this->projectService->handleDeadlineChange($project, $oldDeadline, $project->deadline) || $notified;
         }
 
         if (!$notified) {
-            $this->projectNotification->send('project-updated', $project->id);
-
-            $staffIds = $project->staff()->pluck('staffid')->toArray();
-            $exclude = [(int)Auth::id()];
-            $recipients = array_values(array_diff($staffIds, $exclude));
-            if (!empty($recipients)) {
-                Notification::createForMultipleStaff($recipients, Auth::user()->full_name . ' updated project <strong>' . e($project->name) . '</strong>', route('admin.projects.show', $project->id));
-            }
+            $this->projectService->notifyGeneralUpdate($project);
         }
 
-        // Log activity for project update
-        $changedAttributes = $project->getChanges();
-        unset($changedAttributes['updated_at']);
-
-        if (!empty($changedAttributes)) {
-            ProjectActivity::create([
-                'project_id' => $project->id,
-                'staff_id' => Auth::id(),
-                'description_key' => 'project_activity_project_updated',
-                'additional_data' => json_encode([
-                    'project_name' => $project->name,
-                    'changes' => array_map(function($key) use ($project) { 
-                        return ['old' => $project->getOriginal($key), 'new' => $project->{$key}]; 
-                    }, array_keys($changedAttributes))
-                ]),
-                'dateadded' => now(),
-            ]);
-        }
+        $this->projectService->logProjectActivity($project);
 
         return redirect()->route('admin.projects.index')->with('success', 'Project updated successfully!');
     }

@@ -13,6 +13,11 @@ class ProjectActivity extends Model
         'visible_to_customer', 'description_key', 'additional_data', 'dateadded'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'dateadded' => 'datetime'
+    ];
     public function project()
     {
         return $this->belongsTo(Project::class, 'project_id', 'id');

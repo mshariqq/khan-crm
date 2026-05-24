@@ -17,7 +17,7 @@
                     <p class="text-xs text-slate-500">{{ $data->total() }} records</p>
                 </div>
             </div>
-            <a href="{{ route('admin.expenses.create', ['client_id' => $client->userid]) }}" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2">
+            <a href="{{ route('admin.expenses.create', ['client_id' => $client->userid]) }}" data-pane="create" data-pane-type="expense" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2">
                 <i class="bi bi-plus-lg"></i> New Expense
             </a>
         </div>
@@ -44,17 +44,17 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-sm text-slate-600">{{ $expense->categoryRel->name ?? '—' }}</td>
-                            <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ ($expense->currencyRel->symbol ?? '$') . number_format($expense->amount, 2) }}</td>
+                            <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ app_format_money($expense->amount, $expense->currency) }}</td>
                             <td class="px-6 py-4">
                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold {{ $expense->billable ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500' }}">
                                     {{ $expense->billable ? 'Billable' : 'Not Billable' }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <a href="{{ route('admin.expenses.show', $expense->id) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View Expense">
+                                <a href="{{ route('admin.expenses.show', $expense->id) }}" data-pane="show" data-pane-type="expense" data-pane-id="{{ $expense->id }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View Expense">
                                     <i class="bi bi-eye text-lg"></i>
                                 </a>
-                                <a href="{{ route('admin.expenses.edit', $expense->id) }}" class="p-2 text-slate-400 hover:text-amber-600 transition-colors" title="Edit Expense">
+                                <a href="{{ route('admin.expenses.edit', $expense->id) }}" data-pane="edit" data-pane-type="expense" data-pane-id="{{ $expense->id }}" class="p-2 text-slate-400 hover:text-amber-600 transition-colors" title="Edit Expense">
                                     <i class="bi bi-pencil-square text-lg"></i>
                                 </a>
                             </td>

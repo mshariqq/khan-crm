@@ -9,14 +9,46 @@ use Illuminate\Support\Facades\Auth;
 
 class PermissionController extends Controller
 {
-    public function index()
+    protected $actions = ['View ', 'Create ', 'Edit All ', 'Edit ', 'Delete All ', 'Delete ', 'Manage '];
+
+    public function index(Request $request)
     {
         if (!Auth::user()->can('staff_view')) {
             abort(403, 'Unauthorized action.');
         }
 
-        $permissions = Permission::all();
-        return view('admin.permissions.index', compact('permissions'));
+        $groups = Permission::all()->map(function ($p) {
+            foreach ($this->actions as $action) {
+                if (str_starts_with($p->name, $action)) {
+                    return trim(str_replace('All ', '', substr($p->name, strlen($action))));
+                }
+            }
+            return $p->name;
+        })->unique()->sort()->values();
+
+        $query = Permission::query();
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                  ->orWhere('slug', 'like', '%' . $search . '%');
+            });
+        }
+
+        if ($request->filled('group') && $request->group !== 'all') {
+            $group = $request->group;
+            $query->where(function ($q) use ($group) {
+                foreach ($this->actions as $action) {
+                    $q->orWhere('name', 'like', $action . $group);
+                }
+                $q->orWhere('name', $group);
+            });
+        }
+
+        $permissions = $query->orderBy('name')->paginate(20)->withQueryString();
+
+        return view('admin.permissions.index', compact('permissions', 'groups'));
     }
 
     public function create()

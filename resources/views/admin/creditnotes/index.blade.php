@@ -101,10 +101,10 @@
                             {{ \Carbon\Carbon::parse($cn->date)->format('M j, Y') }}
                         </td>
                         <td class="px-6 py-4 text-sm font-bold text-slate-800">
-                            {{ $cn->currencyRel->symbol ?? '$' }}{{ number_format($cn->total, 2) }}
+                            {{ app_format_money($cn->total, $cn->currency) }}
                         </td>
                         <td class="px-6 py-4 text-sm font-medium {{ $cn->remainingCredit() > 0 ? 'text-emerald-600' : 'text-slate-400' }}">
-                            {{ $cn->currencyRel->symbol ?? '$' }}{{ number_format($cn->remainingCredit(), 2) }}
+                            {{ app_format_money($cn->remainingCredit(), $cn->currency) }}
                         </td>
                         <td class="px-6 py-4">
                             @php

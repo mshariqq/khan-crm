@@ -17,7 +17,7 @@
                     <p class="text-xs text-slate-500">{{ $data->total() }} records</p>
                 </div>
             </div>
-            <a href="{{ route('admin.tickets.create', ['client_id' => $client->userid]) }}" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2">
+            <a href="{{ route('admin.tickets.create', ['client_id' => $client->userid]) }}" data-pane="create" data-pane-type="ticket" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2">
                 <i class="bi bi-plus-lg"></i> New Ticket
             </a>
         </div>
@@ -37,7 +37,7 @@
                     @forelse($data as $ticket)
                         <tr class="hover:bg-slate-50 transition-colors">
                             <td class="px-6 py-4">
-                                <a href="{{ route('admin.tickets.show', $ticket->ticketid) }}" class="text-sm font-semibold text-slate-800 hover:text-blue-600">{{ $ticket->subject }}</a>
+                                <a href="{{ route('admin.tickets.show', $ticket->ticketid) }}" data-pane="show" data-pane-type="ticket" data-pane-id="{{ $ticket->ticketid }}" class="text-sm font-semibold text-slate-800 hover:text-blue-600">{{ $ticket->subject }}</a>
                             </td>
                             <td class="px-6 py-4 text-sm text-slate-600">{{ $ticket->departmentRel->name ?? '—' }}</td>
                             <td class="px-6 py-4">
@@ -59,7 +59,7 @@
                             </td>
                             <td class="px-6 py-4 text-sm text-slate-600">{{ \Carbon\Carbon::parse($ticket->date)->format('M j, Y H:i') }}</td>
                             <td class="px-6 py-4 text-right">
-                                <a href="{{ route('admin.tickets.show', $ticket->ticketid) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View Ticket">
+                                <a href="{{ route('admin.tickets.show', $ticket->ticketid) }}" data-pane="show" data-pane-type="ticket" data-pane-id="{{ $ticket->ticketid }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View Ticket">
                                     <i class="bi bi-eye text-lg"></i>
                                 </a>
                             </td>

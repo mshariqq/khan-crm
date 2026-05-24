@@ -9,4 +9,9 @@ class TaskFollower extends Model
     protected $table = 'tbltask_followers';
     public $timestamps = true;
     protected $fillable = ['id', 'staffid', 'taskid'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 }

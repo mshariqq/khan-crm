@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Task extends Model
 {
+    const STATUS_BACKLOG = 0;
+    const STATUS_PENDING = 1;
+    const STATUS_IN_PROGRESS = 2;
+    const STATUS_COMPLETED = 3;
+
     protected $table = 'tbltasks';
     public $timestamps = true;
     protected $fillable = [
@@ -17,6 +22,28 @@ class Task extends Model
         'milestone_order', 'visible_to_client', 'deadline_notified'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'dateadded' => 'datetime',
+        'startdate' => 'datetime',
+        'duedate' => 'datetime',
+        'datefinished' => 'datetime',
+        'last_recurring_date' => 'datetime',
+        'is_added_from_contact' => 'boolean',
+        'recurring' => 'boolean',
+        'custom_recurring' => 'boolean',
+        'is_public' => 'boolean',
+        'billable' => 'boolean',
+        'billed' => 'boolean',
+        'visible_to_client' => 'boolean',
+        'deadline_notified' => 'boolean'
+    ];
+
+    protected $attributes = [
+        'is_public' => false,
+        'billable' => false
+    ];
     public function creator()
     {
         return $this->belongsTo(Staff::class, 'addedfrom', 'staffid');
@@ -69,17 +96,7 @@ class Task extends Model
 
     public function relatable()
     {
-        if (!$this->rel_type || !$this->rel_id) {
-            return $this->belongsTo(Project::class, 'rel_id', 'id');
-        }
-
-        return match($this->rel_type) {
-            'project' => $this->belongsTo(Project::class, 'rel_id', 'id'),
-            'invoice' => $this->belongsTo(Invoice::class, 'rel_id', 'id'),
-            'estimate' => $this->belongsTo(Estimate::class, 'rel_id', 'id'),
-            'proposal' => $this->belongsTo(Proposal::class, 'rel_id', 'id'),
-            default => $this->belongsTo(Project::class, 'rel_id', 'id'),
-        };
+        return $this->morphTo('relatable', 'rel_type', 'rel_id');
     }
 
     public function getRelatedEntityAttribute()

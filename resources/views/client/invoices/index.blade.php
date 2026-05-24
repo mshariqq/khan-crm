@@ -77,7 +77,7 @@
                         </td>
                         <td class="px-6 py-4">
                             <span class="text-sm font-bold text-slate-800">
-                                {{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->total, 2) }}
+                                {{ app_format_money($invoice->total, $invoice->currency) }}
                             </span>
                         </td>
                         <td class="px-6 py-4">

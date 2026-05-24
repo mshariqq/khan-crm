@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Currency;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -43,7 +44,8 @@ class CurrencyController extends Controller
             'isdefault' => 'nullable|boolean',
         ]);
 
-        Currency::create($request->all());
+        $currency = Currency::create($request->only(['symbol', 'name', 'decimal_separator', 'thousand_separator', 'placement', 'isdefault']));
+        app(AuditService::class)->log('currency_created', 'Currency created: ' . $currency->name, 'Currency', $currency->id, null, $currency->toArray());
 
         return redirect()->route('admin.currencies.index')->with('success', 'Currency created successfully!');
     }
@@ -74,7 +76,9 @@ class CurrencyController extends Controller
         ]);
 
         $currency = Currency::findOrFail($id);
-        $currency->update($request->all());
+        $old = $currency->toArray();
+        $currency->update($request->only(['symbol', 'name', 'decimal_separator', 'thousand_separator', 'placement', 'isdefault']));
+        app(AuditService::class)->log('currency_updated', 'Currency updated: ' . $currency->name, 'Currency', $currency->id, $old, $currency->fresh()->toArray());
 
         return redirect()->route('admin.currencies.index')->with('success', 'Currency updated successfully!');
     }
@@ -86,6 +90,7 @@ class CurrencyController extends Controller
         }
 
         $currency = Currency::findOrFail($id);
+        app(AuditService::class)->log('currency_deleted', 'Currency deleted: ' . $currency->name, 'Currency', $currency->id, $currency->toArray());
         $currency->delete();
 
         return redirect()->route('admin.currencies.index')->with('success', 'Currency deleted successfully!');

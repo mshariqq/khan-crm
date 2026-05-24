@@ -10,6 +10,13 @@ class Reminder extends Model
     public $timestamps = true;
     protected $fillable = ['id', 'description', 'date', 'isnotified', 'rel_id', 'staff', 'rel_type', 'notify_by_email', 'creator'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'date' => 'datetime',
+        'isnotified' => 'boolean',
+        'notify_by_email' => 'boolean'
+    ];
     public function staff()
     {
         return $this->belongsTo(Staff::class, 'staff', 'staffid');
@@ -22,16 +29,6 @@ class Reminder extends Model
 
     public function relatable()
     {
-        $type = $this->rel_type;
-        if ($type === 'project') {
-            return $this->belongsTo(Project::class, 'rel_id', 'id');
-        } elseif ($type === 'lead') {
-            return $this->belongsTo(Lead::class, 'rel_id', 'id');
-        } elseif ($type === 'task') {
-            return $this->belongsTo(Task::class, 'rel_id', 'id');
-        } elseif ($type === 'invoice') {
-            return $this->belongsTo(Invoice::class, 'rel_id', 'id');
-        }
-        return null;
+        return $this->morphTo('relatable', 'rel_type', 'rel_id');
     }
 }

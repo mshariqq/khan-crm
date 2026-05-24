@@ -210,7 +210,7 @@
                 <p class="text-xs text-slate-500">Avg Session</p>
             </div>
             <div class="text-center p-4 bg-white/70 rounded-xl border border-slate-100">
-                <p class="text-lg font-bold text-slate-900">{{ $task->hourly_rate ? '$' . number_format($task->hourly_rate, 2) : '-' }}</p>
+                <p class="text-lg font-bold text-slate-900">{{ $task->hourly_rate ? app_format_money($task->hourly_rate) : '-' }}</p>
                 <p class="text-xs text-slate-500">Hourly Rate</p>
             </div>
         </div>

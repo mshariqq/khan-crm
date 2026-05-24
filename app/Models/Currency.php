@@ -9,4 +9,9 @@ class Currency extends Model
     protected $table = 'tblcurrencies';
     public $timestamps = true;
     protected $fillable = ['id', 'symbol', 'name', 'decimal_separator', 'thousand_separator', 'placement', 'isdefault'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 }

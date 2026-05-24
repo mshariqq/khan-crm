@@ -11,6 +11,16 @@ class KnowledgeBase extends Model
     public $timestamps = true;
     protected $fillable = ['articleid', 'articlegroup', 'subject', 'description', 'slug', 'active', 'datecreated', 'article_order', 'staff_article'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'datecreated' => 'datetime',
+        'active' => 'boolean'
+    ];
+
+    protected $attributes = [
+        'active' => true
+    ];
     public function group()
     {
         return $this->belongsTo(KnowledgeBaseGroup::class, 'articlegroup', 'groupid');

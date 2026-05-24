@@ -9,4 +9,9 @@ class PinnedProject extends Model
     protected $table = 'tblpinned_projects';
     public $timestamps = true;
     protected $fillable = ['id', 'project_id', 'staff_id'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 }

@@ -10,6 +10,11 @@ class GdprRequest extends Model
     public $timestamps = true;
     protected $fillable = ['id', 'clientid', 'contact_id', 'lead_id', 'request_type', 'status', 'request_date', 'request_from', 'description'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'request_date' => 'datetime'
+    ];
     public function client()
     {
         return $this->belongsTo(Client::class, 'clientid', 'userid');

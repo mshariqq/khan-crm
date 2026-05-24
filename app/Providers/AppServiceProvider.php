@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,6 +22,21 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Relation::enforceMorphMap([
+            'project' => \App\Models\Project::class,
+            'lead' => \App\Models\Lead::class,
+            'task' => \App\Models\Task::class,
+            'invoice' => \App\Models\Invoice::class,
+            'estimate' => \App\Models\Estimate::class,
+            'proposal' => \App\Models\Proposal::class,
+            'client' => \App\Models\Client::class,
+            'contact' => \App\Models\Contact::class,
+            'expense' => \App\Models\Expense::class,
+            'credit_note' => \App\Models\CreditNote::class,
+            'ticket' => \App\Models\Ticket::class,
+            'subscription' => \App\Models\Subscription::class,
+        ]);
+
         // Share settings with all views
         view()->composer('*', function ($view) {
             $settings = \App\Helpers\SettingsHelper::getMany([
@@ -44,6 +60,8 @@ class AppServiceProvider extends ServiceProvider
                   'cookie_policy_url',
                   'copyright_text',
                  'default_project_tab',
+                 'shift_start_time',
+                 'shift_end_time',
                  'default_working_hours',
                  'payroll_cutoff_day',
                  'overtime_rate_multiplier',

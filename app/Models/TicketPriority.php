@@ -10,4 +10,9 @@ class TicketPriority extends Model
     protected $primaryKey = 'priorityid';
     public $timestamps = true;
     protected $fillable = ['priorityid', 'name'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 }

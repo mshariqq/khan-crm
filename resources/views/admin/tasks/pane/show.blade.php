@@ -371,10 +371,12 @@ $totalMinutes = $task->timers->reduce(function($carry, $t) {
                         @php
                             $relRouteNames = ['project' => 'admin.projects.show', 'invoice' => 'admin.invoices.show', 'estimate' => 'admin.estimates.show', 'proposal' => 'admin.proposals.show', 'lead' => 'admin.leads.show', 'ticket' => 'admin.tickets.show', 'client' => 'admin.clients.show'];
                             $relRoute = $relRouteNames[$task->rel_type] ?? null;
+                            $paneTypeMap = ['estimate' => 'estimate', 'proposal' => 'proposal', 'ticket' => 'ticket'];
+                            $paneType = $paneTypeMap[$task->rel_type] ?? null;
                         @endphp
                         <span class="text-[10px] font-bold text-blue-500 uppercase block">{{ $task->rel_type }}</span>
                         @if($relRoute)
-                        <a href="{{ route($relRoute, $task->rel_id) }}" class="text-sm font-medium text-slate-800 hover:text-blue-600 truncate block">{{ $task->relatedEntity->name ?? $task->relatedEntity->number ?? 'N/A' }}</a>
+                        <a href="{{ route($relRoute, $task->rel_id) }}" @if($paneType) data-pane="show" data-pane-type="{{ $paneType }}" data-pane-id="{{ $task->rel_id }}" @endif class="text-sm font-medium text-slate-800 hover:text-blue-600 truncate block">{{ $task->relatedEntity->name ?? $task->relatedEntity->number ?? 'N/A' }}</a>
                         @else
                         <span class="text-sm font-medium text-slate-800">{{ $task->relatedEntity->name ?? $task->relatedEntity->number ?? 'N/A' }}</span>
                         @endif
@@ -550,7 +552,7 @@ $totalMinutes = $task->timers->reduce(function($carry, $t) {
                     @if(($task->hourly_rate ?? 0) > 0)
                     <div>
                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Hourly Rate</span>
-                        <p class="text-lg font-bold text-emerald-600">${{ number_format($task->hourly_rate, 2) }}<span class="text-xs text-slate-400 font-medium">/hr</span></p>
+                        <p class="text-lg font-bold text-emerald-600">{{ app_format_money($task->hourly_rate) }}<span class="text-xs text-slate-400 font-medium">/hr</span></p>
                     </div>
                     @endif
                     @if($task->billed)

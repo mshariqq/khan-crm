@@ -35,17 +35,22 @@
 
                     </div>
 
-                    <div class="space-y-1">
-                         <label class="text-sm font-medium text-slate-600">Item Group</label>
-                         <select name="group_id" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all @error('group_id') border-red-500 @enderror">
-                             <option value="">No Group</option>
-                             @foreach($groups as $group)
-                                 <option value="{{ $group->id }}" {{ old('group_id', $item->group_id) == $group->id ? 'selected' : '' }}>{{ $group->name }}</option>
-                             @endforeach
-                         </select>
-                         @error('group_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                     <div class="space-y-1">
+                          <label class="text-sm font-medium text-slate-600">Item Group</label>
+                          <div class="flex gap-2">
+                              <select name="group_id" class="flex-1 px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all @error('group_id') border-red-500 @enderror">
+                                  <option value="">No Group</option>
+                                  @foreach($groups as $group)
+                                      <option value="{{ $group->id }}" {{ old('group_id', $item->group_id) == $group->id ? 'selected' : '' }}>{{ $group->name }}</option>
+                                  @endforeach
+                              </select>
+                              <button type="button" onclick="openItemsGroupPane('{{ route('admin.itemsgroups.pane.create') }}')" class="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors" title="Add New Group">
+                                  <i class="bi bi-plus-lg"></i>
+                              </button>
+                          </div>
+                          @error('group_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
 
-                    </div>
+                     </div>
                 </div>
 
                 <div class="space-y-4">

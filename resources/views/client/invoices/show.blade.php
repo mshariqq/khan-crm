@@ -61,11 +61,11 @@
                                     {{ $item->qty }}
                                 </td>
                                 <td class="px-6 py-4 text-right text-sm text-slate-600">
-                                    {{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($item->rate, 2) }}
+                                    {{ app_format_money($item->rate, $invoice->currency) }}
                                 </td>
                                 <td class="px-6 py-4 text-right">
                                     <span class="text-sm font-bold text-slate-800">
-                                        {{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($item->amount, 2) }}
+                                        {{ app_format_money($item->amount, $invoice->currency) }}
                                     </span>
                                 </td>
                             </tr>
@@ -74,23 +74,23 @@
                         <tfoot class="bg-slate-50/50">
                             <tr>
                                 <td colspan="3" class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Subtotal</td>
-                                <td class="px-6 py-3 text-right text-sm font-bold text-slate-800">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->subtotal, 2) }}</td>
+                                <td class="px-6 py-3 text-right text-sm font-bold text-slate-800">{{ app_format_money($invoice->subtotal, $invoice->currency) }}</td>
                             </tr>
                             @if($invoice->total_tax > 0)
                             <tr>
                                 <td colspan="3" class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Tax</td>
-                                <td class="px-6 py-3 text-right text-sm font-bold text-slate-800">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->total_tax, 2) }}</td>
+                                <td class="px-6 py-3 text-right text-sm font-bold text-slate-800">{{ app_format_money($invoice->total_tax, $invoice->currency) }}</td>
                             </tr>
                             @endif
                             @if($invoice->discount_total > 0)
                             <tr>
                                 <td colspan="3" class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Discount</td>
-                                <td class="px-6 py-3 text-right text-sm font-bold text-rose-600">-{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->discount_total, 2) }}</td>
+                                <td class="px-6 py-3 text-right text-sm font-bold text-rose-600">-{{ app_format_money($invoice->discount_total, $invoice->currency) }}</td>
                             </tr>
                             @endif
                             <tr class="bg-slate-100/50">
                                 <td colspan="3" class="px-6 py-4 text-right text-sm font-bold text-slate-800 uppercase tracking-wider">Total Amount</td>
-                                <td class="px-6 py-4 text-right text-xl font-black text-blue-600">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->total, 2) }}</td>
+                                <td class="px-6 py-4 text-right text-xl font-black text-blue-600">{{ app_format_money($invoice->total, $invoice->currency) }}</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -113,15 +113,15 @@
                 <div class="space-y-4">
                     <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                         <span class="text-xs text-slate-500 font-medium">Total Amount</span>
-                        <span class="text-sm font-bold text-slate-800">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->total, 2) }}</span>
+                        <span class="text-sm font-bold text-slate-800">{{ app_format_money($invoice->total, $invoice->currency) }}</span>
                     </div>
                     <div class="flex items-center justify-between p-3 bg-emerald-50 rounded-xl">
                         <span class="text-xs text-emerald-600 font-medium">Paid Amount</span>
-                        <span class="text-sm font-bold text-emerald-700">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->payments()->sum('amount'), 2) }}</span>
+                        <span class="text-sm font-bold text-emerald-700">{{ app_format_money($invoice->payments()->sum('amount'), $invoice->currency) }}</span>
                     </div>
                     <div class="flex items-center justify-between p-3 bg-rose-50 rounded-xl border border-rose-100">
                         <span class="text-xs text-rose-600 font-medium">Balance Due</span>
-                        <span class="text-lg font-black text-rose-700">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->total - $invoice->payments()->sum('amount'), 2) }}</span>
+                        <span class="text-lg font-black text-rose-700">{{ app_format_money($invoice->total - $invoice->payments()->sum('amount'), $invoice->currency) }}</span>
                     </div>
                 </div>
 

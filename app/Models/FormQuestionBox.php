@@ -10,4 +10,9 @@ class FormQuestionBox extends Model
     protected $primaryKey = 'boxid';
     public $timestamps = true;
     protected $fillable = ['boxid', 'boxtype', 'questionid'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 }

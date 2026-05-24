@@ -17,7 +17,7 @@
                     <p class="text-xs text-slate-500">{{ $data->total() }} records</p>
                 </div>
             </div>
-            <a href="{{ route('admin.contacts.create', ['client_id' => $client->userid]) }}" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2">
+            <a href="{{ route('admin.contacts.create', ['client_id' => $client->userid]) }}" data-pane="create" data-pane-type="contact" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2">
                 <i class="bi bi-plus-lg"></i> Add Contact
             </a>
         </div>
@@ -61,7 +61,7 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <a href="{{ route('admin.contacts.edit', $contact->id) }}" class="p-2 text-slate-400 hover:text-amber-600 transition-colors" title="Edit Contact">
+                                <a href="{{ route('admin.contacts.edit', $contact->id) }}" data-pane="edit" data-pane-type="contact" data-pane-id="{{ $contact->id }}" class="p-2 text-slate-400 hover:text-amber-600 transition-colors" title="Edit Contact">
                                     <i class="bi bi-pencil-square text-lg"></i>
                                 </a>
                             </td>

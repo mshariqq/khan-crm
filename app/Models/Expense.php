@@ -16,6 +16,18 @@ class Expense extends Model
         'send_invoice_to_customer', 'recurring_from', 'dateadded', 'addedfrom'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'date' => 'datetime',
+        'last_recurring_date' => 'datetime',
+        'dateadded' => 'datetime',
+        'billable' => 'boolean',
+        'recurring' => 'boolean',
+        'custom_recurring' => 'boolean',
+        'create_invoice_billable' => 'boolean',
+        'send_invoice_to_customer' => 'boolean'
+    ];
     public function client()
     {
         return $this->belongsTo(Client::class, 'clientid', 'userid');

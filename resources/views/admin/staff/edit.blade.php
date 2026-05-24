@@ -45,6 +45,19 @@
                     <input type="password" name="password" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all @error('password') border-red-500 @enderror" placeholder="••••••••">
                     @error('password') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
+
+                @if(!$staff->email_verified_at)
+                <div class="mt-4">
+                    <a href="{{ route('admin.staff.send_verification', $staff->staffid) }}" class="text-sm text-indigo-600 hover:text-indigo-800 hover:underline" onclick="event.preventDefault(); document.getElementById('send-verify-form').submit();">
+                        <i class="bi bi-envelope-check"></i> Send verification email
+                    </a>
+                    <form id="send-verify-form" action="{{ route('admin.staff.send_verification', $staff->staffid) }}" method="POST" class="hidden">@csrf</form>
+                </div>
+                @else
+                <div class="mt-4 text-sm text-green-600">
+                    <i class="bi bi-check-circle"></i> Email verified {{ $staff->email_verified_at->diffForHumans() }}
+                </div>
+                @endif
             </div>
 
             <div class="space-y-4">
@@ -83,6 +96,30 @@
                 </div>
             </div>
         </div>
+
+        @if($allPermissions->isNotEmpty())
+        <div class="border-t border-slate-200 p-6">
+            <h3 class="text-lg font-semibold text-slate-800 border-b pb-2 mb-4">Permission Overrides</h3>
+            <p class="text-sm text-slate-500 mb-4">Check permissions to <strong class="text-red-600">deny</strong> them for this staff member (overrides role-granted permissions). Unchecked = inherited from role.</p>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                @foreach($allPermissions as $perm)
+                    @php
+                        $isDenied = in_array($perm->slug, $deniedPermissionSlugs);
+                        $isRoleGranted = in_array($perm->slug, $rolePermissionSlugs);
+                    @endphp
+                    <label class="flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all {{ $isDenied ? 'bg-red-50 border-red-300' : ($isRoleGranted ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-200') }} hover:border-slate-300">
+                        <input type="checkbox" name="denied_permissions[]" value="{{ $perm->slug }}" {{ $isDenied ? 'checked' : '' }} class="rounded text-red-600 focus:ring-red-500">
+                        <span class="text-xs {{ $isDenied ? 'text-red-700 font-medium' : 'text-slate-600' }}">
+                            {{ $perm->name }}
+                            @if($isRoleGranted && !$isDenied)
+                                <span class="text-green-500 ml-1">(role)</span>
+                            @endif
+                        </span>
+                    </label>
+                @endforeach
+            </div>
+        </div>
+        @endif
 
         <div class="p-6 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
             <a href="{{ route('admin.staff.index') }}" class="px-6 py-2 text-slate-600 font-semibold rounded-lg hover:bg-slate-200 transition-all">Cancel</a>

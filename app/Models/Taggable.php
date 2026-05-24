@@ -10,6 +10,10 @@ class Taggable extends Model
     public $timestamps = true;
     protected $fillable = ['rel_id', 'rel_type', 'tag_id', 'tag_order'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
     public function tag()
     {
         return $this->belongsTo(Tag::class, 'tag_id', 'id');

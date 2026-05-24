@@ -26,7 +26,7 @@
                         <select name="invoice_id" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all @error('invoice_id') border-red-500 @enderror" required>
                             <option value="">Select Invoice</option>
                             @foreach($invoices as $invoice)
-                                <option value="{{ $invoice->id }}" {{ old('invoice_id') == $invoice->id ? 'selected' : '' }}>{{ $invoice->number ?? 'INV-'.$invoice->id }} ({{ number_format($invoice->total, 2) }})</option>
+                                <option value="{{ $invoice->id }}" {{ old('invoice_id') == $invoice->id ? 'selected' : '' }}>{{ $invoice->number ?? 'INV-'.$invoice->id }} ({{ app_format_money($invoice->total, $invoice->currency) }})</option>
                             @endforeach
                         </select>
                         @error('invoice_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror

@@ -278,7 +278,6 @@ class InvoiceNotificationService
     {
         $client = $invoice->client;
         $contact = $client ? $client->primaryContact : null;
-        $currencySymbol = $invoice->currency->symbol ?? '$';
         $invoiceNumber = ($invoice->prefix ?? '') . $invoice->number;
         $amountDue = $invoice->total - $invoice->payments()->sum('amount');
         $amountPaid = $invoice->payments()->sum('amount');
@@ -288,8 +287,8 @@ class InvoiceNotificationService
             $lineItemsHtml .= '<tr>';
             $lineItemsHtml .= '<td style="padding:8px;border-bottom:1px solid #e2e8f0;">' . e($item->description) . '</td>';
             $lineItemsHtml .= '<td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:center;">' . (int)$item->qty . '</td>';
-            $lineItemsHtml .= '<td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:right;">' . $currencySymbol . number_format($item->rate, 2) . '</td>';
-            $lineItemsHtml .= '<td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:right;">' . $currencySymbol . number_format($item->amount, 2) . '</td>';
+            $lineItemsHtml .= '<td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:right;">' . app_format_money($item->rate, $invoice->currency) . '</td>';
+            $lineItemsHtml .= '<td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:right;">' . app_format_money($item->amount, $invoice->currency) . '</td>';
             $lineItemsHtml .= '</tr>';
         }
 
@@ -302,14 +301,14 @@ class InvoiceNotificationService
             'invoice_id' => (string)$invoice->id,
             'invoice_date' => $invoice->date ? \Carbon\Carbon::parse($invoice->date)->format('d M, Y') : '',
             'due_date' => $invoice->duedate ? \Carbon\Carbon::parse($invoice->duedate)->format('d M, Y') : '',
-            'amount_due' => $currencySymbol . number_format(max($amountDue, 0), 2),
-            'amount_paid' => $currencySymbol . number_format($amountPaid, 2),
-            'balance_due' => $currencySymbol . number_format(max($amountDue, 0), 2),
-            'invoice_total' => $currencySymbol . number_format($invoice->total, 2),
-            'subtotal' => $currencySymbol . number_format($invoice->subtotal, 2),
-            'total_tax' => $currencySymbol . number_format($invoice->total_tax, 2),
-            'currency' => $currencySymbol,
-            'currency_code' => $invoice->currency->name ?? 'USD',
+            'amount_due' => app_format_money(max($amountDue, 0), $invoice->currency),
+            'amount_paid' => app_format_money($amountPaid, $invoice->currency),
+            'balance_due' => app_format_money(max($amountDue, 0), $invoice->currency),
+            'invoice_total' => app_format_money($invoice->total, $invoice->currency),
+            'subtotal' => app_format_money($invoice->subtotal, $invoice->currency),
+            'total_tax' => app_format_money($invoice->total_tax, $invoice->currency),
+            'currency' => $invoice->currency->symbol ?? '$',
+            'currency_code' => app_get_currency_code($invoice->currency),
             'payment_link' => config('app.url') . '/invoices/' . $invoice->id . '/' . $invoice->hash,
             'invoice_link' => config('app.url') . '/invoices/' . $invoice->id . '/' . $invoice->hash,
             'staff_link' => route('admin.invoices.show', $invoice->id),
@@ -333,9 +332,8 @@ class InvoiceNotificationService
     protected function getPaymentData(Invoice $invoice): array
     {
         $lastPayment = $invoice->payments()->latest()->first();
-        $currencySymbol = $invoice->currency->symbol ?? '$';
         return [
-            'last_payment_amount' => $lastPayment ? $currencySymbol . number_format($lastPayment->amount, 2) : '',
+            'last_payment_amount' => $lastPayment ? app_format_money($lastPayment->amount, $invoice->currency) : '',
             'last_payment_date' => $lastPayment ? \Carbon\Carbon::parse($lastPayment->date)->format('d M, Y') : '',
             'last_payment_method' => $lastPayment ? ($lastPayment->paymentMode->name ?? '') : '',
         ];

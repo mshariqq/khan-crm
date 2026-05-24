@@ -23,7 +23,7 @@ class CreditNoteController extends Controller
     {
         if (!Auth::user()->can('credit_notes_view')) abort(403);
 
-        $query = CreditNote::with(['client', 'currencyRel']);
+        $query = CreditNote::with(['client', 'currency']);
 
         if ($request->filled('client')) {
             $query->where('clientid', $request->client);
@@ -51,7 +51,10 @@ class CreditNoteController extends Controller
         $taxes = Tax::all();
         $projects = Project::all();
         
-        return view('admin.creditnotes.create', compact('clients', 'currencies', 'items', 'taxes', 'projects'));
+        $lastCreditNote = \App\Models\CreditNote::orderBy('id', 'desc')->first();
+        $next_credit_note_number = $lastCreditNote ? (int)preg_replace('/[^0-9]/', '', $lastCreditNote->number) + 1 : (int)\App\Helpers\SettingsHelper::get('next_credit_note_number', 1);
+
+        return view('admin.creditnotes.create', compact('clients', 'currencies', 'items', 'taxes', 'projects', 'next_credit_note_number'));
     }
 
     public function store(Request $request)
@@ -71,10 +74,13 @@ class CreditNoteController extends Controller
 
         DB::beginTransaction();
         try {
+            $lastCreditNote = CreditNote::lockForUpdate()->orderBy('id', 'desc')->first();
+            $validated['number'] = $lastCreditNote ? (int)preg_replace('/[^0-9]/', '', $lastCreditNote->number) + 1 : (int)\App\Helpers\SettingsHelper::get('next_credit_note_number', 1);
+
             $creditNote = CreditNote::create(array_merge($validated, [
                 'datecreated' => now(),
                 'addedfrom' => Auth::id(),
-                'status' => 1,
+                'status' => CreditNote::STATUS_OPEN,
                 'include_shipping' => 0,
                 'show_shipping_on_credit_note' => 0,
                 'show_quantity_as' => 1,
@@ -111,11 +117,12 @@ class CreditNoteController extends Controller
     {
         if (!Auth::user()->can('credit_notes_view')) abort(403);
         
-        $creditNote = CreditNote::with(['client', 'currencyRel', 'items', 'credits.invoice'])->findOrFail($id);
+        $creditNote = CreditNote::with(['client', 'currency', 'items', 'credits.invoice'])->findOrFail($id);
         
         // Find unpaid invoices for this client to apply credit
         $availableInvoices = Invoice::where('clientid', $creditNote->clientid)
-            ->whereIn('status', [1, 2]) // Unpaid or Partially Paid
+            ->whereIn('status', [Invoice::STATUS_UNPAID, Invoice::STATUS_PARTIALLY_PAID]) // Unpaid
+$invoice->update(['status' => Invoice::STATUS_UNPAID]); or Partially Paid
             ->get();
 
         return view('admin.creditnotes.show', compact('creditNote', 'availableInvoices'));
@@ -187,9 +194,9 @@ class CreditNoteController extends Controller
         // Update invoice status
         $totalSettled = $invoice->totalSettled();
         if ($totalSettled >= $invoice->total) {
-            $invoice->update(['status' => 3]); // Paid
+            $invoice->update(['status' => Invoice::STATUS_PAID]);
         } elseif ($totalSettled > 0) {
-            $invoice->update(['status' => 2]); // Partially Paid
+            $invoice->update(['status' => Invoice::STATUS_PARTIALLY_PAID]);
         }
 
         return redirect()->route('admin.creditnotes.show', $creditNote->id)->with('success', 'Credit applied to invoice successfully!');
@@ -210,9 +217,9 @@ class CreditNoteController extends Controller
             if ($invoice) {
                 $totalSettled = $invoice->totalSettled();
                 if ($totalSettled <= 0) {
-                    $invoice->update(['status' => 1]); // Unpaid
+                    $invoice->update(['status' => Invoice::STATUS_UNPAID]);
                 } elseif ($totalSettled < $invoice->total) {
-                    $invoice->update(['status' => 2]); // Partially Paid
+                    $invoice->update(['status' => Invoice::STATUS_PARTIALLY_PAID]);
                 }
             }
         }

@@ -31,7 +31,6 @@ class OptionsSeeder extends Seeder
             // Email Settings (SMTP)
             ['name' => 'smtp_host', 'value' => 'smtp.gmail.com', 'autoload' => 1],
             ['name' => 'smtp_port', 'value' => '465', 'autoload' => 1],
-            ['name' => 'smtp_email', 'value' => '', 'autoload' => 1],
             ['name' => 'smtp_password', 'value' => '', 'autoload' => 1],
             ['name' => 'smtp_encrypt', 'value' => 'ssl', 'autoload' => 1],
             ['name' => 'email_signature', 'value' => '', 'autoload' => 1],
@@ -56,24 +55,14 @@ class OptionsSeeder extends Seeder
             
             // System Features
             ['name' => 'services', 'value' => '1', 'autoload' => 1],
-            ['name' => 'use_knowledge_base', 'value' => '1', 'autoload' => 1],
             ['name' => 'maximum_allowed_ticket_attachments', 'value' => '4', 'autoload' => 1],
             ['name' => 'ticket_attachments_file_extensions', 'value' => '.jpg,.jpeg,.png,.pdf,.doc,.docx,.zip,.rar', 'autoload' => 1],
             ['name' => 'staff_access_only_assigned_departments', 'value' => '1', 'autoload' => 1],
-            ['name' => 'tables_pagination_limit', 'value' => '25', 'autoload' => 1],
-            
-            // User Management
-            ['name' => 'allow_registration', 'value' => '0', 'autoload' => 1],
-            ['name' => 'knowledge_base_without_registration', 'value' => '1', 'autoload' => 1],
             
             // Invoice & Estimate
-            ['name' => 'invoice_prefix', 'value' => 'INV-', 'autoload' => 1],
-            ['name' => 'estimate_prefix', 'value' => 'EST-', 'autoload' => 1],
             ['name' => 'invoice_auto_operations_hour', 'value' => '09', 'autoload' => 1],
-            ['name' => 'invoice_due_after', 'value' => '30', 'autoload' => 1],
             
-            // Credit Notes
-            ['name' => 'credit_note_prefix', 'value' => 'CN-', 'autoload' => 1],
+            // Front End Settings
 
             // Front End Settings
             ['name' => 'copyright_text', 'value' => 'All rights reserved', 'autoload' => 1],

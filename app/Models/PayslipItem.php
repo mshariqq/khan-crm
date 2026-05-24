@@ -9,6 +9,10 @@ class PayslipItem extends Model
     protected $table = 'tblpayslip_items';
     protected $fillable = ['payslip_id', 'type', 'label', 'amount'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
     public function payslip()
     {
         return $this->belongsTo(StaffPayslip::class, 'payslip_id', 'id');

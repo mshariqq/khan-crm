@@ -14,6 +14,12 @@ class Vault extends Model
         'last_updated', 'last_updated_from', 'date_created'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'last_updated' => 'datetime',
+        'date_created' => 'datetime'
+    ];
     public function client()
     {
         return $this->belongsTo(Client::class, 'customer_id', 'userid');

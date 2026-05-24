@@ -19,81 +19,54 @@
         </div>
     </div>
 
-    <div class="flex items-center gap-2 flex-wrap">
-        <a href="{{ route('admin.settings.email_templates.index') }}" class="px-3 py-1.5 rounded-lg text-xs font-semibold {{ !request('type') ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }} transition-all">
-            All
-        </a>
+    <div class="flex items-center gap-2 flex-wrap" id="emailTemplateTabs">
         @foreach($types as $t)
-            <a href="{{ route('admin.settings.email_templates.index', ['type' => $t]) }}" class="px-3 py-1.5 rounded-lg text-xs font-semibold {{ request('type') == $t ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }} transition-all">
+            <button type="button" data-type="{{ $t }}" class="email-type-chip px-3 py-1.5 rounded-lg text-xs font-semibold transition-all {{ $currentType == $t ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
                 {{ ucfirst($t) }}
-            </a>
+            </button>
         @endforeach
     </div>
 
-    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-slate-50 border-b border-slate-200">
-                        <th class="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-400">Template Name</th>
-                        <th class="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-400">Type</th>
-                        <th class="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-400 text-center">Status</th>
-                        <th class="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @forelse($templates->groupBy('type') as $type => $group)
-                        <tr class="bg-slate-50/50">
-                            <td colspan="4" class="px-6 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                {{ $type }}
-                            </td>
-                        </tr>
-                        @foreach($group as $template)
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-6 py-4">
-                                <p class="font-bold text-slate-700">{{ $template->name }}</p>
-                                <p class="text-xs text-slate-400">{{ $template->subject }}</p>
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="px-2 py-1 bg-slate-100 text-slate-500 rounded text-[10px] font-bold uppercase tracking-wider">
-                                    {{ $template->type }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                @if($template->active)
-                                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase rounded-full">
-                                        <i class="bi bi-check-circle-fill"></i> Active
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-400 text-[10px] font-black uppercase rounded-full">
-                                        <i class="bi bi-dash-circle"></i> Inactive
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <a href="{{ route('admin.settings.email_templates.edit', $template->emailtemplateid) }}" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition">
-                                    <i class="bi bi-pencil-square"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        @endforeach
-                    @empty
-                        <tr>
-                            <td colspan="4" class="px-6 py-12 text-center text-slate-400">
-                                <i class="bi bi-envelope text-4xl block mb-2"></i>
-                                <p class="text-sm font-medium">No templates found</p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        @if($templates->hasPages())
-        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200">
-            {{ $templates->links() }}
-        </div>
-        @endif
+    <div id="emailTemplatesContent">
+        @include('admin.settings.email_templates_table')
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tabs = document.getElementById('emailTemplateTabs');
+    const content = document.getElementById('emailTemplatesContent');
+
+    tabs.addEventListener('click', function(e) {
+        const chip = e.target.closest('.email-type-chip');
+        if (!chip) return;
+
+        const type = chip.getAttribute('data-type');
+        if (!type) return;
+
+        tabs.querySelectorAll('.email-type-chip').forEach(c => {
+            c.classList.remove('bg-slate-800', 'text-white');
+            c.classList.add('bg-slate-100', 'text-slate-600', 'hover:bg-slate-200');
+        });
+        chip.classList.remove('bg-slate-100', 'text-slate-600', 'hover:bg-slate-200');
+        chip.classList.add('bg-slate-800', 'text-white');
+
+        content.innerHTML = '<div class="flex items-center justify-center py-12"><div class="text-slate-400 animate-pulse"><p class="text-sm font-medium">Loading...</p></div></div>';
+
+        fetch('{{ route('admin.settings.email_templates.index') }}?type=' + type, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        })
+        .then(r => {
+            if (!r.ok) throw new Error('Failed to load');
+            return r.text();
+        })
+        .then(html => {
+            content.innerHTML = html;
+        })
+        .catch(() => {
+            content.innerHTML = '<div class="flex items-center justify-center py-12 text-red-500"><p>Failed to load templates. Please try again.</p></div>';
+        });
+    });
+});
+</script>
 @endsection

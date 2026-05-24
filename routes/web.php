@@ -30,10 +30,19 @@ Route::post('/kb/article/{id}/feedback', [HomeController::class, 'kbFeedback'])-
 Route::middleware('guest')->group(function () {
     // Login routes - only for guest users
     Route::get('/login/staff', [StaffAuthController::class, 'showLogin'])->name('login.staff');
-    Route::post('/login/staff', [StaffAuthController::class, 'login']);
+    Route::post('/login/staff', [StaffAuthController::class, 'login'])->middleware('throttle:5,15');
     
     Route::get('/login/client', [ClientAuthController::class, 'showLogin'])->name('login.client');
-    Route::post('/login/client', [ClientAuthController::class, 'login']);
+    Route::post('/login/client', [ClientAuthController::class, 'login'])->middleware('throttle:5,15');
+
+    // Two-Factor Authentication routes
+    Route::get('/login/staff/2fa', [\App\Http\Controllers\Auth\TwoFactorChallengeController::class, 'showChallenge'])->name('staff.2fa.challenge');
+    Route::post('/login/staff/2fa', [\App\Http\Controllers\Auth\TwoFactorChallengeController::class, 'verify'])->name('staff.2fa.verify');
+    Route::post('/login/staff/2fa/resend', [\App\Http\Controllers\Auth\TwoFactorChallengeController::class, 'resend'])->name('staff.2fa.resend');
+
+    // Email Verification routes
+    Route::get('/email/verify/staff/{id}/{key}', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'verifyStaff'])->name('staff.email.verify');
+    Route::get('/email/verify/client/{id}/{key}', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'verifyContact'])->name('client.email.verify');
 });
 
 // --- STAFF AREA ---
@@ -87,6 +96,11 @@ Route::middleware(['auth:staff'])->prefix('admin')->group(function () {
         'show' => 'admin.items.show',
         'destroy' => 'admin.items.destroy',
     ]);
+
+    // Item Pane Routes
+    Route::get('pane/items/create', [\App\Http\Controllers\Admin\ItemPaneController::class, 'create'])->name('admin.items.pane.create');
+    Route::get('pane/items/{id}/edit', [\App\Http\Controllers\Admin\ItemPaneController::class, 'edit'])->name('admin.items.pane.edit');
+    Route::get('pane/items/{id}', [\App\Http\Controllers\Admin\ItemPaneController::class, 'show'])->name('admin.items.pane.show');
     Route::resource('proposals', \App\Http\Controllers\Admin\ProposalController::class)->names([
         'index' => 'admin.proposals.index',
         'create' => 'admin.proposals.create',
@@ -107,6 +121,13 @@ Route::middleware(['auth:staff'])->prefix('admin')->group(function () {
     Route::post('proposals/{proposal}/mark-accepted', [\App\Http\Controllers\Admin\ProposalController::class, 'markAccepted'])->name('admin.proposals.mark_accepted');
     Route::post('proposals/{proposal}/mark-declined', [\App\Http\Controllers\Admin\ProposalController::class, 'markDeclined'])->name('admin.proposals.mark_declined');
     Route::post('proposals/{proposal}/send', [\App\Http\Controllers\Admin\ProposalController::class, 'sendProposal'])->name('admin.proposals.send');
+    Route::get('proposals/{proposal}/print', [\App\Http\Controllers\Admin\ProposalController::class, 'print'])->name('admin.proposals.print');
+
+    // Proposal Pane Routes
+    Route::get('pane/proposals/create', [\App\Http\Controllers\Admin\ProposalPaneController::class, 'create'])->name('admin.proposals.pane.create');
+    Route::get('pane/proposals/{id}/edit', [\App\Http\Controllers\Admin\ProposalPaneController::class, 'edit'])->name('admin.proposals.pane.edit');
+    Route::get('pane/proposals/{id}', [\App\Http\Controllers\Admin\ProposalPaneController::class, 'show'])->name('admin.proposals.pane.show');
+
     Route::resource('subscriptions', \App\Http\Controllers\Admin\SubscriptionController::class)->names([
         'index' => 'admin.subscriptions.index',
         'create' => 'admin.subscriptions.create',
@@ -192,6 +213,11 @@ Route::middleware(['auth:staff'])->prefix('admin')->group(function () {
         'destroy' => 'admin.itemsgroups.destroy',
     ]);
 
+    // Items Group Pane Routes
+    Route::get('pane/items-groups/create', [\App\Http\Controllers\Admin\ItemsGroupPaneController::class, 'create'])->name('admin.itemsgroups.pane.create');
+    Route::get('pane/items-groups/{id}/edit', [\App\Http\Controllers\Admin\ItemsGroupPaneController::class, 'edit'])->name('admin.itemsgroups.pane.edit');
+    Route::get('pane/items-groups/{id}', [\App\Http\Controllers\Admin\ItemsGroupPaneController::class, 'show'])->name('admin.itemsgroups.pane.show');
+
     Route::get('/clients/search', [ClientController::class, 'searchClients'])->name('admin.clients.search');
     Route::get('/clients/export', [ClientController::class, 'exportCsv'])->name('admin.clients.export');
     Route::resource('clients/groups', CustomersGroupController::class)->names([
@@ -234,6 +260,10 @@ Route::middleware(['auth:staff'])->prefix('admin')->group(function () {
         'destroy' => 'admin.contacts.destroy',
     ]);
 
+    Route::get('pane/contacts/create', [\App\Http\Controllers\Admin\ContactPaneController::class, 'create'])->name('admin.contacts.pane.create');
+    Route::get('pane/contacts/{id}/edit', [\App\Http\Controllers\Admin\ContactPaneController::class, 'edit'])->name('admin.contacts.pane.edit');
+    Route::get('pane/contacts/{id}', [\App\Http\Controllers\Admin\ContactPaneController::class, 'show'])->name('admin.contacts.pane.show');
+
     Route::resource('staff', StaffController::class)->names([
         'index' => 'admin.staff.index',
         'create' => 'admin.staff.create',
@@ -242,6 +272,7 @@ Route::middleware(['auth:staff'])->prefix('admin')->group(function () {
         'update' => 'admin.staff.update',
         'destroy' => 'admin.staff.destroy',
     ]);
+    Route::post('staff/{id}/send-verification', [StaffController::class, 'sendVerificationEmail'])->name('admin.staff.send_verification');
 
     Route::resource('departments', DepartmentController::class)->names([
         'index' => 'admin.departments.index',
@@ -269,6 +300,10 @@ Route::middleware(['auth:staff'])->prefix('admin')->group(function () {
     Route::post('leads/{lead}/mark-lost', [\App\Http\Controllers\Admin\LeadController::class, 'markAsLost'])->name('admin.leads.mark_lost');
     Route::post('leads/{lead}/mark-junk', [\App\Http\Controllers\Admin\LeadController::class, 'markAsJunk'])->name('admin.leads.mark_junk');
     Route::post('leads/{lead}/gdpr', [\App\Http\Controllers\Admin\LeadController::class, 'storeGdpr'])->name('admin.leads.gdpr.store');
+
+    // Lead Pane Routes
+    Route::get('pane/leads/{lead}/proposals', [\App\Http\Controllers\Admin\LeadPaneController::class, 'showProposals'])->name('admin.leads.pane.proposals');
+    Route::get('pane/leads/{lead}/proposals/create', [\App\Http\Controllers\Admin\LeadPaneController::class, 'createProposal'])->name('admin.leads.pane.proposals.create');
 
     Route::resource('projects', \App\Http\Controllers\Admin\ProjectController::class)->names([
     'index' => 'admin.projects.index',
@@ -420,12 +455,16 @@ Route::resource('tickets', \App\Http\Controllers\Admin\TicketController::class)-
     // Invoice sub-routes
     Route::post('invoices/{invoice}/notes', [\App\Http\Controllers\Admin\InvoiceController::class, 'storeNote'])->name('admin.invoices.notes.store');
     Route::post('invoices/{invoice}/payments', [\App\Http\Controllers\Admin\InvoiceController::class, 'storePayment'])->name('admin.invoices.payments.store');
+    Route::get('invoices/{invoice}/payments/{payment}/edit', [\App\Http\Controllers\Admin\InvoiceController::class, 'editPayment'])->name('admin.invoices.payments.edit');
+    Route::put('invoices/{invoice}/payments/{payment}', [\App\Http\Controllers\Admin\InvoiceController::class, 'updatePayment'])->name('admin.invoices.payments.update');
+    Route::delete('invoices/{invoice}/payments/{payment}', [\App\Http\Controllers\Admin\InvoiceController::class, 'destroyPayment'])->name('admin.invoices.payments.destroy');
+    Route::post('invoices/{invoice}/credits', [\App\Http\Controllers\Admin\InvoiceController::class, 'storeCredit'])->name('admin.invoices.credits.store');
+    Route::delete('invoices/{invoice}/credits/{credit}', [\App\Http\Controllers\Admin\InvoiceController::class, 'destroyCredit'])->name('admin.invoices.credits.destroy');
     Route::post('invoices/{invoice}/mark-paid', [\App\Http\Controllers\Admin\InvoiceController::class, 'markAsPaid'])->name('admin.invoices.mark_paid');
     Route::post('invoices/{invoice}/mark-cancelled', [\App\Http\Controllers\Admin\InvoiceController::class, 'markAsCancelled'])->name('admin.invoices.mark_cancelled');
     Route::post('invoices/{invoice}/send', [\App\Http\Controllers\Admin\InvoiceController::class, 'sendInvoice'])->name('admin.invoices.send');
     Route::get('invoices/{invoice}/print', [\App\Http\Controllers\Admin\InvoiceController::class, 'print'])->name('admin.invoices.print');
     Route::post('invoices/{invoice}/reminders', [\App\Http\Controllers\Admin\InvoiceController::class, 'storeReminder'])->name('admin.invoices.reminders.store');
-    Route::delete('reminders/{reminder}', [\App\Http\Controllers\Admin\InvoiceController::class, 'deleteReminder'])->name('admin.reminders.destroy');
     Route::post('invoices/{invoice}/send-notification', [\App\Http\Controllers\Admin\InvoiceController::class, 'sendNotification'])->name('admin.invoices.send_notification');
 
     Route::resource('estimates', \App\Http\Controllers\Admin\EstimateController::class)->names([
@@ -437,6 +476,12 @@ Route::resource('tickets', \App\Http\Controllers\Admin\TicketController::class)-
         'show' => 'admin.estimates.show',
         'destroy' => 'admin.estimates.destroy',
     ]);
+
+    Route::get('estimates/{estimate}/print', [\App\Http\Controllers\Admin\EstimateController::class, 'print'])->name('admin.estimates.print');
+
+    Route::get('pane/estimates/create', [\App\Http\Controllers\Admin\EstimatePaneController::class, 'create'])->name('admin.estimates.pane.create');
+    Route::get('pane/estimates/{id}/edit', [\App\Http\Controllers\Admin\EstimatePaneController::class, 'edit'])->name('admin.estimates.pane.edit');
+    Route::get('pane/estimates/{id}', [\App\Http\Controllers\Admin\EstimatePaneController::class, 'show'])->name('admin.estimates.pane.show');
 
     // Estimate sub-routes
     Route::post('estimates/{estimate}/notes', [\App\Http\Controllers\Admin\EstimateController::class, 'storeNote'])->name('admin.estimates.store_note');
@@ -454,6 +499,10 @@ Route::resource('tickets', \App\Http\Controllers\Admin\TicketController::class)-
         'show' => 'admin.expenses.show',
         'destroy' => 'admin.expenses.destroy',
     ]);
+
+    Route::get('pane/expenses/create', [\App\Http\Controllers\Admin\ExpensePaneController::class, 'create'])->name('admin.expenses.pane.create');
+    Route::get('pane/expenses/{id}/edit', [\App\Http\Controllers\Admin\ExpensePaneController::class, 'edit'])->name('admin.expenses.pane.edit');
+    Route::get('pane/expenses/{id}', [\App\Http\Controllers\Admin\ExpensePaneController::class, 'show'])->name('admin.expenses.pane.show');
 
     Route::resource('credit-notes', \App\Http\Controllers\Admin\CreditNoteController::class)->names([
         'index' => 'admin.creditnotes.index',

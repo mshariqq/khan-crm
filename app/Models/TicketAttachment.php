@@ -9,4 +9,10 @@ class TicketAttachment extends Model
     protected $table = 'tblticket_attachments';
     public $timestamps = true;
     protected $fillable = ['id', 'ticketid', 'replyid', 'file_name', 'filetype', 'dateadded'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'dateadded' => 'datetime'
+    ];
 }

@@ -45,7 +45,7 @@ class CountryController extends Controller
             'cctld' => 'nullable|string|max:10',
         ]);
 
-        Country::create($request->all());
+        Country::create($request->only(['iso2', 'short_name', 'long_name', 'iso3', 'numcode', 'un_member', 'calling_code', 'cctld']));
 
         return redirect()->route('admin.countries.index')->with('success', 'Country created successfully!');
     }
@@ -78,7 +78,7 @@ class CountryController extends Controller
         ]);
 
         $country = Country::findOrFail($id);
-        $country->update($request->all());
+        $country->update($request->only(['iso2', 'short_name', 'long_name', 'iso3', 'numcode', 'un_member', 'calling_code', 'cctld']));
 
         return redirect()->route('admin.countries.index')->with('success', 'Country updated successfully!');
     }

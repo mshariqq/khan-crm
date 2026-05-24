@@ -10,6 +10,11 @@ class LeadActivityLog extends Model
     public $timestamps = true;
     protected $fillable = ['id', 'leadid', 'description', 'additional_data', 'date', 'staffid', 'full_name', 'custom_activity'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'date' => 'datetime'
+    ];
     public function lead()
     {
         return $this->belongsTo(Lead::class, 'leadid', 'id');

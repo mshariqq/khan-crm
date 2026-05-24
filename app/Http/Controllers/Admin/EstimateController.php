@@ -14,19 +14,28 @@ use App\Models\Note;
 use App\Models\Reminder;
 use App\Models\Invoice;
 use App\Models\Itemable;
+use App\Services\EstimateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class EstimateController extends Controller
 {
+    protected $estimateService;
+
+    public function __construct(EstimateService $estimateService)
+    {
+        $this->estimateService = $estimateService;
+    }
+
     public function index(Request $request)
     {
         if (!Auth::user()->can('estimates_view')) {
             abort(403, 'Unauthorized action.');
         }
 
-        $query = Estimate::query()->with(['client', 'currencyRel']);
+        $query = Estimate::query()->with(['client', 'currency']);
 
         if ($request->filled('client')) {
             $query->where('clientid', $request->client);
@@ -37,10 +46,10 @@ class EstimateController extends Controller
         }
 
         $total = $query->count();
-        $draft = Estimate::where('status', 1)->count();
-        $sent = Estimate::where('status', 2)->count();
-        $accepted = Estimate::where('status', 3)->count();
-        $declined = Estimate::where('status', 4)->count();
+        $draft = Estimate::where('status', Estimate::STATUS_DRAFT)->count();
+        $sent = Estimate::where('status', Estimate::STATUS_SENT)->count();
+        $accepted = Estimate::where('status', Estimate::STATUS_ACCEPTED)->count();
+        $declined = Estimate::where('status', Estimate::STATUS_DECLINED)->count();
         $estimates = $query->paginate(15)->withQueryString();
         $clients = Client::all();
 
@@ -60,7 +69,10 @@ class EstimateController extends Controller
         $items = Item::all();
         $taxes = Tax::all();
 
-        return view('admin.estimates.create', compact('clients', 'currencies', 'staff', 'projects', 'items', 'taxes'));
+        $lastEstimate = \App\Models\Estimate::orderBy('id', 'desc')->first();
+        $next_estimate_number = $lastEstimate ? (int)preg_replace('/[^0-9]/', '', $lastEstimate->number) + 1 : (int)\App\Helpers\SettingsHelper::get('next_estimate_number', 1);
+
+        return view('admin.estimates.create', compact('clients', 'currencies', 'staff', 'projects', 'items', 'taxes', 'next_estimate_number'));
     }
 
     public function store(Request $request)
@@ -107,61 +119,23 @@ class EstimateController extends Controller
             'terms' => 'nullable|string',
         ]);
 
-        // Set defaults
-        $validated['subtotal'] = $validated['subtotal'] ?? 0;
-        $validated['total_tax'] = $validated['total_tax'] ?? 0;
-        $validated['adjustment'] = $validated['adjustment'] ?? 0;
-        $validated['discount_percent'] = $validated['discount_percent'] ?? 0;
-        $validated['discount_total'] = $validated['discount_total'] ?? 0;
-        $validated['include_shipping'] = $validated['include_shipping'] ?? 0;
-        $validated['show_shipping_on_estimate'] = $validated['show_shipping_on_estimate'] ?? 0;
-        
-        $estimateData = $validated;
-        $estimateData['date'] = $request->date ?? date('Y-m-d');
-        $estimateData['datecreated'] = now();
-        $estimateData['addedfrom'] = Auth::id();
-        $estimateData['hash'] = Str::random(32);
-        $estimateData['sent'] = 0;
-        
-        // Required fields with defaults from migration
-        $estimateData['show_quantity_as'] = $request->show_quantity_as ?? 1;
-        $estimateData['discount_type'] = $request->discount_type ?? 'percent';
-        $estimateData['sale_agent'] = $request->sale_agent ?? 0;
-        $estimateData['project_id'] = $request->project_id ?? 0;
-        $estimateData['billing_country'] = $request->billing_country ?? 0;
-        $estimateData['shipping_country'] = $request->shipping_country ?? 0;
-        $estimateData['prefix'] = $request->prefix ?? '';
-        $estimateData['number_format'] = $request->number_format ?? 0;
-        
-        // Only add nullable fields if they have values
-        if (!empty($request->reference_no)) $estimateData['reference_no'] = $request->reference_no;
-        if (!empty($request->expirydate)) $estimateData['expirydate'] = $request->expirydate;
-        
-        $estimate = Estimate::create($estimateData);
+        DB::beginTransaction();
+        try {
+            $estimateData = $this->estimateService->prepareEstimateData($validated, $request);
+            $estimateData['number'] = $this->estimateService->generateNextNumber();
 
-        // Save items
-        if ($request->has('item_description')) {
-            $descriptions = $request->item_description;
-            $qtys = $request->item_qty ?? [];
-            $rates = $request->item_rate ?? [];
-            $amounts = $request->item_amount ?? [];
+            $estimate = Estimate::create($estimateData);
 
-            foreach ($descriptions as $index => $description) {
-                if (!empty($description)) {
-                    Itemable::create([
-                        'rel_id' => $estimate->id,
-                        'rel_type' => 'estimate',
-                        'description' => $description,
-                        'qty' => $qtys[$index] ?? 1,
-                        'rate' => $rates[$index] ?? 0,
-                        'amount' => $amounts[$index] ?? 0,
-                        'item_order' => $index,
-                    ]);
-                }
-            }
+            $totals = $this->estimateService->saveItems($estimate, $request);
+            $this->estimateService->recalculateTotals($estimate, $totals['subtotal'], $totals['total_tax'], (float) ($validated['adjustment'] ?? 0), (float) ($validated['discount_total'] ?? 0));
+
+            DB::commit();
+
+            return redirect()->route('admin.estimates.index')->with('success', 'Estimate created successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Failed to create estimate: ' . $e->getMessage()])->withInput();
         }
-
-        return redirect()->route('admin.estimates.index')->with('success', 'Estimate created successfully!');
     }
 
     public function edit($id)
@@ -225,9 +199,36 @@ class EstimateController extends Controller
         ]);
 
         $estimate = Estimate::findOrFail($id);
+
+        if (in_array($estimate->status, [Estimate::STATUS_ACCEPTED, Estimate::STATUS_DECLINED, Estimate::STATUS_INVOICED])) {
+            return back()->withErrors(['error' => 'Cannot modify an accepted, declined, or invoiced estimate.']);
+        }
+
+        $validated['include_shipping'] = $validated['include_shipping'] ?? 0;
+        $validated['show_shipping_on_estimate'] = $validated['show_shipping_on_estimate'] ?? 0;
+        $validated['discount_percent'] = $validated['discount_percent'] ?? 0;
+        $validated['discount_total'] = $validated['discount_total'] ?? 0;
+        $validated['adjustment'] = $validated['adjustment'] ?? 0;
+        $validated['subtotal'] = $validated['subtotal'] ?? 0;
+        $validated['total_tax'] = $validated['total_tax'] ?? 0;
+        $validated['sale_agent'] = $validated['sale_agent'] ?? 0;
+        $validated['project_id'] = $validated['project_id'] ?? 0;
+        $validated['billing_country'] = $validated['billing_country'] ?? 0;
+        $validated['shipping_country'] = $validated['shipping_country'] ?? 0;
+        $validated['show_quantity_as'] = $validated['show_quantity_as'] ?? 1;
+
         $estimate->update($validated);
 
+        $totals = $this->estimateService->syncItemsFromRequest($estimate, $request);
+        $this->estimateService->recalculateTotals($estimate, $totals['subtotal'], $totals['total_tax'], (float) ($validated['adjustment'] ?? 0), (float) ($validated['discount_total'] ?? 0));
+
         return redirect()->route('admin.estimates.index')->with('success', 'Estimate updated successfully!');
+    }
+
+    public function print($id)
+    {
+        $estimate = Estimate::with(['client', 'currency', 'items'])->findOrFail($id);
+        return view('admin.estimates.pdf', compact('estimate'));
     }
 
     public function show($id)
@@ -262,7 +263,7 @@ class EstimateController extends Controller
 
         $estimate = Estimate::findOrFail($id);
         Note::create([
-            'content' => $request->content,
+            'description' => $request->content,
             'rel_id' => $estimate->id,
             'rel_type' => 'estimate',
             'dateadded' => now(),
@@ -291,7 +292,7 @@ class EstimateController extends Controller
             'date' => $request->date,
             'staff' => Auth::id(),
             'creator' => Auth::id(),
-            'is_notified' => 0,
+            'isnotified' => 0,
         ]);
 
         return redirect()->route('admin.estimates.show', $estimate->id)->with('success', 'Reminder added!');
@@ -304,7 +305,7 @@ class EstimateController extends Controller
         }
 
         $estimate = Estimate::findOrFail($id);
-        $estimate->update(['status' => 3]);
+        $estimate->update(['status' => Estimate::STATUS_ACCEPTED]);
 
         return redirect()->route('admin.estimates.show', $estimate->id)->with('success', 'Estimate accepted!');
     }
@@ -316,7 +317,7 @@ class EstimateController extends Controller
         }
 
         $estimate = Estimate::findOrFail($id);
-        $estimate->update(['status' => 4]);
+        $estimate->update(['status' => Estimate::STATUS_DECLINED]);
 
         return redirect()->route('admin.estimates.show', $estimate->id)->with('success', 'Estimate declined!');
     }
@@ -327,31 +328,72 @@ class EstimateController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $estimate = Estimate::findOrFail($id);
+        try {
+            DB::beginTransaction();
 
-        $invoice = Invoice::create([
-            'clientid' => $estimate->clientid,
-            'number' => $estimate->number,
-            'prefix' => $estimate->prefix,
-            'date' => now(),
-            'duedate' => now()->addDays(30),
-            'currency' => $estimate->currency,
-            'subtotal' => $estimate->subtotal,
-            'total_tax' => $estimate->total_tax,
-            'total' => $estimate->total,
-            'status' => 1,
-            'datecreated' => now(),
-            'addedfrom' => Auth::id(),
-            'hash' => Str::random(32),
-            'billing_street' => $estimate->billing_street,
-            'billing_city' => $estimate->billing_city,
-            'billing_state' => $estimate->billing_state,
-            'billing_zip' => $estimate->billing_zip,
-            'billing_country' => $estimate->billing_country,
-        ]);
+            $estimate = Estimate::with('items')->findOrFail($id);
 
-        $estimate->update(['status' => 5, 'invoice_id' => $invoice->id]);
+            $invoice = Invoice::create([
+                'clientid' => $estimate->clientid,
+                'number' => $estimate->number,
+                'prefix' => $estimate->prefix,
+                'number_format' => $estimate->number_format,
+                'date' => now(),
+                'duedate' => now()->addDays(30),
+                'currency' => $estimate->currency,
+                'subtotal' => $estimate->subtotal,
+                'total_tax' => $estimate->total_tax,
+                'total' => $estimate->total,
+                'adjustment' => $estimate->adjustment,
+                'status' => Estimate::STATUS_DRAFT,
+                'datecreated' => now(),
+                'addedfrom' => Auth::id(),
+                'hash' => Str::random(32),
+                'billing_street' => $estimate->billing_street,
+                'billing_city' => $estimate->billing_city,
+                'billing_state' => $estimate->billing_state,
+                'billing_zip' => $estimate->billing_zip,
+                'billing_country' => $estimate->billing_country,
+                'shipping_street' => $estimate->shipping_street,
+                'shipping_city' => $estimate->shipping_city,
+                'shipping_state' => $estimate->shipping_state,
+                'shipping_zip' => $estimate->shipping_zip,
+                'shipping_country' => $estimate->shipping_country,
+                'include_shipping' => $estimate->include_shipping,
+                'show_shipping_on_invoice' => $estimate->show_shipping_on_estimate,
+                'show_quantity_as' => $estimate->show_quantity_as,
+                'project_id' => $estimate->project_id,
+                'sale_agent' => $estimate->sale_agent,
+                'discount_percent' => $estimate->discount_percent,
+                'discount_total' => $estimate->discount_total,
+                'discount_type' => $estimate->discount_type,
+                'clientnote' => $estimate->clientnote,
+                'adminnote' => $estimate->adminnote,
+                'terms' => $estimate->terms,
+                'reference_no' => $estimate->reference_no,
+            ]);
 
-        return redirect()->route('admin.invoices.show', $invoice->id)->with('success', 'Invoice created from estimate!');
+            foreach ($estimate->items as $item) {
+                Itemable::create([
+                    'rel_id' => $invoice->id,
+                    'rel_type' => 'invoice',
+                    'description' => $item->description,
+                    'qty' => $item->qty ?? 1,
+                    'rate' => $item->rate ?? 0,
+                    'amount' => $item->amount ?? 0,
+                    'tax_rate' => $item->tax_rate ?? 0,
+                    'item_order' => $item->item_order ?? 0,
+                ]);
+            }
+
+            $estimate->update(['status' => Estimate::STATUS_INVOICED, 'invoiceid' => $invoice->id, 'invoiced_date' => now()]);
+
+            DB::commit();
+
+            return redirect()->route('admin.invoices.show', $invoice->id)->with('success', 'Invoice created from estimate!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Error converting estimate to invoice: ' . $e->getMessage());
+        }
     }
 }

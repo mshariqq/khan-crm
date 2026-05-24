@@ -10,6 +10,11 @@ class NewsfeedPostComment extends Model
     public $timestamps = true;
     protected $fillable = ['id', 'content', 'userid', 'postid', 'dateadded'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'dateadded' => 'datetime'
+    ];
     public function post()
     {
         return $this->belongsTo(NewsfeedPost::class, 'postid', 'postid');

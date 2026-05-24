@@ -3,7 +3,6 @@
 @section('breadcrumb', 'Create Proposal')
 
 @push('styles')
-<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
 <style>
 .invoice-builder { font-family: 'Inter', sans-serif; }
 .line-item { transition: all 0.2s ease; }
@@ -13,14 +12,15 @@
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 .amount-display { font-variant-numeric: tabular-nums; }
-.ql-editor { font-size: 14px; padding: 15px; min-height: 150px; }
-.ql-toolbar { border: 1px solid #e2e8f0 !important; border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; background: #f8fafc; }
-.ql-container { border: 1px solid #e2e8f0 !important; border-top: none !important; border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
+#content-editor { height: 320px; }
+#adminnote-editor, #terms-editor { height: 200px; }
+#content-editor .ql-editor { min-height: 280px; }
+#adminnote-editor .ql-editor, #terms-editor .ql-editor { min-height: 160px; }
 </style>
 @endpush
 
 @section('main')
-<div class="invoice-builder p-4 lg:p-6 space-y-6 bg-slate-50 min-h-screen">
+<div class="invoice-builder p-4 lg:p-6 space-y-6">
     {{-- Header --}}
     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
@@ -97,9 +97,9 @@
                     </div>
                     <div>
                         <label class="text-xs font-medium text-slate-500 mb-1 block">Currency</label>
-                        <select name="currency" class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm" required>
+                        <select name="currency" onchange="updateCurrencySymbol()" class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm" required>
                             @foreach($currencies as $currency)
-                                <option value="{{ $currency->id }}" {{ old('currency') == $currency->id ? 'selected' : '' }}>{{ $currency->symbol }} {{ $currency->name }}</option>
+                                <option value="{{ $currency->id }}" data-symbol="{{ $currency->symbol }}" {{ old('currency') == $currency->id ? 'selected' : '' }}>{{ $currency->symbol }} {{ $currency->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -268,75 +268,82 @@
             document.querySelector('#terms-input').value = termsQuill.root.innerHTML;
         };
     });
-</script>
-<script>
-let lineItemCount = 1;
 
-function addLineItem() {
-    const tbody = document.getElementById('line-items-body');
-    const row = document.createElement('tr');
-    row.className = 'line-item';
-    row.dataset.index = lineItemCount;
-    row.innerHTML = `
-        <td class="px-4 py-3 text-sm text-slate-400 text-center item-number">${lineItemCount + 1}</td>
-        <td class="px-4 py-2">
-            <input type="text" name="item_description[]" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Item name or description">
-        </td>
-        <td class="px-4 py-2">
-            <input type="number" name="item_qty[]" value="1" min="0.01" step="0.01" class="qty-input w-full px-2 py-2 rounded-lg border border-slate-200 text-sm text-center focus:ring-2 focus:ring-blue-500 outline-none" onchange="calculateTotal(this)">
-        </td>
-        <td class="px-4 py-2">
-            <input type="number" name="item_rate[]" value="0" min="0" step="0.01" class="rate-input w-full px-2 py-2 rounded-lg border border-slate-200 text-sm text-right focus:ring-2 focus:ring-blue-500 outline-none" onchange="calculateTotal(this)">
-        </td>
-        <td class="px-4 py-2">
-            <div class="amount-display text-right font-medium text-slate-800 bg-slate-50 px-3 py-2 rounded-lg">$0.00</div>
-            <input type="hidden" name="item_amount[]" class="amount-input" value="0">
-        </td>
-        <td class="px-2 py-2">
-            <button type="button" onclick="removeLineItem(this)" class="text-slate-300 hover:text-red-500 transition-colors p-1">
-                <i class="bi bi-x-lg"></i>
-            </button>
-        </td>
-    `;
-    tbody.appendChild(row);
-    lineItemCount++;
-    recalculateAll();
-}
+    let lineItemCount = 1;
 
-function removeLineItem(btn) {
-    const tbody = document.getElementById('line-items-body');
-    if (tbody.children.length > 1) {
-        btn.closest('tr').remove();
-        tbody.querySelectorAll('.line-item').forEach((row, index) => {
-            row.querySelector('.item-number').textContent = index + 1;
-        });
+    function addLineItem() {
+        const tbody = document.getElementById('line-items-body');
+        const row = document.createElement('tr');
+        row.className = 'line-item';
+        row.dataset.index = lineItemCount;
+        row.innerHTML = `
+            <td class="px-4 py-3 text-sm text-slate-400 text-center item-number">${lineItemCount + 1}</td>
+            <td class="px-4 py-2">
+                <input type="text" name="item_description[]" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Item name or description">
+            </td>
+            <td class="px-4 py-2">
+                <input type="number" name="item_qty[]" value="1" min="0.01" step="0.01" class="qty-input w-full px-2 py-2 rounded-lg border border-slate-200 text-sm text-center focus:ring-2 focus:ring-blue-500 outline-none" onchange="calculateTotal(this)">
+            </td>
+            <td class="px-4 py-2">
+                <input type="number" name="item_rate[]" value="0" min="0" step="0.01" class="rate-input w-full px-2 py-2 rounded-lg border border-slate-200 text-sm text-right focus:ring-2 focus:ring-blue-500 outline-none" onchange="calculateTotal(this)">
+            </td>
+            <td class="px-4 py-2">
+                <div class="amount-display text-right font-medium text-slate-800 bg-slate-50 px-3 py-2 rounded-lg">${getCurrencySymbol()}0.00</div>
+                <input type="hidden" name="item_amount[]" class="amount-input" value="0">
+            </td>
+            <td class="px-2 py-2">
+                <button type="button" onclick="removeLineItem(this)" class="text-slate-300 hover:text-red-500 transition-colors p-1">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+        lineItemCount++;
         recalculateAll();
     }
-}
 
-function calculateTotal(element) {
-    const row = element.closest('.line-item');
-    const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
-    const rate = parseFloat(row.querySelector('.rate-input').value) || 0;
-    const amount = qty * rate;
-    row.querySelector('.amount-display').textContent = '$' + amount.toFixed(2);
-    row.querySelector('.amount-input').value = amount.toFixed(2);
+    function removeLineItem(btn) {
+        const tbody = document.getElementById('line-items-body');
+        if (tbody.children.length > 1) {
+            btn.closest('tr').remove();
+            tbody.querySelectorAll('.line-item').forEach((row, index) => {
+                row.querySelector('.item-number').textContent = index + 1;
+            });
+            recalculateAll();
+        }
+    }
+
+    function getCurrencySymbol() {
+        const sel = document.querySelector('select[name="currency"]');
+        if (!sel) return '$';
+        const opt = sel.options[sel.selectedIndex];
+        return opt ? opt.getAttribute('data-symbol') || '$' : '$';
+    }
+
+    function updateCurrencySymbol() { recalculateAll(); }
+
+    function calculateTotal(element) {
+        const row = element.closest('.line-item');
+        const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+        const rate = parseFloat(row.querySelector('.rate-input').value) || 0;
+        const amount = qty * rate;
+        row.querySelector('.amount-display').textContent = getCurrencySymbol() + amount.toFixed(2);
+        row.querySelector('.amount-input').value = amount.toFixed(2);
+        recalculateAll();
+    }
+
+    function recalculateAll() {
+        let subtotal = 0;
+        document.querySelectorAll('.line-item').forEach(row => {
+            subtotal += parseFloat(row.querySelector('.amount-input').value) || 0;
+        });
+        document.getElementById('display-subtotal').textContent = getCurrencySymbol() + subtotal.toFixed(2);
+        document.getElementById('display-total').textContent = getCurrencySymbol() + subtotal.toFixed(2);
+        document.querySelector('input[name="subtotal"]').value = subtotal.toFixed(2);
+        document.querySelector('input[name="total"]').value = subtotal.toFixed(2);
+    }
+
     recalculateAll();
-}
-
-function recalculateAll() {
-    let subtotal = 0;
-    document.querySelectorAll('.line-item').forEach(row => {
-        subtotal += parseFloat(row.querySelector('.amount-input').value) || 0;
-    });
-    document.getElementById('display-subtotal').textContent = '$' + subtotal.toFixed(2);
-    document.getElementById('display-total').textContent = '$' + subtotal.toFixed(2);
-    document.querySelector('input[name="subtotal"]').value = subtotal.toFixed(2);
-    document.querySelector('input[name="total"]').value = subtotal.toFixed(2);
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    recalculateAll();
-});
 </script>
+@endpush
 @endsection

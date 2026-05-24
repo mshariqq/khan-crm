@@ -17,6 +17,11 @@ class WebToLead extends Model
         'track_duplicate_field_and', 'create_task_on_duplicate', 'dateadded'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'dateadded' => 'datetime'
+    ];
     public function source()
     {
         return $this->belongsTo(LeadSource::class, 'lead_source', 'id');

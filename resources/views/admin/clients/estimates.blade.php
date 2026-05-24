@@ -17,7 +17,7 @@
                     <p class="text-xs text-slate-500">{{ $data->total() }} records</p>
                 </div>
             </div>
-            <a href="{{ route('admin.estimates.create', ['client_id' => $client->userid]) }}" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2">
+            <a href="{{ route('admin.estimates.create', ['client_id' => $client->userid]) }}" data-pane="create" data-pane-type="estimate" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2">
                 <i class="bi bi-plus-lg"></i> New Estimate
             </a>
         </div>
@@ -46,21 +46,21 @@
                         @php $s = $estimateStatusMap[$estimate->status] ?? ['label' => 'Unknown', 'class' => 'bg-slate-100 text-slate-700']; @endphp
                         <tr class="hover:bg-slate-50 transition-colors">
                             <td class="px-6 py-4">
-                                <a href="{{ route('admin.estimates.show', $estimate->id) }}" class="text-sm font-semibold text-cyan-600 hover:text-cyan-800">{{ ($estimate->prefix ?? '') . $estimate->number }}</a>
+                                <a href="{{ route('admin.estimates.show', $estimate->id) }}" data-pane="show" data-pane-type="estimate" data-pane-id="{{ $estimate->id }}" class="text-sm font-semibold text-cyan-600 hover:text-cyan-800">{{ ($estimate->prefix ?? '') . $estimate->number }}</a>
                             </td>
                             <td class="px-6 py-4 text-sm text-slate-600">{{ \Carbon\Carbon::parse($estimate->date)->format('M j, Y') }}</td>
                             <td class="px-6 py-4 text-sm {{ $estimate->expirydate && \Carbon\Carbon::parse($estimate->expirydate)->isPast() && $estimate->status == 1 ? 'text-red-600 font-medium' : 'text-slate-600' }}">
                                 {{ $estimate->expirydate ? \Carbon\Carbon::parse($estimate->expirydate)->format('M j, Y') : '—' }}
                             </td>
-                            <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ ($estimate->currencyRel->symbol ?? '$') . number_format($estimate->total, 2) }}</td>
+                            <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ app_format_money($estimate->total, $estimate->currency) }}</td>
                             <td class="px-6 py-4">
                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold {{ $s['class'] }}">{{ $s['label'] }}</span>
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <a href="{{ route('admin.estimates.show', $estimate->id) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View Estimate">
+                                <a href="{{ route('admin.estimates.show', $estimate->id) }}" data-pane="show" data-pane-type="estimate" data-pane-id="{{ $estimate->id }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View Estimate">
                                     <i class="bi bi-eye text-lg"></i>
                                 </a>
-                                <a href="{{ route('admin.estimates.edit', $estimate->id) }}" class="p-2 text-slate-400 hover:text-amber-600 transition-colors" title="Edit Estimate">
+                                <a href="{{ route('admin.estimates.edit', $estimate->id) }}" data-pane="edit" data-pane-type="estimate" data-pane-id="{{ $estimate->id }}" class="p-2 text-slate-400 hover:text-amber-600 transition-colors" title="Edit Estimate">
                                     <i class="bi bi-pencil-square text-lg"></i>
                                 </a>
                             </td>

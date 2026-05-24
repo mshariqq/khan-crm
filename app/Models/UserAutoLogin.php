@@ -13,6 +13,11 @@ class UserAutoLogin extends Model
     public $timestamps = true;
     protected $fillable = ['key_id', 'user_id', 'user_agent', 'last_ip', 'last_login', 'staff'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'last_login' => 'datetime'
+    ];
     public function staff()
     {
         return $this->belongsTo(Staff::class, 'staff', 'staffid');

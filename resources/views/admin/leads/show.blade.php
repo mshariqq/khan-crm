@@ -19,7 +19,7 @@
             @if($lead->lead_value)
             <div class="text-right px-4 py-2 bg-emerald-50 rounded-lg border border-emerald-200">
                 <p class="text-xs text-emerald-600 font-medium">Lead Value</p>
-                <p class="text-lg font-bold text-emerald-700">${{ number_format($lead->lead_value, 2) }}</p>
+                <p class="text-lg font-bold text-emerald-700">{{ app_format_money($lead->lead_value) }}</p>
             </div>
             @endif
             <span class="px-3 py-1.5 rounded-lg text-xs font-semibold
@@ -193,7 +193,7 @@
                                         <div class="flex items-center gap-3">
                                             <span class="w-2 h-2 rounded-full {{ $task->status == 5 ? 'bg-emerald-500' : ($task->status == 4 ? 'bg-blue-500' : 'bg-amber-500') }}"></span>
                                             <div>
-                                                <a href="{{ route('admin.tasks.show', $task->id) }}" data-pane="show" data-pane-id="{{ $task->id }}" class="text-sm font-medium text-slate-700 hover:text-blue-600">{{ $task->name }}</a>
+                                                <a href="{{ route('admin.tasks.show', $task->id) }}" data-pane="show" data-pane-type="task" data-pane-id="{{ $task->id }}" class="text-sm font-medium text-slate-700 hover:text-blue-600">{{ $task->name }}</a>
                                                 <p class="text-xs text-slate-400">Due: {{ $task->duedate ? \Carbon\Carbon::parse($task->duedate)->format('M d, Y') : 'No due date' }}</p>
                                             </div>
                                         </div>
@@ -203,7 +203,7 @@
                         @else
                             <div class="text-center py-4">
                                 <p class="text-sm text-slate-400 mb-2">No tasks linked to this lead</p>
-                                <a href="{{ route('admin.tasks.create') }}?rel_type=lead&rel_id={{ $lead->id }}" data-pane="create" class="text-blue-600 text-sm hover:underline">+ Create Task</a>
+                                <a href="{{ route('admin.tasks.create') }}?rel_type=lead&rel_id={{ $lead->id }}" data-pane="create" data-pane-type="task" class="text-blue-600 text-sm hover:underline">+ Create Task</a>
                             </div>
                         @endif
                     </div>
@@ -215,8 +215,8 @@
                                 @foreach($lead->proposals()->orderBy('datecreated', 'desc')->get() as $proposal)
                                     <div class="bg-slate-50 rounded-lg p-3 flex justify-between items-center">
                                         <div>
-                                            <p class="text-sm font-medium text-slate-700">{{ $proposal->subject }}</p>
-                                            <p class="text-xs text-slate-400">${{ number_format($proposal->total, 2) }} • {{ \Carbon\Carbon::parse($proposal->datecreated)->format('M d, Y') }}</p>
+                                            <a href="{{ route('admin.proposals.pane.show', $proposal->id) }}" data-pane="show" data-pane-id="{{ $proposal->id }}" data-pane-type="proposal" class="text-sm font-medium text-slate-700 hover:text-blue-600">{{ $proposal->subject }}</a>
+                                            <p class="text-xs text-slate-400">{{ app_format_money($proposal->total) }} • {{ \Carbon\Carbon::parse($proposal->datecreated)->format('M d, Y') }}</p>
                                         </div>
                                         <span class="px-2 py-1 text-xs rounded
                                             {{ $proposal->status == 1 ? 'bg-amber-100 text-amber-700' : '' }}
@@ -226,14 +226,14 @@
                                             {{ $proposal->status == 5 ? 'bg-slate-100 text-slate-700' : '' }}">
                                             {{ $proposal->status == 1 ? 'Draft' : ($proposal->status == 2 ? 'Sent' : ($proposal->status == 3 ? 'Accepted' : ($proposal->status == 4 ? 'Declined' : 'Expired'))) }}
                                         </span>
-                                        <a href="{{ route('admin.proposals.show', $proposal->id) }}" class="text-blue-600 text-sm hover:underline">View</a>
+                                        <a href="{{ route('admin.proposals.pane.show', $proposal->id) }}" data-pane="show" data-pane-id="{{ $proposal->id }}" data-pane-type="proposal" class="text-blue-600 text-sm hover:underline">View</a>
                                     </div>
                                 @endforeach
                             </div>
                         @else
                             <div class="text-center py-4">
                                 <p class="text-sm text-slate-400 mb-2">No proposals linked to this lead</p>
-                                <a href="{{ route('admin.proposals.create') }}?rel_type=lead&rel_id={{ $lead->id }}" class="text-blue-600 text-sm hover:underline">+ Create Proposal</a>
+                                <a href="{{ route('admin.proposals.pane.create') }}?rel_type=lead&rel_id={{ $lead->id }}" data-pane="create" data-pane-type="proposal" class="text-blue-600 text-sm hover:underline">+ Create Proposal</a>
                             </div>
                         @endif
                     </div>

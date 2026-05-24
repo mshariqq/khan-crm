@@ -16,6 +16,20 @@ class Ticket extends Model
         'assigned', 'staff_id_replying', 'cc', 'message_id', 'references'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'date' => 'datetime',
+        'lastreply' => 'datetime',
+        'adminreplying' => 'boolean',
+        'clientread' => 'boolean',
+        'adminread' => 'boolean'
+    ];
+
+    protected $attributes = [
+        'clientread' => false,
+        'adminread' => false
+    ];
     public function departmentRel()
     {
         return $this->belongsTo(Department::class, 'department', 'departmentid');

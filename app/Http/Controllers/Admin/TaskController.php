@@ -13,19 +13,24 @@ use App\Models\Notification;
 use App\Models\Estimate;
 use App\Models\Proposal;
 use App\Models\File;
+use App\Services\TaskService;
 use App\Services\EmailService;
 use App\Services\FileService;
 use App\Services\ProjectNotificationService;
+use App\Http\Requests\StoreTaskRequest;
+use App\Http\Requests\UpdateTaskRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class TaskController extends Controller
 {
+    protected $taskService;
     protected $emailService;
     protected $projectNotification;
 
-    public function __construct(EmailService $emailService, ProjectNotificationService $projectNotification)
+    public function __construct(TaskService $taskService, EmailService $emailService, ProjectNotificationService $projectNotification)
     {
+        $this->taskService = $taskService;
         $this->emailService = $emailService;
         $this->projectNotification = $projectNotification;
     }
@@ -146,7 +151,7 @@ class TaskController extends Controller
                 ->orderBy('status')
                 ->get()
                 ->groupBy(function($task) {
-                    $statusMap = [0 => 'backlog', 1 => 'pending', 2 => 'in_progress', 3 => 'completed'];
+                    $statusMap = [Task::STATUS_BACKLOG => 'backlog', Task::STATUS_PENDING => 'pending', Task::STATUS_IN_PROGRESS => 'in_progress', Task::STATUS_COMPLETED => 'completed'];
                     return $statusMap[(int)$task->status] ?? 'backlog';
                 });
         }
@@ -197,88 +202,20 @@ class TaskController extends Controller
         return view('admin.tasks.create', compact('staff', 'milestones', 'projects', 'invoices', 'estimates', 'proposals'));
     }
 
-    public function store(Request $request)
+    public function store(StoreTaskRequest $request)
     {
-        if (!Auth::user()->can('tasks_create')) {
-            abort(403, 'Unauthorized action.');
-        }
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'priority' => 'required|integer',
-            'status' => 'required|integer',
-        ]);
-
-        $task = Task::create(array_merge($validated, [
-            'description' => $request->description,
-            'startdate' => $request->startdate ?? now()->format('Y-m-d'),
-            'duedate' => $request->duedate,
-            'datefinished' => $request->datefinished,
-            'rel_id' => $request->rel_id ?: null,
-            'rel_type' => $request->rel_type ?: null,
-            'milestone' => $request->milestone ?? 0,
-            'billable' => $request->billable ?? 0,
-            'billed' => $request->billed ?? 0,
-            'hourly_rate' => $request->hourly_rate ?? 0,
-            'is_public' => $request->is_public ?? 0,
-            'visible_to_client' => $request->visible_to_client ?? 0,
-            'recurring' => $request->recurring ?? 0,
-            'recurring_type' => $request->recurring_type,
-            'repeat_every' => $request->repeat_every,
-            'cycles' => $request->cycles ?? 0,
-            'total_cycles' => $request->total_cycles ?? 0,
-            'custom_recurring' => $request->custom_recurring ?? 0,
-            'dateadded' => now(),
-            'addedfrom' => Auth::id(),
-        ]));
+        $taskData = $this->taskService->prepareTaskData($validated, $request);
+        $task = Task::create($taskData);
 
         $staffIds = $request->filled('assigned_staff') ? (is_array($request->assigned_staff) ? $request->assigned_staff : explode(',', $request->assigned_staff)) : [];
         if (!empty($staffIds)) {
-            $staffIds = array_map('trim', $staffIds);
-            $task->assignedStaff()->sync($staffIds);
-
-            $taskPriority = $task->priority == 4 ? 'Urgent' : ($task->priority == 3 ? 'High' : ($task->priority == 2 ? 'Medium' : 'Low'));
-
-            if ($task->rel_type === 'project' && $task->rel_id) {
-                foreach ($staffIds as $staffId) {
-                    $staffMember = Staff::find($staffId);
-                    if ($staffMember) {
-                        $this->projectNotification->sendToOneStaff('task-assigned', $task->rel_id, $staffMember, [
-                            'task_name' => $task->name,
-                            'task_priority' => $taskPriority,
-                            'task_duedate' => $task->duedate ? \Carbon\Carbon::parse($task->duedate)->format('d M, Y') : '',
-                            'task_link' => route('admin.tasks.show', $task->id),
-                        ]);
-
-                        Notification::createForStaff($staffMember->staffid, Auth::user()->full_name . ' assigned task <strong>' . e($task->name) . '</strong> to you', route('admin.tasks.show', $task->id));
-                    }
-                }
-            } else {
-                foreach ($staffIds as $staffId) {
-                    $staffMember = Staff::find($staffId);
-                    if ($staffMember && $staffMember->email) {
-                        $this->emailService->send($staffMember->email, 'task-assigned', [
-                            'staff_firstname' => $staffMember->firstname,
-                            'task_name' => $task->name,
-                            'task_startdate' => \Carbon\Carbon::parse($task->startdate)->format('d M, Y'),
-                            'task_duedate' => $task->duedate ? \Carbon\Carbon::parse($task->duedate)->format('d M, Y') : 'N/A',
-                            'task_priority' => $taskPriority,
-                            'task_link' => route('admin.tasks.show', $task->id),
-                        ]);
-                    }
-                }
-            }
+            $this->taskService->syncAssignedStaff($task, $staffIds);
+            $this->taskService->notifyAssignedStaff($task, $staffIds);
         }
 
-        if ($task->rel_type === 'project' && $task->rel_id) {
-            ProjectActivity::create([
-                'project_id' => $task->rel_id,
-                'staff_id' => Auth::id(),
-                'description_key' => 'project_activity_task_created',
-                'additional_data' => json_encode(['task_name' => $task->name]),
-                'dateadded' => now(),
-            ]);
-        }
+        $this->taskService->logProjectActivity($task, 'project_activity_task_created');
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json(['success' => true, 'message' => 'Task created successfully!', 'task' => $task, 'reload' => true]);
@@ -308,89 +245,28 @@ class TaskController extends Controller
         return view('admin.tasks.edit', compact('task', 'staff', 'milestones', 'projects', 'invoices', 'estimates', 'proposals'));
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateTaskRequest $request, $id)
     {
-        if (!Auth::user()->can('tasks_edit')) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'priority' => 'required|integer',
-            'status' => 'required|integer',
-        ]);
+        $validated = $request->validated();
 
         $task = Task::findOrFail($id);
-        
-        // Capture old values for logging if needed later
-        $oldTaskName = $task->name;
+
         $oldTaskStatus = $task->status;
 
-        $task->update(array_merge($request->only([
-            'name', 'description', 'priority', 'status', 'startdate', 'duedate', 'datefinished',
-            'rel_id', 'rel_type', 'milestone', 'billable', 'billed', 'hourly_rate',
-            'is_public', 'visible_to_client', 'recurring', 'recurring_type',
-            'repeat_every', 'cycles', 'total_cycles', 'custom_recurring'
-        ]), [
-            'rel_id' => $request->rel_id ?: null,
-            'rel_type' => $request->rel_type ?: null,
-            'milestone' => $request->milestone ?? 0,
-            'billable' => $request->billable ?? 0,
-            'billed' => $request->billed ?? 0,
-            'hourly_rate' => $request->hourly_rate ?? 0,
-            'is_public' => $request->is_public ?? 0,
-            'visible_to_client' => $request->visible_to_client ?? 0,
-            'recurring' => $request->recurring ?? 0,
-            'cycles' => $request->cycles ?? 0,
-            'total_cycles' => $request->total_cycles ?? 0,
-        ]));
+        $updateData = $this->taskService->prepareUpdateData($request);
+        $task->update($updateData);
 
         $staffIds = $request->filled('assigned_staff') ? (is_array($request->assigned_staff) ? $request->assigned_staff : explode(',', $request->assigned_staff)) : [];
-        $task->assignedStaff()->sync(array_map('trim', $staffIds));
-
-        // Send task-completed notification
-        if ($task->rel_type === 'project' && $task->rel_id && (int)$oldTaskStatus !== 3 && (int)$task->status === 3) {
-            $this->projectNotification->send('task-completed', $task->rel_id, [
-                'task_name' => $task->name,
-                'task_link' => route('admin.tasks.show', $task->id),
-            ]);
-
-            $project = Project::find($task->rel_id);
-            if ($project) {
-                $staffIds = $project->staff()->pluck('staffid')->toArray();
-                $exclude = [(int)Auth::id()];
-                $recipients = array_values(array_diff($staffIds, $exclude));
-                if (!empty($recipients)) {
-                    Notification::createForMultipleStaff($recipients, Auth::user()->full_name . ' completed task <strong>' . e($task->name) . '</strong> in <strong>' . e($project->name) . '</strong>', route('admin.tasks.show', $task->id));
-                }
-            }
+        if (!empty($staffIds)) {
+            $this->taskService->syncAssignedStaff($task, $staffIds);
         }
 
-        // Log activity for task update
-        if ($task->rel_type === 'project' && $task->rel_id) {
-            $changes = [];
-            if ($oldTaskName !== $task->name) {
-                $changes['old_name'] = $oldTaskName;
-                $changes['new_name'] = $task->name;
-            }
-            if ($oldTaskStatus !== $task->status) {
-                $changes['old_status'] = $oldTaskStatus;
-                $changes['new_status'] = $task->status;
-            }
+        $this->taskService->handleTaskCompleted($task, (int)$oldTaskStatus);
 
-            $descriptionKey = 'project_activity_task_updated';
-            if (!empty($changes)) {
-                 $descriptionKey = 'project_activity_task_updated_details'; // More specific key if changes are present
-            }
-
-            ProjectActivity::create([
-                'project_id' => $task->rel_id,
-                'staff_id' => Auth::id(),
-                'description_key' => $descriptionKey,
-                'additional_data' => json_encode(['task_name' => $task->name, 'changes' => $changes]),
-                'dateadded' => now(),
-            ]);
-        }
+        $this->taskService->logProjectActivity($task, 'project_activity_task_updated', [
+            'old_status' => $oldTaskStatus,
+            'new_status' => $task->status,
+        ]);
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json(['success' => true, 'message' => 'Task updated successfully!', 'task' => $task, 'reload' => true]);
@@ -534,15 +410,7 @@ class TaskController extends Controller
             'rel_type' => $request->rel_type ?: null,
         ]);
 
-        if ($task->rel_type === 'project' && $task->rel_id) {
-            ProjectActivity::create([
-                'project_id' => $task->rel_id,
-                'staff_id' => Auth::id(),
-                'description_key' => 'project_activity_task_quick_created',
-                'additional_data' => json_encode(['task_name' => $task->name]),
-                'dateadded' => now(),
-            ]);
-        }
+        $this->taskService->logProjectActivity($task, 'project_activity_task_quick_created');
 
         return response()->json([
             'success' => true,

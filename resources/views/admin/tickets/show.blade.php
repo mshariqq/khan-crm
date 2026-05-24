@@ -49,7 +49,7 @@
                 <button onclick="switchTab('notes')" class="tab-btn px-4 py-1.5 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-700" data-tab="notes">Private Notes</button>
             </div>
             <div class="h-8 w-px bg-slate-200 mx-2"></div>
-            <a href="{{ route('admin.tickets.edit', $ticket->ticketid) }}" class="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 transition-all" title="Edit Ticket">
+            <a href="{{ route('admin.tickets.edit', $ticket->ticketid) }}" data-pane="edit" data-pane-type="ticket" data-pane-id="{{ $ticket->ticketid }}" class="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 transition-all" title="Edit Ticket">
                 <i class="bi bi-pencil-square"></i>
             </a>
             <form action="{{ route('admin.tickets.destroy', $ticket->ticketid) }}" method="POST" onsubmit="return confirm('Delete ticket?');" class="inline">

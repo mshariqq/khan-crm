@@ -64,7 +64,7 @@ class ItemController extends Controller
             'group_id' => 'nullable|integer',
         ]);
 
-        Item::create([
+        $item = Item::create([
             'description' => $request->description,
             'long_description' => $request->long_description,
             'rate' => $request->rate,
@@ -73,6 +73,10 @@ class ItemController extends Controller
             'unit' => $request->unit,
             'group_id' => $request->group_id,
         ]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Item created successfully!', 'pane_refresh_url' => route('admin.items.pane.show', $item->id)]);
+        }
 
         return redirect()->route('admin.items.index')->with('success', 'Item created successfully!');
     }
@@ -116,6 +120,10 @@ class ItemController extends Controller
             'group_id' => $request->group_id,
         ]);
 
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Item updated successfully!']);
+        }
+
         return redirect()->route('admin.items.index')->with('success', 'Item updated successfully!');
     }
 
@@ -137,11 +145,15 @@ class ItemController extends Controller
         }
 
         $item = Item::findOrFail($id);
-        
-        // Check for usage in invoices or estimates to prevent deletion
-        // Since I don't have the relation methods in Item model, I'll just delete. 
-        // In a real CRM I would check tblinvoiceitems etc.
-        
+
+        $usageCount = \App\Models\Itemable::where('description', $item->description)
+            ->whereIn('rel_type', ['invoice', 'estimate', 'proposal', 'credit_note'])
+            ->count();
+
+        if ($usageCount > 0) {
+            return redirect()->back()->with('error', 'This item is used in ' . $usageCount . ' financial document(s) and cannot be deleted. Archive it instead.');
+        }
+
         $item->delete();
         return redirect()->route('admin.items.index')->with('success', 'Item deleted successfully!');
     }

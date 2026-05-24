@@ -18,6 +18,24 @@
         </div>
     @endif
 
+    <form action="{{ route('admin.permissions.index') }}" method="GET" class="flex items-center gap-3">
+        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name or slug..." class="flex-1 px-4 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        <select name="group" class="px-4 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+            <option value="all">All Groups</option>
+            @foreach($groups as $group)
+                <option value="{{ $group }}" {{ request('group') == $group ? 'selected' : '' }}>{{ $group }}</option>
+            @endforeach
+        </select>
+        <button type="submit" class="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-lg hover:bg-slate-900 transition-all flex items-center gap-2">
+            <i class="bi bi-search"></i> Filter
+        </button>
+        @if(request('search') || (request('group') && request('group') != 'all'))
+            <a href="{{ route('admin.permissions.index') }}" class="px-4 py-2 bg-slate-100 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-200 transition-all">
+                Clear
+            </a>
+        @endif
+    </form>
+
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <table class="w-full text-left">
             <thead class="bg-slate-50 border-b border-slate-200">
@@ -52,6 +70,12 @@
                 @endforeach
             </tbody>
         </table>
+
+        @if($permissions->hasPages())
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200">
+                {{ $permissions->links() }}
+            </div>
+        @endif
     </div>
 </div>
 @endsection

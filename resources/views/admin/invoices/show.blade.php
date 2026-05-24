@@ -18,7 +18,7 @@
         <div class="flex items-center gap-3">
             <div class="text-right px-4 py-2 bg-emerald-50 rounded-lg border border-emerald-200">
                 <p class="text-xs text-emerald-600 font-medium">Total</p>
-                <p class="text-lg font-bold text-emerald-700">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->total, 2) }}</p>
+                <p class="text-lg font-bold text-emerald-700">{{ app_format_money($invoice->total, $invoice->currency) }}</p>
             </div>
             @php
                 $statusMap = [
@@ -135,31 +135,31 @@
                                 <div class="space-y-2 text-sm">
                                     <div class="flex justify-between">
                                         <span class="text-slate-500">Subtotal</span>
-                                        <span class="text-slate-800">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->subtotal, 2) }}</span>
+                                        <span class="text-slate-800">{{ app_format_money($invoice->subtotal, $invoice->currency) }}</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-slate-500">Tax</span>
-                                        <span class="text-slate-800">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->total_tax, 2) }}</span>
+                                        <span class="text-slate-800">{{ app_format_money($invoice->total_tax, $invoice->currency) }}</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-slate-500">Discount</span>
-                                        <span class="text-slate-800">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->discount_total ?? 0, 2) }}</span>
+                                        <span class="text-slate-800">{{ app_format_money($invoice->discount_total ?? 0, $invoice->currency) }}</span>
                                     </div>
                                     <div class="flex justify-between border-t pt-2">
                                         <span class="text-slate-500 font-medium">Total</span>
-                                        <span class="text-slate-800 font-bold">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->total, 2) }}</span>
+                                        <span class="text-slate-800 font-bold">{{ app_format_money($invoice->total, $invoice->currency) }}</span>
                                     </div>
                                     <div class="flex justify-between items-center text-sm">
                                         <span class="text-slate-500">Paid</span>
-                                        <span class="font-bold text-emerald-600">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->totalPaid(), 2) }}</span>
+                                        <span class="font-bold text-emerald-600">{{ app_format_money($invoice->totalPaid(), $invoice->currency) }}</span>
                                     </div>
                                     <div class="flex justify-between items-center text-sm">
                                         <span class="text-slate-500">Credits Applied</span>
-                                        <span class="font-bold text-blue-600">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->totalCredits(), 2) }}</span>
+                                        <span class="font-bold text-blue-600">{{ app_format_money($invoice->totalCredits(), $invoice->currency) }}</span>
                                     </div>
                                     <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl mt-4">
                                         <span class="text-sm font-bold text-slate-700">Amount Due</span>
-                                        <span class="text-lg font-black text-rose-600">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->amountDue(), 2) }}</span>
+                                        <span class="text-lg font-black text-rose-600">{{ app_format_money($invoice->amountDue(), $invoice->currency) }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -202,9 +202,9 @@
                                         <p class="font-medium text-slate-800">{{ $item->description }}</p>
                                     </td>
                                     <td class="px-3 py-2 text-center">{{ $item->qty }}</td>
-                                    <td class="px-3 py-2 text-right">{{ $invoice->currency->symbol ?? '$' }}{{ number_format($item->rate, 2) }}</td>
-                                    <td class="px-3 py-2 text-right">{{ $invoice->currency->symbol ?? '$' }}{{ number_format($item->tax_rate, 2) }}</td>
-                                    <td class="px-3 py-2 text-right font-medium">{{ $invoice->currency->symbol ?? '$' }}{{ number_format($item->amount, 2) }}</td>
+                                    <td class="px-3 py-2 text-right">{{ app_format_money($item->rate, $invoice->currency) }}</td>
+                                    <td class="px-3 py-2 text-right">{{ app_format_money($item->tax_rate, $invoice->currency) }}</td>
+                                    <td class="px-3 py-2 text-right font-medium">{{ app_format_money($item->amount, $invoice->currency) }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -227,7 +227,7 @@
                         {{-- Summary Cards --}}
                         <div class="grid grid-cols-3 gap-3 mb-4">
                             <div class="bg-emerald-50 rounded-xl border border-emerald-200 p-4 text-center">
-                                <p class="text-2xl font-black text-emerald-700">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($totalPaid, 2) }}</p>
+                                <p class="text-2xl font-black text-emerald-700">{{ app_format_money($totalPaid, $invoice->currency) }}</p>
                                 <p class="text-xs font-medium text-emerald-600 mt-1">Total Paid</p>
                             </div>
                             <div class="bg-blue-50 rounded-xl border border-blue-200 p-4 text-center">
@@ -253,7 +253,7 @@
                                 <div>
                                     <label class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block mb-1">Amount</label>
                                     <div class="relative">
-                                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-emerald-500 text-sm font-medium">{{ $invoice->currencyRel->symbol ?? '$' }}</span>
+                                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-emerald-500 text-sm font-medium">{{ $invoice->currency->symbol ?? '$' }}</span>
                                         <input type="number" step="0.01" name="amount" class="w-full pl-8 pr-3 py-2 rounded-lg border border-emerald-300 text-sm font-bold focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0.00" required>
                                     </div>
                                 </div>
@@ -297,6 +297,7 @@
                                         <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Transaction ID</th>
                                         <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Note</th>
                                         <th class="px-4 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider">Recorded</th>
+                                        <th class="px-4 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
@@ -309,7 +310,7 @@
                                             <span class="font-medium text-slate-700">{{ \Carbon\Carbon::parse($payment->date)->format('M d, Y') }}</span>
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
-                                            <span class="font-bold text-emerald-700">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($payment->amount, 2) }}</span>
+                                            <span class="font-bold text-emerald-700">{{ app_format_money($payment->amount, $invoice->currency) }}</span>
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
                                             @if($modeName)
@@ -334,6 +335,20 @@
                                         <td class="px-4 py-3 text-right whitespace-nowrap">
                                             <span class="text-xs text-slate-400">{{ $payment->daterecorded ? \Carbon\Carbon::parse($payment->daterecorded)->format('M d, Y H:i') : '-' }}</span>
                                         </td>
+                                        <td class="px-4 py-3 text-right whitespace-nowrap">
+                                            <div class="flex items-center justify-end gap-1">
+                                                <a href="{{ route('admin.invoices.payments.edit', [$invoice->id, $payment->id]) }}" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Payment">
+                                                    <i class="bi bi-pencil text-sm"></i>
+                                                </a>
+                                                <form action="{{ route('admin.invoices.payments.destroy', [$invoice->id, $payment->id]) }}" method="POST" class="inline" onsubmit="return confirm('Delete this payment?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete Payment">
+                                                        <i class="bi bi-trash text-sm"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -352,8 +367,47 @@
 
                     {{-- Credits Tab --}}
                     <div id="tab-credits" class="tab-content hidden">
+                        {{-- Apply Credit Form --}}
+                        <form action="{{ route('admin.invoices.credits.store', $invoice->id) }}" method="POST" class="mb-4 p-4 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-xl border border-blue-200">
+                            @csrf
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center text-white">
+                                    <i class="bi bi-plus-lg text-xs"></i>
+                                </div>
+                                <h4 class="text-sm font-bold text-blue-800">Apply Credit</h4>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="text-[10px] font-bold text-blue-600 uppercase tracking-wider block mb-1">Credit Note</label>
+                                    <select name="credit_id" class="w-full px-3 py-2 rounded-lg border border-blue-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none" required>
+                                        <option value="">Select Credit Note...</option>
+                                        @foreach(\App\Models\CreditNote::where('status', 1)->where('clientid', $invoice->clientid)->get() as $cn)
+                                            @php $remaining = $cn->remainingCredit(); @endphp
+                                            @if($remaining > 0)
+                                            <option value="{{ $cn->id }}">
+                                                {{ $cn->prefix }}{{ str_pad($cn->number, 4, '0', STR_PAD_LEFT) }} - {{ app_format_money($remaining, $invoice->currency) }} remaining
+                                            </option>
+                                            @endif
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-blue-600 uppercase tracking-wider block mb-1">Amount</label>
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-blue-500 text-sm font-medium">{{ $invoice->currency->symbol ?? '$' }}</span>
+                                        <input type="number" step="0.01" name="amount" class="w-full pl-8 pr-3 py-2 rounded-lg border border-blue-300 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0.00" required>
+                                    </div>
+                                </div>
+                                <div class="flex items-end">
+                                    <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-1.5">
+                                        <i class="bi bi-check2-circle"></i> Apply
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
                         @if($invoice->credits()->count() > 0)
-                        <div class="space-y-4">
+                        <div class="space-y-3">
                             @foreach($invoice->credits as $credit)
                             <div class="bg-blue-50 rounded-xl p-4 flex justify-between items-center border border-blue-100">
                                 <div>
@@ -364,8 +418,15 @@
                                     </p>
                                     <p class="text-xs text-blue-500 font-medium mt-1">Applied on {{ \Carbon\Carbon::parse($credit->date_applied)->format('M d, Y') }}</p>
                                 </div>
-                                <div class="text-right">
-                                    <p class="text-sm font-black text-blue-800">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($credit->amount, 2) }}</p>
+                                <div class="flex items-center gap-3">
+                                    <p class="text-sm font-black text-blue-800">{{ app_format_money($credit->amount, $invoice->currency) }}</p>
+                                    <form action="{{ route('admin.invoices.credits.destroy', [$invoice->id, $credit->id]) }}" method="POST" onsubmit="return confirm('Remove this credit?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="p-1.5 text-blue-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Remove Credit">
+                                            <i class="bi bi-x-lg text-sm"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                             @endforeach
@@ -687,7 +748,7 @@
                                             <div class="flex-1 min-w-0">
                                                 <p class="text-sm text-slate-700 leading-relaxed">{!! $activity['description'] !!}</p>
                                                 @if($activity['type'] === 'checkout' && isset($activity['amount']))
-                                                <p class="text-sm font-bold text-slate-800 mt-1">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($activity['amount'], 2) }}</p>
+                                                <p class="text-sm font-bold text-slate-800 mt-1">{{ app_format_money($activity['amount'], $invoice->currency) }}</p>
                                                 @endif
                                                 @if($activity['type'] === 'checkout' && !empty($activity['attempt_reference']))
                                                 <p class="text-xs text-slate-400 font-mono mt-1">Attempt: {{ $activity['attempt_reference'] }}</p>

@@ -10,6 +10,10 @@ class ProjectSetting extends Model
     public $timestamps = true;
     protected $fillable = ['id', 'project_id', 'name', 'value'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
     public function project()
     {
         return $this->belongsTo(Project::class, 'project_id', 'id');

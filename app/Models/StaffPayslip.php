@@ -11,6 +11,10 @@ class StaffPayslip extends Model
         'staffid', 'month', 'year', 'basic', 'total_additions', 'total_deductions', 'net_amount', 'status', 'payment_date'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
     public function staff()
     {
         return $this->belongsTo(Staff::class, 'staffid', 'staffid');

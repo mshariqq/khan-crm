@@ -61,30 +61,111 @@
 
 ## InvoiceModuleTest (`tests/Feature/InvoiceModuleTest.php`)
 
-**20 tests — 58 assertions**
+**52 tests — 146 assertions**
 
+### Views (5)
 | # | Test | What it covers | Key assertions |
 |---|------|----------------|----------------|
-| 1 | `test_guest_is_redirected_to_login_when_accessing_invoices` | Auth middleware blocks guests on index/create/store | `assertRedirect(route('login.staff'))` |
-| 2 | `test_admin_can_view_invoices_list` | Index page renders invoices | `assertStatus(200)`, `assertSee(invoice.number)` |
-| 3 | `test_admin_can_create_invoice` | Full invoice creation | DB: `tblinvoices`, redirect + session |
-| 4 | `test_create_invoice_requires_required_fields` | Validation rejects empty required fields | `assertSessionHasErrors([...6 fields...])` |
-| 5 | `test_admin_can_create_invoice_with_items` | Invoice creation with line items | DB: `tblitemable` with 2 items |
-| 6 | `test_admin_can_view_single_invoice` | Show page renders | `assertStatus(200)` |
-| 7 | `test_admin_can_update_invoice` | PUT update changes total | DB: `tblinvoices.total` changed |
-| 8 | `test_admin_can_delete_invoice` | DELETE removes invoice | `assertDatabaseMissing('tblinvoices')` |
-| 9 | `test_record_payment_transitions_status_to_partial_then_paid` | Payment 1→status 2 (partial), Payment 2→status 3 (paid) | DB: `tblinvoicepaymentrecords` + status transitions |
-| 10 | `test_mark_invoice_as_paid` | `markAsPaid` sets status 3 | DB: `tblinvoices.status=3` |
-| 11 | `test_mark_invoice_as_cancelled` | `markAsCancelled` sets status 4 | DB: `tblinvoices.status=4` |
-| 12 | `test_send_invoice_to_client` | `sendInvoice` sets `sent=1` + `datesend` | DB: `tblinvoices.sent=1` |
-| 13 | `test_store_note_on_invoice` | Note creation on invoice | DB: `tblnotes` (rel_type='invoice') |
-| 14 | `test_store_reminder_on_invoice` | Reminder creation with staff assignment | DB: `tblreminders` |
-| 15 | `test_filter_invoices_by_status` | `?status=3` filters by status | `assertStatus(200)` |
-| 16 | `test_invoice_creation_logs_sales_activity` | Invoice creation logs to `tblsales_activity` | DB: `tblsales_activity` |
-| 17 | `test_send_invoice_triggers_email_notification_to_client` | Send invoice sends email | `Mail::getSymfonyTransport()->messages()` |
-| 18 | `test_record_payment_triggers_multiple_email_notifications` | Payment triggers email notifications | `Mail::getSymfonyTransport()->messages()` |
-| 19 | `test_mark_paid_triggers_email_notification` | Mark paid sends notification email | `Mail::getSymfonyTransport()->messages()` |
-| 20 | `test_mark_cancelled_triggers_email_notification` | Mark cancelled sends notification email | `Mail::getSymfonyTransport()->messages()` |
+| 1 | `test_guest_is_redirected_to_login` | Auth blocks guests on index/create/store/edit/update/delete | `assertRedirect(route('login.staff'))` for all 7 routes |
+| 2 | `test_admin_can_view_index_page` | Index page renders with invoice number + client name | `assertStatus(200)`, `assertSee(number)`, `assertSee('Invoice Test Client')` |
+| 3 | `test_admin_can_view_create_page` | Create page renders | `assertStatus(200)`, `assertSee('Create Invoice')`, `assertSee(client)` |
+| 4 | `test_admin_can_view_edit_page` | Edit page renders with existing data (notes, number) | `assertStatus(200)`, `assertSee('Edit Invoice')`, `assertSee('300')`, `assertSee('Thanks!')`, `assertSee('Internal')` |
+| 5 | `test_admin_can_view_invoice_print_page` | Print page renders | `assertStatus(200)` |
+
+### Create (7)
+| # | Test | What it covers | Key assertions |
+|---|------|----------------|----------------|
+| 6 | `test_admin_can_create_invoice` | Full invoice creation with client/notes/adminnote | DB: `tblinvoices`, redirect + session, asserts clientnote + adminnote |
+| 7 | `test_create_requires_required_fields` | Validation rejects empty | `assertSessionHasErrors(['number','clientid','currency','date','total','status'])` |
+| 8 | `test_create_invoice_with_items` | Invoice creation with 2 line items | DB: `tblitemable` with description, qty, rate |
+| 9 | `test_create_invoice_with_tax_on_items` | Items with tax_id → tax_rate resolved | DB: `tblitemable.tax_rate` matches tax |
+| 10 | `test_create_invoice_with_billing_and_shipping_address` | Full billing + shipping address + checkboxes | DB fields: billing_street/city/state/zip, shipping_street/city, include_shipping=1, show_shipping_on_invoice=1 |
+| 11 | `test_create_invoice_with_sale_agent_and_project` | Sale agent assignment | DB: `tblinvoices.sale_agent` equals admin's staffid |
+| 12 | `test_create_invoice_logs_sales_activity` | Activity logged on creation | DB: `tblsales_activity` |
+
+### Update (7)
+| # | Test | What it covers | Key assertions |
+|---|------|----------------|----------------|
+| 13 | `test_admin_can_update_invoice` | PUT update changes total | DB: `tblinvoices.total` 500→750, redirect + session |
+| 14 | `test_update_invoice_with_items` | Items synced on update (old deleted, new created) | DB: `tblitemable` with updated description/qty/rate |
+| 15 | `test_update_invoice_removes_old_items` | Old items deleted when not in request | `assertDatabaseMissing('tblitemable', 'Old Item')` |
+| 16 | `test_update_invoice_without_items_clears_them` | No item_description in request → all items deleted | `assertDatabaseMissing('tblitemable', rel_id)` |
+| 17 | `test_update_invoice_keeps_checkbox_defaults_when_unchecked` | Checkboxes default to 0 when absent | `include_shipping=0`, `show_shipping_on_invoice=0`, `cancel_overdue_reminders=0` |
+| 18 | `test_update_invoice_with_client_note_and_terms` | clientnote, adminnote, terms persist on update | DB: all 3 fields updated |
+
+### Delete (2)
+| # | Test | What it covers | Key assertions |
+|---|------|----------------|----------------|
+| 19 | `test_admin_can_delete_invoice` | DELETE removes invoice | `assertDatabaseMissing('tblinvoices')`, redirect + session |
+| 20 | `test_admin_can_delete_invoice_controller` | Controller delete via route | `assertDatabaseMissing('tblinvoices')` |
+
+### Payments (5)
+| # | Test | What it covers | Key assertions |
+|---|------|----------------|----------------|
+| 21 | `test_record_payment_transitions_status_to_partial_then_paid` | Payment 1→status 2 (partial), Payment 2→status 3 (paid) | DB: `tblinvoicepaymentrecords`, status transitions 1→2→3 |
+| 22 | `test_record_payment_requires_amount_and_paymentmode` | Validation rejects empty payment | `assertSessionHasErrors(['amount','paymentmode','date'])` |
+| 23 | `test_record_multiple_payments_tracks_total` | 2 payments sum correctly | `$invoice->payments()->sum('amount')` = 500.00 |
+| 24 | `test_payment_shows_on_invoice_page` | Payment visible on show page | `assertSee('Partial')`, `assertSee('400.00')` |
+| 25 | `test_mark_paid_invoice_does_not_overwrite_existing_payments` | Mark paid preserves existing payment records | `$invoice->payments()->count()` = 1 |
+
+### Mark as Paid/Cancelled (3)
+| # | Test | What it covers | Key assertions |
+|---|------|----------------|----------------|
+| 26 | `test_mark_invoice_as_paid` | `markAsPaid` sets status 3 | DB: `tblinvoices.status=3` |
+| 27 | `test_mark_invoice_as_cancelled` | `markAsCancelled` sets status 4 | DB: `tblinvoices.status=4` |
+| 28 | `test_mark_paid_invoice_does_not_overwrite_existing_payments` | Existing payments preserved when marking paid | payment count unchanged |
+
+### Send (1)
+| # | Test | What it covers | Key assertions |
+|---|------|----------------|----------------|
+| 29 | `test_send_invoice_to_client` | `sendInvoice` sets `sent=1` | DB: `tblinvoices.sent=1` |
+
+### Notes (2)
+| # | Test | What it covers | Key assertions |
+|---|------|----------------|----------------|
+| 30 | `test_store_note_on_invoice` | Note creation on invoice | DB: `tblnotes` (rel_type='invoice') |
+| 31 | `test_store_note_requires_description` | Note validation | `assertSessionHasErrors(['description'])` |
+
+### Reminders (3)
+| # | Test | What it covers | Key assertions |
+|---|------|----------------|----------------|
+| 32 | `test_store_reminder_on_invoice` | Reminder with staff/date/description | DB: `tblreminders` |
+| 33 | `test_store_reminder_requires_date_staff_description` | Validation rejects empty | `assertSessionHasErrors(['date','staff','description'])` |
+| 34 | `test_delete_reminder` | DELETE reminder removes it | `assertDatabaseMissing('tblreminders')` |
+
+### Filter & Search (3)
+| # | Test | What it covers | Key assertions |
+|---|------|----------------|----------------|
+| 35 | `test_filter_invoices_by_status` | `?status=3` filters | `assertSee('2001')`, `assertDontSee('2000')` |
+| 36 | `test_filter_invoices_by_client` | `?client=` filters | `assertSee('2100')`, `assertDontSee('2101')` |
+| 37 | `test_search_invoices_by_number` | `?search=2200` finds match | `assertSee('2200')` |
+
+### Email Notifications (4)
+| # | Test | What it covers | Key assertions |
+|---|------|----------------|----------------|
+| 38 | `test_send_triggers_email` | Send invoice → email sent | `Mail::getSymfonyTransport()->messages()` |
+| 39 | `test_record_payment_triggers_email` | Payment recorded → email sent | `Mail::getSymfonyTransport()->messages()` |
+| 40 | `test_mark_paid_triggers_email` | Mark paid → email sent | `Mail::getSymfonyTransport()->messages()` |
+| 41 | `test_mark_cancelled_triggers_email` | Mark cancelled → email sent | status=4 |
+
+### Permissions (5)
+| # | Test | What it covers | Key assertions |
+|---|------|----------------|----------------|
+| 42 | `test_staff_without_view_permission_gets_403` | No invoices_view → 403 on index + show | `assertStatus(403)` |
+| 43 | `test_staff_without_create_permission_gets_403` | No invoices_create → 403 on create + store | `assertStatus(403)` |
+| 44 | `test_staff_without_edit_permission_gets_403` | No invoices_edit → 403 on edit + update | `assertStatus(403)` |
+| 45 | `test_staff_without_delete_permission_gets_403` | No invoices_delete → 403 on destroy | `assertStatus(403)` |
+| 46 | `test_admin_can_bypass_permission_checks` | Admin (role=1) can access all | `assertStatus(200)` or redirect |
+
+### Model Relationships (6)
+| # | Test | What it covers | Key assertions |
+|---|------|----------------|----------------|
+| 47 | `test_invoice_belongs_to_client` | belongsTo Client | `assertInstanceOf(Client::class, $invoice->client)` |
+| 48 | `test_invoice_total_paid_calculation` | totalPaid(), totalSettled(), amountDue() | 400, 400, 600 |
+| 49 | `test_invoice_items_relation` | hasMany items via Itemable | count=1, `assertEquals('Item A')` |
+| 50 | `test_invoice_has_many_notes` | hasMany notes (rel_type=invoice) | count=2 |
+| 51 | `test_invoice_has_many_reminders` | hasMany reminders (rel_type=invoice) | count=1 |
+| 52 | `test_invoice_has_sales_activities` | hasMany salesActivities (rel_type=invoice) | count=1 |
 
 ---
 
@@ -303,7 +384,7 @@
 | CurrencyModuleTest | 6 | 17 | Currencies CRUD |
 | EstimateModuleTest | 11 | 40 | Estimates CRUD, Mark Accepted/Declined, Convert to Invoice, Filters |
 | ExpenseModuleTest | 13 | 38 | Expenses CRUD, Expense Categories CRUD, Filters |
-| InvoiceModuleTest | 20 | 58 | Invoices CRUD, Items, Payments, Status Transitions, Notes, Reminders, Email, Sales Activity |
+| InvoiceModuleTest | 52 | 146 | Invoices Full CRUD, Items (create/update/delete/clear), Payments (partial→paid, validation, multiple), Mark Paid/Cancelled, Send, Notes, Reminders (add/delete), Filter (by status/client/number), Email triggers (send/payment/paid/cancelled), Permissions (view/create/edit/delete 403 + admin bypass), Model relationships (client/items/notes/reminders/activities/totalPaid/amountDue) |
 | ItemModuleTest | 13 | 36 | Items CRUD, Items Groups CRUD, Filters |
 | LeadModuleTest | 20 | 79 | Leads CRUD, Status/Source/Country Filters, Notes, Reminders, Lost/Junk/Convert, GDPR |
 | PaymentModeModuleTest | 6 | 20 | Payment Modes CRUD |
@@ -312,7 +393,7 @@
 | TaxModuleTest | 7 | 20 | Taxes CRUD |
 | TicketModuleTest | 17 | 59 | Tickets CRUD, Replies (email threading), Status/Assignment changes, Filters, Email, Notifications |
 | ExampleTest | 1 | 1 | Smoke test |
-| **Total** | **172** | **609** | |
+| **Total** | **204** | **697** | |
 
 ## Running
 

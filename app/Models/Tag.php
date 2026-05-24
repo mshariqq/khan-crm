@@ -10,6 +10,10 @@ class Tag extends Model
     public $timestamps = true;
     protected $fillable = ['id', 'name'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
     public function taggables()
     {
         return $this->hasMany(Taggable::class, 'tag_id', 'id');

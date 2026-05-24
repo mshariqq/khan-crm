@@ -197,9 +197,11 @@
                             @php
                                 $relRouteNames = ['project' => 'admin.projects.show', 'invoice' => 'admin.invoices.show', 'estimate' => 'admin.estimates.show', 'proposal' => 'admin.proposals.show', 'lead' => 'admin.leads.show', 'ticket' => 'admin.tickets.show', 'client' => 'admin.clients.show'];
                                 $relRoute = $relRouteNames[$task->rel_type] ?? null;
+                                $paneTypeMap = ['estimate' => 'estimate', 'proposal' => 'proposal', 'ticket' => 'ticket'];
+                                $paneType = $paneTypeMap[$task->rel_type] ?? null;
                             @endphp
                             @if($relRoute)
-                            <a href="{{ route($relRoute, $task->rel_id) }}" class="hover:text-blue-700">{{ ucfirst($task->rel_type) }}: {{ $task->relatedEntity->name ?? $task->relatedEntity->number ?? 'N/A' }}</a>
+                            <a href="{{ route($relRoute, $task->rel_id) }}" @if($paneType) data-pane="show" data-pane-type="{{ $paneType }}" data-pane-id="{{ $task->rel_id }}" @endif class="hover:text-blue-700">{{ ucfirst($task->rel_type) }}: {{ $task->relatedEntity->name ?? $task->relatedEntity->number ?? 'N/A' }}</a>
                             @else
                             {{ ucfirst($task->rel_type) }}: {{ $task->relatedEntity->name ?? $task->relatedEntity->number ?? 'N/A' }}
                             @endif
@@ -269,7 +271,7 @@
                     @if($task->hourly_rate > 0)
                     <div>
                         <span class="text-[10px] text-slate-400 uppercase">Hourly Rate</span>
-                        <div class="text-xs text-slate-700 font-medium">${{ number_format($task->hourly_rate, 2) }}/hr</div>
+                        <div class="text-xs text-slate-700 font-medium">{{ app_format_money($task->hourly_rate) }}/hr</div>
                     </div>
                     @endif
                     @if($task->billed)

@@ -12,11 +12,21 @@ class ReminderController extends Controller
     public function destroy($id)
     {
         $reminder = Reminder::findOrFail($id);
-        
-        if (!Auth::user()->can('delete')) {
+
+        $permissionMap = [
+            'estimate' => 'estimates_edit',
+            'proposal' => 'proposals_edit',
+            'project' => 'projects_edit',
+            'task' => 'tasks_edit',
+            'invoice' => 'invoices_edit',
+            'lead' => 'leads_edit',
+        ];
+
+        $permission = $permissionMap[$reminder->rel_type] ?? null;
+        if (!$permission || !Auth::user()->can($permission)) {
             abort(403, 'Unauthorized action.');
         }
-        
+
         $reminder->delete();
 
         return redirect()->back()->with('success', 'Reminder deleted successfully!');

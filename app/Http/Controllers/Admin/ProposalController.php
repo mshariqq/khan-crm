@@ -15,19 +15,30 @@ use App\Models\Note;
 use App\Models\Reminder;
 use App\Models\ProposalComment;
 use App\Models\Itemable;
+use App\Services\EmailService;
+use App\Services\ProposalNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class ProposalController extends Controller
 {
+    protected $emailService;
+    protected $proposalNotification;
+
+    public function __construct(EmailService $emailService, ProposalNotificationService $proposalNotification)
+    {
+        $this->emailService = $emailService;
+        $this->proposalNotification = $proposalNotification;
+    }
+
     public function index(Request $request)
     {
         if (!Auth::user()->can('proposals_view')) {
             abort(403, 'Unauthorized action.');
         }
 
-        $query = Proposal::query()->with(['currencyRel', 'countryRel', 'project']);
+        $query = Proposal::query()->with(['currency', 'countryRel', 'project']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -42,9 +53,9 @@ class ProposalController extends Controller
         }
 
         $total = $query->count();
-        $open = Proposal::where('status', 1)->count();
-        $accepted = Proposal::where('status', 2)->count();
-        $declined = Proposal::where('status', 3)->count();
+        $open = Proposal::where('status', Proposal::STATUS_OPEN)->count();
+        $accepted = Proposal::where('status', Proposal::STATUS_ACCEPTED)->count();
+        $declined = Proposal::where('status', Proposal::STATUS_DECLINED)->count();
         $proposals = $query->paginate(15)->withQueryString();
 
         return view('admin.proposals.index', compact('proposals', 'total', 'open', 'accepted', 'declined'));
@@ -209,7 +220,26 @@ class ProposalController extends Controller
         ]);
 
         $proposal = Proposal::findOrFail($id);
-        $proposal->update($request->all());
+        $proposal->update($validated);
+
+        // Sync items
+        Itemable::where('rel_id', $proposal->id)->where('rel_type', 'proposal')->delete();
+        if ($request->has('items')) {
+            foreach ($request->items as $index => $item) {
+                if (!empty($item['description'])) {
+                    Itemable::create([
+                        'rel_id' => $proposal->id,
+                        'rel_type' => 'proposal',
+                        'description' => $item['description'],
+                        'qty' => $item['qty'] ?? 1,
+                        'rate' => $item['rate'] ?? 0,
+                        'amount' => $item['amount'] ?? 0,
+                        'tax_rate' => $item['tax'] ?? null,
+                        'item_order' => $index,
+                    ]);
+                }
+            }
+        }
 
         return redirect()->route('admin.proposals.index')->with('success', 'Proposal updated successfully!');
     }
@@ -247,7 +277,7 @@ class ProposalController extends Controller
 
         $proposal = Proposal::findOrFail($id);
         Note::create([
-            'content' => $request->content,
+            'description' => $request->content,
             'rel_id' => $proposal->id,
             'rel_type' => 'proposal',
             'dateadded' => now(),
@@ -307,7 +337,7 @@ class ProposalController extends Controller
             'date' => $request->date,
             'staff' => Auth::id(),
             'creator' => Auth::id(),
-            'is_notified' => 0,
+            'isnotified' => 0,
         ]);
 
         return redirect()->route('admin.proposals.show', $proposal->id)->with('success', 'Reminder added!');
@@ -320,7 +350,7 @@ class ProposalController extends Controller
         }
 
         $proposal = Proposal::findOrFail($id);
-        $proposal->update(['status' => 2]);
+        $proposal->update(['status' => Proposal::STATUS_ACCEPTED]);
 
         return redirect()->route('admin.proposals.show', $proposal->id)->with('success', 'Proposal accepted!');
     }
@@ -332,9 +362,19 @@ class ProposalController extends Controller
         }
 
         $proposal = Proposal::findOrFail($id);
-        $proposal->update(['status' => 3]);
+        $proposal->update(['status' => Proposal::STATUS_DECLINED]);
 
         return redirect()->route('admin.proposals.show', $proposal->id)->with('success', 'Proposal declined!');
+    }
+
+    public function print($id)
+    {
+        if (!Auth::user()->can('proposals_view')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $proposal = Proposal::with(['currency', 'country', 'items', 'creator', 'assignedStaff', 'project'])->findOrFail($id);
+        return view('admin.proposals.pdf', compact('proposal'));
     }
 
     public function sendProposal($id)
@@ -344,8 +384,11 @@ class ProposalController extends Controller
         }
 
         $proposal = Proposal::findOrFail($id);
-        $proposal->update(['status' => 1]);
 
-        return redirect()->route('admin.proposals.show', $proposal->id)->with('success', 'Proposal sent!');
+        $this->proposalNotification->send('proposal-send-to-client', $proposal->id);
+
+        $proposal->update(['status' => Proposal::STATUS_OPEN]);
+
+        return redirect()->route('admin.proposals.show', $proposal->id)->with('success', 'Proposal sent to client!');
     }
 }

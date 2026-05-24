@@ -8,4 +8,10 @@ class CompanyHoliday extends Model
 {
     protected $table = 'tblcompany_holidays';
     protected $fillable = ['name', 'date', 'description'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'date' => 'datetime'
+    ];
 }

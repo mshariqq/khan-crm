@@ -41,6 +41,8 @@
                     <option value="Present" {{ request('status') == 'Present' ? 'selected' : '' }}>Present</option>
                     <option value="Absent" {{ request('status') == 'Absent' ? 'selected' : '' }}>Absent</option>
                     <option value="Late" {{ request('status') == 'Late' ? 'selected' : '' }}>Late</option>
+                    <option value="Early Departure" {{ request('status') == 'Early Departure' ? 'selected' : '' }}>Early Departure</option>
+                    <option value="Late / Early Departure" {{ request('status') == 'Late / Early Departure' ? 'selected' : '' }}>Late / Early Departure</option>
                 </select>
             </div>
 
@@ -93,8 +95,17 @@
                         {{ $attendance->clock_out ?? '--:--' }}
                     </td>
                     <td class="px-6 py-4">
-                        <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider 
-                            {{ $attendance->status == 'Present' ? 'bg-emerald-100 text-emerald-700' : ($attendance->status == 'Absent' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700') }}">
+                        @php
+                            $statusColors = [
+                                'Present' => 'bg-emerald-100 text-emerald-700',
+                                'Absent' => 'bg-red-100 text-red-700',
+                                'Late' => 'bg-amber-100 text-amber-700',
+                                'Early Departure' => 'bg-orange-100 text-orange-700',
+                                'Late / Early Departure' => 'bg-rose-100 text-rose-700',
+                            ];
+                            $statusColor = $statusColors[$attendance->status] ?? 'bg-slate-100 text-slate-700';
+                        @endphp
+                        <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider {{ $statusColor }}">
                             {{ $attendance->status }}
                         </span>
                     </td>

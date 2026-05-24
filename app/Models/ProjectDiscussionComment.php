@@ -14,6 +14,12 @@ class ProjectDiscussionComment extends Model
         'file_name', 'file_mime_type'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'created' => 'datetime',
+        'modified' => 'datetime'
+    ];
     public function discussion()
     {
         return $this->belongsTo(ProjectDiscussion::class, 'discussion_id', 'id');

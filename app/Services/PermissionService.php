@@ -9,6 +9,8 @@ class PermissionService extends BaseService
 {
     /**
      * Check if a staff member has a specific permission.
+     * Deny mechanism: staff-specific permissions prefixed with '!' (e.g., '!invoices_delete')
+     * will override role-granted permissions.
      * 
      * @param Staff $staff
      * @param string $permission The permission key (e.g., 'edit_invoice')
@@ -18,17 +20,19 @@ class PermissionService extends BaseService
     {
         $cacheKey = "staff_perms_{$staff->staffid}";
         
-        $permissions = Cache::remember($cacheKey, 3600, function () use ($staff) {
-            $allPermissions = [];
+        $cached = Cache::remember($cacheKey, 3600, function () use ($staff) {
+            $granted = [];
+            $denied = [];
 
-            // 1. Get permissions from the Role
+            // 1. Get permissions from the Role (pivot table preferred, fallback to comma-separated)
             $role = $staff->staffRole; 
-            if ($role && $role->permissions) {
-                // Assuming permissions are stored as a comma-separated list or JSON
-                $rolePerms = is_array($role->permissions) 
-                    ? $role->permissions 
-                    : explode(',', $role->permissions);
-                $allPermissions = array_merge($allPermissions, $rolePerms);
+            if ($role) {
+                $rolePerms = $role->getPermissionSlugs();
+                foreach ($rolePerms as $perm) {
+                    $perm = trim($perm);
+                    if (!$perm) continue;
+                    $granted[] = $perm;
+                }
             }
 
             // 2. Get granular permissions from tblstaff_permissions
@@ -37,12 +41,28 @@ class PermissionService extends BaseService
                 ->pluck('capability')
                 ->toArray();
             
-            $allPermissions = array_merge($allPermissions, $staffPerms);
+            foreach ($staffPerms as $perm) {
+                $perm = trim($perm);
+                if (!$perm) continue;
+                if (str_starts_with($perm, '!')) {
+                    $denied[] = substr($perm, 1);
+                } else {
+                    $granted[] = $perm;
+                }
+            }
 
-            return array_unique(array_map('trim', $allPermissions));
+            return [
+                'granted' => array_unique($granted),
+                'denied' => array_unique($denied),
+            ];
         });
 
-        return in_array($permission, $permissions);
+        // Deny takes precedence over grant
+        if (in_array($permission, $cached['denied'])) {
+            return false;
+        }
+
+        return in_array($permission, $cached['granted']);
     }
 
     /**
@@ -51,5 +71,20 @@ class PermissionService extends BaseService
     public function hasRole(Staff $staff, int $roleId): bool
     {
         return $staff->role == $roleId;
+    }
+
+    /**
+     * Clear the permission cache for a specific staff member or all staff.
+     */
+    public function clearCache(?int $staffId = null): void
+    {
+        if ($staffId) {
+            Cache::forget("staff_perms_{$staffId}");
+        } else {
+            $staffIds = \DB::table('tblstaff')->pluck('staffid');
+            foreach ($staffIds as $id) {
+                Cache::forget("staff_perms_{$id}");
+            }
+        }
     }
 }

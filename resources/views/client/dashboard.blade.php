@@ -117,7 +117,7 @@
                         </div>
                     </div>
                     <div class="text-right">
-                        <p class="text-sm font-black text-slate-800">{{ $invoice->currencyRel->symbol ?? '$' }}{{ number_format($invoice->total, 2) }}</p>
+                        <p class="text-sm font-black text-slate-800">{{ app_format_money($invoice->total, $invoice->currency) }}</p>
                         <a href="{{ route('client.invoices.show', $invoice->id) }}" class="text-[10px] font-bold text-blue-600 hover:underline uppercase">View Details</a>
                     </div>
                 </div>

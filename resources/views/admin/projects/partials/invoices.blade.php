@@ -20,7 +20,7 @@
         </div>
         <div class="flex items-center gap-3">
             <div class="text-right">
-                <span class="text-sm font-bold text-slate-700">${{ number_format($invoice->total, 2) }}</span>
+                <span class="text-sm font-bold text-slate-700">{{ app_format_money($invoice->total, $invoice->currency) }}</span>
                 <span class="text-[10px] block px-2 py-0.5 rounded-full mt-1
                     @if($invoice->status == 'paid') bg-emerald-100 text-emerald-700
                     @elseif($invoice->status == 'sent') bg-blue-100 text-blue-700

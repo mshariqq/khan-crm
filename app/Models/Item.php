@@ -10,6 +10,10 @@ class Item extends Model
     public $timestamps = true;
     protected $fillable = ['id', 'description', 'long_description', 'rate', 'tax', 'tax2', 'unit', 'group_id'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
     public function group()
     {
         return $this->belongsTo(ItemsGroup::class, 'group_id', 'id');

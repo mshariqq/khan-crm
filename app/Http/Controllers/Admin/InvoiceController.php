@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreInvoiceRequest;
+use App\Http\Requests\UpdateInvoiceRequest;
 use App\Models\Invoice;
 use App\Models\Client;
 use App\Models\Currency;
@@ -13,26 +15,33 @@ use App\Models\Item;
 use App\Models\Tax;
 use App\Models\PaymentMode;
 use App\Models\Note;
-use App\Models\Itemable;
 use App\Models\Reminder;
 use App\Models\SalesActivity;
 use App\Models\InvoicePaymentRecord;
+use App\Models\Credit;
+use App\Models\CreditNote;
 use App\Services\EmailService;
+use App\Services\InvoiceService;
 use App\Services\InvoiceNotificationService;
+use App\Services\AuditService;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class InvoiceController extends Controller
 {
     protected $emailService;
+    protected $invoiceService;
     protected $invoiceNotification;
+    protected $auditService;
 
-    public function __construct(EmailService $emailService, InvoiceNotificationService $invoiceNotification)
+    public function __construct(EmailService $emailService, InvoiceService $invoiceService, InvoiceNotificationService $invoiceNotification, AuditService $auditService)
     {
         $this->emailService = $emailService;
+        $this->invoiceService = $invoiceService;
         $this->invoiceNotification = $invoiceNotification;
+        $this->auditService = $auditService;
     }
 
     public function index(Request $request)
@@ -41,7 +50,7 @@ class InvoiceController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $query = Invoice::query()->with(['client', 'currencyRel', 'creator']);
+        $query = Invoice::query()->with(['client', 'currency', 'creator']);
 
         if ($request->filled('client')) {
             $query->where('clientid', $request->client);
@@ -56,9 +65,9 @@ class InvoiceController extends Controller
         }
 
         $total = Invoice::count();
-        $paid = Invoice::where('status', 3)->count();
-        $unpaid = Invoice::where('status', 1)->count();
-        $overdue = Invoice::where('status', 1)->where('duedate', '<', now())->count();
+        $paid = Invoice::where('status', Invoice::STATUS_PAID)->count();
+        $unpaid = Invoice::where('status', Invoice::STATUS_UNPAID)->count();
+        $overdue = Invoice::where('status', Invoice::STATUS_UNPAID)->where('duedate', '<', now())->count();
 
         $invoices = $query->orderBy('id', 'desc')->paginate(15)->withQueryString();
         $clients = Client::all();
@@ -96,127 +105,38 @@ class InvoiceController extends Controller
         return view('admin.invoices.create', compact('clients', 'currencies', 'staff', 'projects', 'subscriptions', 'items', 'taxes', 'paymentModes', 'next_invoice_number', 'default_due_date', 'default_terms', 'default_client_note'));
     }
 
-    public function store(Request $request)
+    public function store(StoreInvoiceRequest $request)
     {
-        if (!Auth::user()->can('invoices_create')) {
-            abort(403, 'Unauthorized action.');
-        }
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'number' => 'required|string|max:255',
-            'clientid' => 'required|integer',
-            'currency' => 'required|integer',
-            'date' => 'required|date',
-            'duedate' => 'nullable|date',
-            'subtotal' => 'nullable|numeric',
-            'total_tax' => 'nullable|numeric',
-            'total' => 'required|numeric',
-            'adjustment' => 'nullable|numeric',
-            'discount_percent' => 'nullable|numeric',
-            'discount_total' => 'nullable|numeric',
-            'discount_type' => 'nullable|string|max:50',
-            'status' => 'required|integer',
-            'prefix' => 'nullable|string|max:50',
-            'number_format' => 'nullable|integer',
-            'project_id' => 'nullable|integer',
-            'subscription_id' => 'nullable|integer',
-            'sale_agent' => 'nullable|integer',
-            'billing_street' => 'nullable|string',
-            'billing_city' => 'nullable|string|max:255',
-            'billing_state' => 'nullable|string|max:255',
-            'billing_zip' => 'nullable|string|max:50',
-            'billing_country' => 'nullable|integer',
-            'shipping_street' => 'nullable|string',
-            'shipping_city' => 'nullable|string|max:255',
-            'shipping_state' => 'nullable|string|max:255',
-            'shipping_zip' => 'nullable|string|max:50',
-            'shipping_country' => 'nullable|integer',
-            'include_shipping' => 'nullable|boolean',
-            'show_shipping_on_invoice' => 'nullable|boolean',
-            'show_quantity_as' => 'nullable|string|max:50',
-            'clientnote' => 'nullable|string',
-            'adminnote' => 'nullable|string',
-            'terms' => 'nullable|string',
-            'recurring' => 'nullable|integer',
-            'recurring_type' => 'nullable|string|max:50',
-            'cycles' => 'nullable|integer',
-            'cancel_overdue_reminders' => 'nullable|boolean',
-            'allowed_payment_modes' => 'nullable|string',
-        ]);
+        try {
+            DB::beginTransaction();
 
-        $validated['subtotal'] = $validated['subtotal'] ?? 0;
-        $validated['total_tax'] = $validated['total_tax'] ?? 0;
-        $validated['adjustment'] = $validated['adjustment'] ?? 0;
-        $validated['discount_percent'] = $validated['discount_percent'] ?? 0;
-        $validated['discount_total'] = $validated['discount_total'] ?? 0;
-        $validated['include_shipping'] = $validated['include_shipping'] ?? 0;
-        $validated['show_shipping_on_invoice'] = $validated['show_shipping_on_invoice'] ?? 0;
-        $validated['recurring'] = $validated['recurring'] ?? 0;
-        $validated['cancel_overdue_reminders'] = $validated['cancel_overdue_reminders'] ?? 0;
-        
-        $invoiceData = $validated;
-        $invoiceData['number'] = (int)preg_replace('/[^0-9]/', '', $validated['number']);
-        $invoiceData['datecreated'] = now();
-        $invoiceData['addedfrom'] = Auth::id();
-        $invoiceData['hash'] = Str::random(32);
-        $invoiceData['sent'] = 0;
-        
-        $invoiceData['discount_type'] = $request->discount_type ?? 'percent';
-        $invoiceData['show_quantity_as'] = $request->show_quantity_as ?? 1;
-        $invoiceData['sale_agent'] = $request->sale_agent ?? 0;
-        $invoiceData['project_id'] = $request->project_id ?? 0;
-        $invoiceData['subscription_id'] = $request->subscription_id ?? 0;
-        $invoiceData['billing_country'] = $request->billing_country ?? 0;
-        $invoiceData['shipping_country'] = $request->shipping_country ?? 0;
-        $invoiceData['prefix'] = $request->prefix ?? '';
-        $invoiceData['number_format'] = $request->number_format ?? 0;
-        
-        if (!empty($request->duedate)) $invoiceData['duedate'] = $request->duedate;
-        
-        $invoice = Invoice::create($invoiceData);
+            $invoiceData = $this->invoiceService->prepareInvoiceData($validated, $request);
+            $invoiceData['number'] = $this->invoiceService->generateNextNumber();
 
-        $this->logActivity($invoice->id, 'Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b> created');
+            $invoice = Invoice::create($invoiceData);
 
-        if ($request->has('item_description')) {
-            $descriptions = $request->item_description;
-            $qtys = $request->item_qty ?? [];
-            $rates = $request->item_rate ?? [];
-            $amounts = $request->item_amount ?? [];
-            $taxIds = $request->item_tax_id ?? [];
+            $this->invoiceService->logActivity($invoice, 'Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b> created');
 
-            foreach ($descriptions as $index => $description) {
-                if (!empty($description)) {
-                    $taxRate = 0;
-                    if (!empty($taxIds[$index])) {
-                        $tax = Tax::find($taxIds[$index]);
-                        if ($tax) {
-                            $taxRate = $tax->taxrate;
-                        }
-                    }
+            $totals = $this->invoiceService->saveItems($invoice, $request);
+            $this->invoiceService->recalculateTotals($invoice, $totals['subtotal'], $totals['total_tax'], (float) ($validated['adjustment'] ?? 0), (float) ($validated['discount_total'] ?? 0));
 
-                    Itemable::create([
-                        'rel_id' => $invoice->id,
-                        'rel_type' => 'invoice',
-                        'description' => $description,
-                        'qty' => $qtys[$index] ?? 1,
-                        'rate' => $rates[$index] ?? 0,
-                        'amount' => $amounts[$index] ?? 0,
-                        'tax_rate' => $taxRate,
-                        'item_order' => $index,
-                    ]);
-                }
+            if ($invoice->total >= ($request->high_value_threshold ?? 100000)) {
+                $this->invoiceNotification->send('high-value-invoice-created', $invoice->id);
             }
-        }
 
-        if ($invoice->total >= ($request->high_value_threshold ?? 100000)) {
-            $this->invoiceNotification->send('high-value-invoice-created', $invoice->id);
-        }
+            DB::commit();
 
-        if ($request->filled('referer')) {
-            return redirect($request->referer)->with('success', 'Invoice created successfully!');
-        }
+            if ($request->filled('referer')) {
+                return redirect($request->referer)->with('success', 'Invoice created successfully!');
+            }
 
-        return redirect()->route('admin.invoices.index')->with('success', 'Invoice created successfully!');
+            return redirect()->route('admin.invoices.index')->with('success', 'Invoice created successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Failed to create invoice: ' . $e->getMessage()])->withInput();
+        }
     }
 
     public function show($id)
@@ -243,7 +163,7 @@ class InvoiceController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $invoice = Invoice::findOrFail($id);
+        $invoice = Invoice::with('items')->findOrFail($id);
         $clients = Client::all();
         $currencies = Currency::all();
         $staff = Staff::all();
@@ -256,59 +176,58 @@ class InvoiceController extends Controller
         return view('admin.invoices.edit', compact('invoice', 'clients', 'currencies', 'staff', 'projects', 'subscriptions', 'items', 'taxes', 'paymentModes'));
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateInvoiceRequest $request, $id)
     {
-        if (!Auth::user()->can('invoices_edit')) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $validated = $request->validate([
-            'number' => 'required|string|max:255',
-            'clientid' => 'required|integer',
-            'currency' => 'required|integer',
-            'date' => 'required|date',
-            'duedate' => 'nullable|date',
-            'subtotal' => 'nullable|numeric',
-            'total_tax' => 'nullable|numeric',
-            'total' => 'required|numeric',
-            'adjustment' => 'nullable|numeric',
-            'discount_percent' => 'nullable|numeric',
-            'discount_total' => 'nullable|numeric',
-            'discount_type' => 'nullable|string|max:50',
-            'status' => 'required|integer',
-            'prefix' => 'nullable|string|max:50',
-            'number_format' => 'nullable|integer',
-            'project_id' => 'nullable|integer',
-            'subscription_id' => 'nullable|integer',
-            'sale_agent' => 'nullable|integer',
-            'billing_street' => 'nullable|string',
-            'billing_city' => 'nullable|string|max:255',
-            'billing_state' => 'nullable|string|max:255',
-            'billing_zip' => 'nullable|string|max:50',
-            'billing_country' => 'nullable|integer',
-            'shipping_street' => 'nullable|string',
-            'shipping_city' => 'nullable|string|max:255',
-            'shipping_state' => 'nullable|string|max:255',
-            'shipping_zip' => 'nullable|string|max:50',
-            'shipping_country' => 'nullable|integer',
-            'include_shipping' => 'nullable|boolean',
-            'show_shipping_on_invoice' => 'nullable|boolean',
-            'show_quantity_as' => 'nullable|string|max:50',
-            'clientnote' => 'nullable|string',
-            'adminnote' => 'nullable|string',
-            'terms' => 'nullable|string',
-            'recurring' => 'nullable|integer',
-            'recurring_type' => 'nullable|string|max:50',
-            'cycles' => 'nullable|integer',
-            'cancel_overdue_reminders' => 'nullable|boolean',
-            'allowed_payment_modes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $invoice = Invoice::findOrFail($id);
+
+        if (in_array($invoice->status, [Invoice::STATUS_PAID, Invoice::STATUS_CANCELLED])) {
+            return back()->withErrors(['error' => 'Cannot modify a paid or cancelled invoice.']);
+        }
+
+        $oldItems = $invoice->items()->get()->toArray();
+        $oldData = $invoice->toArray();
+
         $validated['number'] = (int)preg_replace('/[^0-9]/', '', $validated['number']);
+        $validated['include_shipping'] = $validated['include_shipping'] ?? 0;
+        $validated['show_shipping_on_invoice'] = $validated['show_shipping_on_invoice'] ?? 0;
+        $validated['cancel_overdue_reminders'] = $validated['cancel_overdue_reminders'] ?? 0;
+        $validated['discount_percent'] = $validated['discount_percent'] ?? 0;
+        $validated['discount_total'] = $validated['discount_total'] ?? 0;
+        $validated['adjustment'] = $validated['adjustment'] ?? 0;
+        $validated['subtotal'] = $validated['subtotal'] ?? 0;
+        $validated['total_tax'] = $validated['total_tax'] ?? 0;
+        $validated['sale_agent'] = $validated['sale_agent'] ?? 0;
+        $validated['project_id'] = $validated['project_id'] ?? 0;
+        $validated['subscription_id'] = $validated['subscription_id'] ?? 0;
+        $validated['billing_country'] = $validated['billing_country'] ?? 0;
+        $validated['shipping_country'] = $validated['shipping_country'] ?? 0;
+        $showQtyMap = ['qty' => 1, 'hours' => 2, 'items' => 3];
+        $validated['show_quantity_as'] = $showQtyMap[$validated['show_quantity_as']] ?? (int)($validated['show_quantity_as'] ?? 1);
+        $validated['discount_type'] = $validated['discount_type'] ?? 'percent';
         $invoice->update($validated);
 
-        $this->logActivity($invoice->id, 'Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b> updated');
+        $newItems = [];
+        $totals = $this->invoiceService->syncItemsFromRequest($invoice, $request, $newItems);
+        $this->invoiceService->recalculateTotals($invoice, $totals['subtotal'], $totals['total_tax'], (float) ($validated['adjustment'] ?? 0), (float) ($validated['discount_total'] ?? 0));
+
+        $newData = $invoice->fresh()->toArray();
+        $newData['items'] = $newItems;
+        $oldData['items'] = $oldItems;
+
+        $this->auditService->log(
+            'invoice_updated',
+            "Invoice #{$invoice->number} updated",
+            'Invoice',
+            $invoice->id,
+            $oldData,
+            $newData,
+            null,
+            $request
+        );
+
+        $this->invoiceService->logActivity($invoice, 'Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b> updated');
 
         return redirect()->route('admin.invoices.index')->with('success', 'Invoice updated successfully!');
     }
@@ -366,44 +285,189 @@ class InvoiceController extends Controller
         ]);
 
         $invoice = Invoice::findOrFail($id);
-        
+
+        // State machine: cannot record payment on cancelled or fully paid invoices
+        if ($invoice->status === Invoice::STATUS_CANCELLED) {
+            return back()->withErrors(['error' => 'Cannot record payment on a cancelled invoice.']);
+        }
+
+        $remaining = $invoice->total - $invoice->totalSettled();
+        if ($request->amount > $remaining) {
+            return back()->withErrors(['amount' => 'Payment amount (' . $request->amount . ') exceeds the remaining balance (' . $remaining . ').']);
+        }
+
         $paymentMode = PaymentMode::find($request->paymentmode);
-        
-        InvoicePaymentRecord::create([
-            'invoiceid' => $invoice->id,
+
+        try {
+            DB::beginTransaction();
+
+            InvoicePaymentRecord::create([
+                'invoiceid' => $invoice->id,
+                'amount' => $request->amount,
+                'paymentmode' => $request->paymentmode,
+                'date' => $request->date,
+                'note' => $request->note,
+                'addedfrom' => Auth::id(),
+                'daterecorded' => now(),
+            ]);
+
+            $totalPaid = $invoice->payments()->sum('amount');
+            $wasJustPaid = false;
+            if ($totalPaid >= $invoice->total) {
+                $invoice->update(['status' => Invoice::STATUS_PAID]);
+                $wasJustPaid = true;
+            } elseif ($totalPaid > 0) {
+                $invoice->update(['status' => Invoice::STATUS_PARTIALLY_PAID]);
+            }
+
+            $paymentOptions = [
+                'payment_total' => app_format_money($request->amount, $invoice->currency),
+                'payment_date' => \Carbon\Carbon::parse($request->date)->format('d M, Y'),
+                'payment_method' => $paymentMode->name ?? '',
+            ];
+
+            $this->invoiceNotification->send('invoice-payment-recorded', $invoice->id, $paymentOptions);
+            $this->invoiceNotification->send('invoice-payment-received-staff', $invoice->id, $paymentOptions);
+
+            if ($wasJustPaid) {
+                $this->invoiceNotification->send('invoice-paid', $invoice->id, $paymentOptions);
+            }
+
+            $this->logActivity($invoice->id, 'Payment of <b>' . app_format_money($request->amount, $invoice->currency) . '</b> recorded for Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b>');
+
+            DB::commit();
+
+            return redirect()->route('admin.invoices.show', $invoice->id)->with('success', 'Payment recorded!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Failed to record payment: ' . $e->getMessage()]);
+        }
+    }
+
+    public function editPayment($invoiceId, $paymentId)
+    {
+        if (!Auth::user()->can('invoices_create')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $invoice = Invoice::findOrFail($invoiceId);
+        $payment = InvoicePaymentRecord::findOrFail($paymentId);
+        $paymentModes = PaymentMode::where('active', 1)->get();
+
+        return view('admin.invoices.payment_edit', compact('invoice', 'payment', 'paymentModes'));
+    }
+
+    public function updatePayment(Request $request, $invoiceId, $paymentId)
+    {
+        if (!Auth::user()->can('invoices_create')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'amount' => 'required|numeric|min:0',
+            'paymentmode' => 'required|integer',
+            'date' => 'required|date',
+            'note' => 'nullable|string',
+            'transactionid' => 'nullable|string',
+        ]);
+
+        $payment = InvoicePaymentRecord::findOrFail($paymentId);
+        $payment->update([
             'amount' => $request->amount,
             'paymentmode' => $request->paymentmode,
             'date' => $request->date,
             'note' => $request->note,
-            'addedfrom' => Auth::id(),
-            'daterecorded' => now(),
+            'transactionid' => $request->transactionid,
         ]);
 
+        $invoice = Invoice::findOrFail($invoiceId);
         $totalPaid = $invoice->payments()->sum('amount');
-        $wasJustPaid = false;
         if ($totalPaid >= $invoice->total) {
-            $invoice->update(['status' => 3]);
-            $wasJustPaid = true;
+            $invoice->update(['status' => Invoice::STATUS_PAID]);
         } elseif ($totalPaid > 0) {
-            $invoice->update(['status' => 2]);
+            $invoice->update(['status' => Invoice::STATUS_PARTIALLY_PAID]);
+        } else {
+            $invoice->update(['status' => Invoice::STATUS_UNPAID]);
         }
 
-        $paymentOptions = [
-            'payment_total' => ($invoice->currency->symbol ?? '$') . number_format($request->amount, 2),
-            'payment_date' => \Carbon\Carbon::parse($request->date)->format('d M, Y'),
-            'payment_method' => $paymentMode->name ?? '',
-        ];
+        $this->logActivity($invoice->id, 'Payment of <b>' . app_format_money($request->amount, $invoice->currency) . '</b> updated for Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b>');
 
-        $this->invoiceNotification->send('invoice-payment-recorded', $invoice->id, $paymentOptions);
-        $this->invoiceNotification->send('invoice-payment-received-staff', $invoice->id, $paymentOptions);
+        return redirect()->route('admin.invoices.show', $invoice->id)->with('success', 'Payment updated!');
+    }
 
-        if ($wasJustPaid) {
-            $this->invoiceNotification->send('invoice-paid', $invoice->id, $paymentOptions);
+    public function destroyPayment($invoiceId, $paymentId)
+    {
+        if (!Auth::user()->can('invoices_create')) {
+            abort(403, 'Unauthorized action.');
         }
 
-        $this->logActivity($invoice->id, 'Payment of <b>' . ($invoice->currency->symbol ?? '$') . number_format($request->amount, 2) . '</b> recorded for Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b>');
+        $payment = InvoicePaymentRecord::findOrFail($paymentId);
+        $payment->delete();
 
-        return redirect()->route('admin.invoices.show', $invoice->id)->with('success', 'Payment recorded!');
+        $invoice = Invoice::findOrFail($invoiceId);
+        $totalPaid = $invoice->payments()->sum('amount');
+        if ($totalPaid >= $invoice->total) {
+            $invoice->update(['status' => Invoice::STATUS_PAID]);
+        } elseif ($totalPaid > 0) {
+            $invoice->update(['status' => Invoice::STATUS_PARTIALLY_PAID]);
+        } else {
+            $invoice->update(['status' => Invoice::STATUS_UNPAID]);
+        }
+
+        $this->logActivity($invoice->id, 'Payment deleted for Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b>');
+
+        return redirect()->route('admin.invoices.show', $invoice->id)->with('success', 'Payment deleted!');
+    }
+
+    public function storeCredit(Request $request, $id)
+    {
+        if (!Auth::user()->can('invoices_create')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'credit_id' => 'required|integer|exists:tblcreditnotes,id',
+            'amount' => 'required|numeric|min:0',
+        ]);
+
+        $invoice = Invoice::with('currency')->findOrFail($id);
+        $creditNote = CreditNote::with('currency')->findOrFail($request->credit_id);
+
+        if ($request->amount > $creditNote->remainingCredit()) {
+            return redirect()->back()->with('error', 'Amount exceeds remaining credit on this credit note.');
+        }
+
+        if ($creditNote->currency && $invoice->currency && $creditNote->currency->id !== $invoice->currency->id) {
+            return redirect()->back()->with('error', 'Currency mismatch: The credit note is in ' . ($creditNote->currency->name ?? 'N/A') . ' but the invoice is in ' . ($invoice->currency->name ?? 'N/A') . '. Credits can only be applied within the same currency.');
+        }
+
+        Credit::create([
+            'invoice_id' => $invoice->id,
+            'credit_id' => $creditNote->id,
+            'staff_id' => Auth::id(),
+            'date' => now(),
+            'date_applied' => now(),
+            'amount' => $request->amount,
+        ]);
+
+        $this->logActivity($invoice->id, 'Credit of <b>' . app_format_money($request->amount, $invoice->currency) . '</b> applied to Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b>');
+
+        return redirect()->route('admin.invoices.show', $invoice->id)->with('success', 'Credit applied!');
+    }
+
+    public function destroyCredit($invoiceId, $creditId)
+    {
+        if (!Auth::user()->can('invoices_create')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $credit = Credit::findOrFail($creditId);
+        $credit->delete();
+
+        $invoice = Invoice::findOrFail($invoiceId);
+        $this->logActivity($invoice->id, 'Credit removed from Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b>');
+
+        return redirect()->route('admin.invoices.show', $invoice->id)->with('success', 'Credit removed!');
     }
 
     public function markAsPaid($id)
@@ -413,7 +477,16 @@ class InvoiceController extends Controller
         }
 
         $invoice = Invoice::findOrFail($id);
-        $invoice->update(['status' => 3]);
+
+        // State machine: cannot mark cancelled invoice as paid
+        if ($invoice->status === Invoice::STATUS_CANCELLED) {
+            return back()->withErrors(['error' => 'Cannot mark a cancelled invoice as paid.']);
+        }
+        if ($invoice->status === Invoice::STATUS_PAID) {
+            return back()->withErrors(['error' => 'Invoice is already marked as paid.']);
+        }
+
+        $invoice->update(['status' => Invoice::STATUS_PAID]);
 
         $this->invoiceNotification->send('invoice-paid', $invoice->id);
 
@@ -429,7 +502,16 @@ class InvoiceController extends Controller
         }
 
         $invoice = Invoice::findOrFail($id);
-        $invoice->update(['status' => 4]);
+
+        // State machine: cannot cancel a paid invoice
+        if ($invoice->status === Invoice::STATUS_PAID) {
+            return back()->withErrors(['error' => 'Cannot cancel a paid invoice.']);
+        }
+        if ($invoice->status === Invoice::STATUS_CANCELLED) {
+            return back()->withErrors(['error' => 'Invoice is already cancelled.']);
+        }
+
+        $invoice->update(['status' => Invoice::STATUS_CANCELLED]);
 
         $this->invoiceNotification->send('invoice-cancelled', $invoice->id);
 
@@ -471,6 +553,9 @@ class InvoiceController extends Controller
 
     public function print($id)
     {
+        if (!Auth::user()->can('invoices_view')) {
+            abort(403, 'Unauthorized action.');
+        }
         $invoice = Invoice::with(['client', 'currency', 'items'])->findOrFail($id);
         return view('admin.invoices.pdf', compact('invoice'));
     }
@@ -520,24 +605,6 @@ class InvoiceController extends Controller
         $this->logActivity($id, 'Reminder set for Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b>');
 
         return redirect()->back()->with('success', 'Reminder added successfully!');
-    }
-
-    public function deleteReminder($id)
-    {
-        if (!Auth::user()->can('invoices_edit')) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $reminder = Reminder::findOrFail($id);
-        $invoiceId = $reminder->rel_id;
-        $reminder->delete();
-
-        $invoice = Invoice::find($invoiceId);
-        if ($invoice) {
-            $this->logActivity($invoiceId, 'Reminder removed from Invoice <b>#' . ($invoice->prefix ?? '') . $invoice->number . '</b>');
-        }
-
-        return redirect()->back()->with('success', 'Reminder deleted!');
     }
 
     private function logActivity($invoiceId, $description)

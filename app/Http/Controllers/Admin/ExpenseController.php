@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Models\Project;
 use App\Models\Invoice;
 use App\Models\PaymentMode;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -78,7 +79,7 @@ class ExpenseController extends Controller
             'send_invoice_to_customer' => 'nullable|boolean',
         ]);
 
-        Expense::create([
+        $expense = Expense::create([
             'expense_name' => $request->expense_name,
             'amount' => $request->amount,
             'date' => $request->date,
@@ -105,6 +106,7 @@ class ExpenseController extends Controller
             'dateadded' => now(),
             'addedfrom' => Auth::id(),
         ]);
+        app(AuditService::class)->log('expense_created', 'Expense created: ' . $expense->expense_name, 'Expense', $expense->id, null, $expense->toArray());
 
         if ($request->filled('referer')) {
             return redirect($request->referer)->with('success', 'Expense created successfully!');
@@ -159,8 +161,9 @@ class ExpenseController extends Controller
         ]);
 
         $expense = Expense::findOrFail($id);
+        $old = $expense->toArray();
         
-        $data = $request->all();
+        $data = $request->only(['expense_name', 'amount', 'date', 'clientid', 'project_id', 'currency', 'category', 'paymentmode', 'invoiceid', 'tax', 'tax2', 'reference_no', 'note', 'recurring_type', 'repeat_every', 'cycles', 'total_cycles', 'recurring_from']);
         $data['billable'] = $request->boolean('billable', false);
         $data['recurring'] = $request->boolean('recurring', false);
         $data['custom_recurring'] = $request->boolean('custom_recurring', false);
@@ -168,6 +171,7 @@ class ExpenseController extends Controller
         $data['send_invoice_to_customer'] = $request->boolean('send_invoice_to_customer', false);
 
         $expense->update($data);
+        app(AuditService::class)->log('expense_updated', 'Expense updated: ' . $expense->expense_name, 'Expense', $expense->id, $old, $expense->fresh()->toArray());
 
         return redirect()->route('admin.expenses.index')->with('success', 'Expense updated successfully!');
     }
@@ -184,7 +188,9 @@ class ExpenseController extends Controller
     {
         if (!Auth::user()->can('expenses_delete')) abort(403);
 
-        Expense::findOrFail($id)->delete();
+        $expense = Expense::findOrFail($id);
+        app(AuditService::class)->log('expense_deleted', 'Expense deleted: ' . $expense->expense_name, 'Expense', $expense->id, $expense->toArray());
+        $expense->delete();
         return redirect()->route('admin.expenses.index')->with('success', 'Expense deleted successfully!');
     }
 }

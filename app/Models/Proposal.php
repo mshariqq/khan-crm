@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Proposal extends Model
 {
+    const STATUS_OPEN = 1;
+    const STATUS_ACCEPTED = 2;
+    const STATUS_DECLINED = 3;
+
     protected $table = 'tblproposals';
     public $timestamps = true;
     protected $fillable = [
@@ -19,6 +23,22 @@ class Proposal extends Model
         'acceptance_date', 'acceptance_ip', 'signature', 'short_link'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'datecreated' => 'datetime',
+        'open_till' => 'date',
+        'date' => 'datetime',
+        'date_converted' => 'datetime',
+        'acceptance_date' => 'datetime',
+        'show_quantity_as' => 'boolean',
+        'allow_comments' => 'boolean',
+        'is_expiry_notified' => 'boolean'
+    ];
+
+    protected $attributes = [
+        'status' => 1
+    ];
     public function creator()
     {
         return $this->belongsTo(Staff::class, 'addedfrom', 'staffid');

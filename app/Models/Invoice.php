@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Invoice extends Model
 {
+    const STATUS_UNPAID = 1;
+    const STATUS_PARTIALLY_PAID = 2;
+    const STATUS_PAID = 3;
+    const STATUS_CANCELLED = 4;
+
     protected $table = 'tblinvoices';
     public $timestamps = true;
     protected $fillable = [
@@ -22,6 +27,28 @@ class Invoice extends Model
         'show_quantity_as', 'project_id', 'subscription_id', 'short_link'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'datesend' => 'datetime',
+        'datecreated' => 'datetime',
+        'date' => 'datetime',
+        'duedate' => 'datetime',
+        'last_overdue_reminder' => 'datetime',
+        'last_due_reminder' => 'datetime',
+        'last_recurring_date' => 'datetime',
+        'sent' => 'boolean',
+        'cancel_overdue_reminders' => 'boolean',
+        'recurring' => 'boolean',
+        'custom_recurring' => 'boolean',
+        'include_shipping' => 'boolean',
+        'show_shipping_on_invoice' => 'boolean',
+        'show_quantity_as' => 'boolean'
+    ];
+
+    protected $attributes = [
+        'status' => 1
+    ];
     public function client()
     {
         return $this->belongsTo(Client::class, 'clientid', 'userid');
@@ -89,6 +116,9 @@ class Invoice extends Model
 
     public function amountDue()
     {
+        if ($this->status === self::STATUS_CANCELLED) {
+            return 0;
+        }
         return $this->total - $this->totalSettled();
     }
 

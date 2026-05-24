@@ -10,6 +10,10 @@ class StaffPermission extends Model
     public $timestamps = true;
     protected $fillable = ['staff_id', 'feature', 'capability'];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
     public function staff()
     {
         return $this->belongsTo(Staff::class, 'staff_id', 'staffid');

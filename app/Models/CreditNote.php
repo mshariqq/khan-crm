@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class CreditNote extends Model
 {
+    const STATUS_OPEN = 1;
+
     protected $table = 'tblcreditnotes';
     public $timestamps = true;
     protected $fillable = [
@@ -18,6 +20,19 @@ class CreditNote extends Model
         'include_shipping', 'show_shipping_on_credit_note', 'show_quantity_as', 'reference_no'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'datecreated' => 'datetime',
+        'date' => 'datetime',
+        'include_shipping' => 'boolean',
+        'show_shipping_on_credit_note' => 'boolean',
+        'show_quantity_as' => 'boolean'
+    ];
+
+    protected $attributes = [
+        'status' => 1
+    ];
     public function client()
     {
         return $this->belongsTo(Client::class, 'clientid', 'userid');

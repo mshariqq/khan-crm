@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tax;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -39,7 +40,8 @@ class TaxController extends Controller
             'taxrate' => 'required|numeric',
         ]);
 
-        Tax::create($request->all());
+        $tax = Tax::create($request->only(['name', 'taxrate']));
+        app(AuditService::class)->log('tax_created', 'Tax created: ' . $tax->name, 'Tax', $tax->id, null, $tax->toArray());
 
         return redirect()->route('admin.taxes.index')->with('success', 'Tax created successfully!');
     }
@@ -66,7 +68,9 @@ class TaxController extends Controller
         ]);
 
         $tax = Tax::findOrFail($id);
-        $tax->update($request->all());
+        $old = $tax->toArray();
+        $tax->update($request->only(['name', 'taxrate']));
+        app(AuditService::class)->log('tax_updated', 'Tax updated: ' . $tax->name, 'Tax', $tax->id, $old, $tax->fresh()->toArray());
 
         return redirect()->route('admin.taxes.index')->with('success', 'Tax updated successfully!');
     }
@@ -78,6 +82,7 @@ class TaxController extends Controller
         }
 
         $tax = Tax::findOrFail($id);
+        app(AuditService::class)->log('tax_deleted', 'Tax deleted: ' . $tax->name, 'Tax', $tax->id, $tax->toArray());
         $tax->delete();
 
         return redirect()->route('admin.taxes.index')->with('success', 'Tax deleted successfully!');

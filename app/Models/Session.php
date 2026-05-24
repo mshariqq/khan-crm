@@ -12,4 +12,9 @@ class Session extends Model
     protected $keyType = 'string';
     public $timestamps = true;
     protected $fillable = ['id', 'ip_address', 'timestamp', 'data'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 }

@@ -11,6 +11,12 @@ class StaffLeave extends Model
         'staffid', 'leave_type_id', 'start_date', 'end_date', 'reason', 'status', 'approved_by'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'start_date' => 'datetime',
+        'end_date' => 'datetime'
+    ];
     public function staff()
     {
         return $this->belongsTo(Staff::class, 'staffid', 'staffid');

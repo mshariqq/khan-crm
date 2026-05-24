@@ -29,7 +29,7 @@ class ProposalController extends ClientBaseController
     public function show($id)
     {
         $client = $this->getClient();
-        $proposal = $client->proposals()->with(['items', 'currencyRel'])->findOrFail($id);
+        $proposal = $client->proposals()->with(['items', 'currency'])->findOrFail($id);
         
         return view('client.proposals.show', compact('proposal'));
     }
@@ -60,15 +60,15 @@ class ProposalController extends ClientBaseController
 
         foreach ($proposals as $proposal) {
             $statusLabel = 'Unknown';
-            if($proposal->status == 1) $statusLabel = 'Open';
-            elseif($proposal->status == 2) $statusLabel = 'Accepted';
-            elseif($proposal->status == 3) $statusLabel = 'Declined';
+            if($proposal->status == \App\Models\Proposal::STATUS_OPEN) $statusLabel = 'Open';
+            elseif($proposal->status == \App\Models\Proposal::STATUS_ACCEPTED) $statusLabel = 'Accepted';
+            elseif($proposal->status == \App\Models\Proposal::STATUS_DECLINED) $statusLabel = 'Declined';
 
             fputcsv($handle, [
                 $proposal->subject,
                 $proposal->date,
                 $proposal->open_till,
-                ($proposal->currencyRel->symbol ?? '$') . number_format($proposal->total, 2),
+                app_format_money($proposal->total, $proposal->currency),
                 $statusLabel,
                 $proposal->created_at,
             ]);

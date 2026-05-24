@@ -9,4 +9,10 @@ class NewsfeedPostLike extends Model
     protected $table = 'tblnewsfeed_post_likes';
     public $timestamps = true;
     protected $fillable = ['id', 'postid', 'userid', 'dateliked'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'dateliked' => 'datetime'
+    ];
 }

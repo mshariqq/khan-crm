@@ -11,21 +11,20 @@ use Carbon\Carbon;
 
 class AttendanceController extends Controller
 {
+
     public function index(Request $request)
     {
         if (!Auth::user()->can('attendance_view')) abort(403);
 
         $staffId = Auth::id();
-        $isAdmin = Auth::user()->admin;
+        $isAdmin = Auth::user()->can('attendance_view_all');
 
         $query = StaffAttendance::with('staff');
 
-        // Filter by Staff
         $query->when($request->filled('staff_id'), function ($q) use ($request) {
             return $q->where('staffid', $request->staff_id);
         });
 
-        // Filter by Date Range
         $query->when($request->filled('date_from'), function ($q) use ($request) {
             return $q->where('date', '>=', $request->date_from);
         });
@@ -33,12 +32,10 @@ class AttendanceController extends Controller
             return $q->where('date', '<=', $request->date_to);
         });
 
-        // Filter by Status
         $query->when($request->filled('status'), function ($q) use ($request) {
             return $q->where('status', $request->status);
         });
 
-        // Search by Staff Name or IP
         $query->when($request->filled('search'), function ($q) use ($request) {
             $search = $request->search;
             return $q->whereHas('staff', function ($sq) use ($search) {
@@ -48,7 +45,6 @@ class AttendanceController extends Controller
             })->orWhere('ip_address', 'like', "%$search%");
         });
 
-        // Handle Non-Admin view restriction
         if (!$isAdmin && !$request->filled('staff_id')) {
             $query->where('staffid', $staffId);
         }
@@ -61,10 +57,10 @@ class AttendanceController extends Controller
 
     public function clockIn(Request $request)
     {
+        if (!Auth::user()->can('attendance_create')) abort(403);
         $staffId = Auth::id();
         $today = Carbon::today()->toDateString();
 
-        // Validation: Already clocked in today
         $existing = StaffAttendance::where('staffid', $staffId)
             ->where('date', $today)
             ->first();
@@ -77,26 +73,32 @@ class AttendanceController extends Controller
             ], 422);
         }
 
-        $defaultStatus = SettingsHelper::get('attendance_default_status', 'Present');
+        $now = Carbon::now();
+        $gracePeriod = (int) SettingsHelper::get('late_grace_period', 15);
+        $shiftStartTime = SettingsHelper::get('shift_start_time', '09:00');
+        $shiftStart = Carbon::createFromTimeString($shiftStartTime)->addMinutes($gracePeriod);
+
+        $status = $now->greaterThan($shiftStart) ? 'Late' : SettingsHelper::get('attendance_default_status', 'Present');
         $recordIp = SettingsHelper::get('attendance_require_ip', '0') === '1';
 
         $attendance = StaffAttendance::create([
             'staffid' => $staffId,
             'date' => $today,
-            'clock_in' => Carbon::now()->toTimeString(),
-            'status' => $defaultStatus,
+            'clock_in' => $now->toTimeString(),
+            'status' => $status,
             'ip_address' => $recordIp ? $request->ip() : null,
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Clocked in successfully!',
+            'message' => 'Clocked in successfully!' . ($status === 'Late' ? ' (Late arrival detected)' : ''),
             'data' => $attendance
         ]);
     }
 
     public function clockOut(Request $request)
     {
+        if (!Auth::user()->can('attendance_create')) abort(403);
         $staffId = Auth::id();
         $today = Carbon::today()->toDateString();
 
@@ -118,19 +120,34 @@ class AttendanceController extends Controller
             ], 422);
         }
 
+        $now = Carbon::now();
+        $shiftEndTime = SettingsHelper::get('shift_end_time', '18:00');
+        $shiftEnd = Carbon::createFromTimeString($shiftEndTime);
+        $gracePeriod = (int) SettingsHelper::get('late_grace_period', 15);
+        $earlyDeparture = $now->lessThan($shiftEnd->subMinutes($gracePeriod));
+
+        $status = $attendance->status;
+        if ($earlyDeparture && $status !== 'Late') {
+            $status = 'Early Departure';
+        } elseif ($earlyDeparture) {
+            $status = 'Late / Early Departure';
+        }
+
         $attendance->update([
-            'clock_out' => Carbon::now()->toTimeString(),
+            'clock_out' => $now->toTimeString(),
+            'status' => $status,
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Clocked out successfully!',
+            'message' => 'Clocked out successfully!' . ($earlyDeparture ? ' (Early departure detected)' : ''),
             'data' => $attendance
         ]);
     }
 
     public function getStatus()
     {
+        if (!Auth::user()->can('attendance_view')) abort(403);
         $staffId = Auth::id();
         $today = Carbon::today()->toDateString();
 
@@ -139,10 +156,19 @@ class AttendanceController extends Controller
             ->first();
 
         $workedDuration = null;
+        $overtime = null;
+        $expectedSeconds = (float) SettingsHelper::get('default_working_hours', 8) * 3600;
+
         if ($attendance && $attendance->clock_in && $attendance->clock_out) {
             $clockIn = Carbon::parse($attendance->date . ' ' . $attendance->clock_in);
             $clockOut = Carbon::parse($attendance->date . ' ' . $attendance->clock_out);
-            $workedDuration = $clockOut->diff($clockIn)->format('%H:%I:%S');
+            $workedSeconds = $clockOut->diffInSeconds($clockIn);
+            $workedDuration = gmdate('H:i:s', $workedSeconds);
+
+            if ($workedSeconds > $expectedSeconds) {
+                $overtimeSeconds = $workedSeconds - $expectedSeconds;
+                $overtime = gmdate('H:i:s', $overtimeSeconds);
+            }
         }
 
         return response()->json([
@@ -151,6 +177,8 @@ class AttendanceController extends Controller
             'clock_in_time' => $attendance ? $attendance->date . ' ' . $attendance->clock_in : null,
             'clock_out_time' => $attendance ? $attendance->date . ' ' . $attendance->clock_out : null,
             'worked_duration' => $workedDuration,
+            'overtime' => $overtime,
+            'expected_hours' => SettingsHelper::get('default_working_hours', 8),
             'attendance' => $attendance
         ]);
     }

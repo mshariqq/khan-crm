@@ -275,7 +275,7 @@ class ClientController extends Controller
     {
         $client = Client::findOrFail($id);
         $stats = $this->getClientStats($client);
-        $data = $client->invoices()->with('currencyRel')->paginate(10);
+        $data = $client->invoices()->with('currency')->paginate(10);
         return view('admin.clients.invoices', compact('client', 'stats', 'data'));
     }
 
@@ -283,7 +283,7 @@ class ClientController extends Controller
     {
         $client = Client::findOrFail($id);
         $stats = $this->getClientStats($client);
-        $data = $client->estimates()->with('currencyRel')->paginate(10);
+        $data = $client->estimates()->with('currency')->paginate(10);
         return view('admin.clients.estimates', compact('client', 'stats', 'data'));
     }
 
@@ -291,7 +291,7 @@ class ClientController extends Controller
     {
         $client = Client::findOrFail($id);
         $stats = $this->getClientStats($client);
-        $data = $client->expenses()->with(['categoryRel', 'currencyRel'])->paginate(10);
+        $data = $client->expenses()->with(['categoryRel', 'currency'])->paginate(10);
         return view('admin.clients.expenses', compact('client', 'stats', 'data'));
     }
 

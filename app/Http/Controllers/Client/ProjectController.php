@@ -60,9 +60,9 @@ class ProjectController extends ClientBaseController
 
         foreach ($projects as $project) {
             $statusLabel = 'Unknown';
-            if($project->status == 1) $statusLabel = 'In Progress';
-            elseif($project->status == 2) $statusLabel = 'Completed';
-            elseif($project->status == 3) $statusLabel = 'On Hold';
+            if($project->status == \App\Models\Project::STATUS_ACTIVE) $statusLabel = 'In Progress';
+            elseif($project->status == \App\Models\Project::STATUS_COMPLETED) $statusLabel = 'Completed';
+            elseif($project->status == \App\Models\Project::STATUS_ON_HOLD) $statusLabel = 'On Hold';
 
             fputcsv($handle, [
                 $project->name,

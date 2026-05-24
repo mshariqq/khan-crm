@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Project;
+use App\Models\Task;
 use App\Models\EmailTemplate;
 use App\Models\Staff;
 use App\Helpers\SettingsHelper;
@@ -363,10 +364,10 @@ class ProjectNotificationService
         $client = $project->client;
         $contact = $client ? $client->primaryContact : null;
 
-        $statusMap = [1 => 'Active', 2 => 'Completed', 3 => 'On Hold', 4 => 'Cancelled'];
+        $statusMap = [Project::STATUS_ACTIVE => 'Active', Project::STATUS_COMPLETED => 'Completed', Project::STATUS_ON_HOLD => 'On Hold', Project::STATUS_CANCELLED => 'Cancelled'];
         $billingTypes = [1 => 'Fixed Rate', 2 => 'Project Hours', 3 => 'Task Hours'];
 
-        $completedTasks = $project->tasks->where('status', 3)->count();
+        $completedTasks = $project->tasks->where('status', Task::STATUS_COMPLETED)->count();
         $totalTasks = $project->tasks->count();
 
         $staffNames = $project->staff->pluck('firstname')->implode(', ');

@@ -9,4 +9,9 @@ class RelatedItem extends Model
     protected $table = 'tblrelated_items';
     public $timestamps = true;
     protected $fillable = ['id', 'rel_id', 'rel_type', 'item_id'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 }

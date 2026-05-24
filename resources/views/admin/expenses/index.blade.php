@@ -9,7 +9,7 @@
             <h1 class="text-2xl font-bold text-slate-800">Expenses</h1>
             <p class="text-slate-500 text-sm">Manage company expenditures and billable expenses.</p>
         </div>
-        <a href="{{ route('admin.expenses.create') }}" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
+        <a href="{{ route('admin.expenses.create') }}" data-pane="create" data-pane-type="expense" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
             <i class="bi bi-plus-lg"></i> Add Expense
         </a>
     </div>
@@ -119,7 +119,7 @@
                 @foreach($expenses as $expense)
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="px-6 py-4">
-                            <a href="{{ route('admin.expenses.show', $expense->id) }}" class="font-medium text-slate-800 hover:text-blue-600 transition-colors">{{ $expense->expense_name }}</a>
+                            <a href="{{ route('admin.expenses.show', $expense->id) }}" data-pane="show" data-pane-type="expense" data-pane-id="{{ $expense->id }}" class="font-medium text-slate-800 hover:text-blue-600 transition-colors">{{ $expense->expense_name }}</a>
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-600">
                             @if($expense->client)
@@ -136,7 +136,7 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-600 font-medium">
-                            {{ number_format($expense->amount, 2) }}
+                            {{ app_format_money($expense->amount, $expense->currency) }}
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-600">
                             {{ \Carbon\Carbon::parse($expense->date)->format('M j Y') }}
@@ -152,10 +152,10 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 text-right space-x-2">
-                            <a href="{{ route('admin.expenses.show', $expense->id) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View Expense">
+                            <a href="{{ route('admin.expenses.show', $expense->id) }}" data-pane="show" data-pane-type="expense" data-pane-id="{{ $expense->id }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View Expense">
                                 <i class="bi bi-eye text-lg"></i>
                             </a>
-                            <a href="{{ route('admin.expenses.edit', $expense->id) }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Edit Expense">
+                            <a href="{{ route('admin.expenses.edit', $expense->id) }}" data-pane="edit" data-pane-type="expense" data-pane-id="{{ $expense->id }}" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Edit Expense">
                                 <i class="bi bi-pencil-square text-lg"></i>
                             </a>
                             <form action="{{ route('admin.expenses.destroy', $expense->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this expense?');">

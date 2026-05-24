@@ -1,6 +1,6 @@
 <div class="flex items-center justify-between mb-4">
     <h3 class="text-sm font-semibold text-slate-800">Expenses ({{ $expenses->count() }})</h3>
-    <a href="{{ route('admin.expenses.create') }}?project_id={{ $project->id }}" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 flex items-center gap-1">
+    <a href="{{ route('admin.expenses.create') }}?project_id={{ $project->id }}" data-pane="create" data-pane-type="expense" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 flex items-center gap-1">
         <i class="bi bi-plus"></i> Add Expense
     </a>
 </div>
@@ -19,12 +19,12 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
-            <span class="text-sm font-bold text-slate-700">${{ number_format($expense->amount, 2) }}</span>
+            <span class="text-sm font-bold text-slate-700">{{ app_format_money($expense->amount, $expense->currency) }}</span>
             <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <a href="{{ route('admin.expenses.show', $expense->id) }}" class="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-200" title="View">
+                <a href="{{ route('admin.expenses.show', $expense->id) }}" data-pane="show" data-pane-type="expense" data-pane-id="{{ $expense->id }}" class="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-200" title="View">
                     <i class="bi bi-eye text-xs"></i>
                 </a>
-                <a href="{{ route('admin.expenses.edit', $expense->id) }}" class="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-200" title="Edit">
+                <a href="{{ route('admin.expenses.edit', $expense->id) }}" data-pane="edit" data-pane-type="expense" data-pane-id="{{ $expense->id }}" class="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-200" title="Edit">
                     <i class="bi bi-pencil text-xs"></i>
                 </a>
                 <form action="{{ route('admin.expenses.destroy', $expense->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this expense?');">
@@ -40,7 +40,7 @@
 </div>
 <div class="mt-4 p-3 bg-slate-100 rounded-lg flex justify-between">
     <span class="text-sm font-medium text-slate-600">Total Expenses</span>
-    <span class="text-sm font-bold text-slate-800">${{ number_format($expenses->sum('amount'), 2) }}</span>
+    <span class="text-sm font-bold text-slate-800">{{ app_format_money($expenses->sum('amount')) }}</span>
 </div>
 @else
 <div class="text-center py-12">
@@ -48,6 +48,6 @@
         <i class="bi bi-cash-stack text-slate-400 text-xl"></i>
     </div>
     <p class="text-sm text-slate-500">No expenses yet</p>
-    <a href="{{ route('admin.expenses.create') }}?project_id={{ $project->id }}" class="mt-3 inline-block px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">Add Expense</a>
+    <a href="{{ route('admin.expenses.create') }}?project_id={{ $project->id }}" data-pane="create" data-pane-type="expense" class="mt-3 inline-block px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">Add Expense</a>
 </div>
 @endif

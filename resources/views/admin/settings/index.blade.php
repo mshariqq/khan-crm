@@ -400,6 +400,16 @@
                             <p class="text-xs text-slate-400">Status label assigned when staff clocks in.</p>
                         </div>
                         <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-700">Shift Start Time</label>
+                            <input type="time" name="shift_start_time" value="{{ $settings['shift_start_time'] ?? '09:00' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                            <p class="text-xs text-slate-400">Default start time for late arrival detection.</p>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-700">Shift End Time</label>
+                            <input type="time" name="shift_end_time" value="{{ $settings['shift_end_time'] ?? '18:00' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                            <p class="text-xs text-slate-400">Default end time for early departure detection.</p>
+                        </div>
+                        <div class="space-y-2">
                             <label class="text-sm font-medium text-slate-700">Late Clock-In Grace Period (minutes)</label>
                             <input type="number" min="0" name="late_grace_period" value="{{ $settings['late_grace_period'] ?? '15' }}" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
                             <p class="text-xs text-slate-400">Clock-ins within this window after shift start are not marked late.</p>
