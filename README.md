@@ -359,3 +359,5 @@ KhanCRM is open-sourced software licensed under the [AGPLv3 license](LICENSE). S
 <div align="center">
 Made with ❤️ by the CK Softwares
 </div>
+
+Built by [SHA REEQ](https://mshariqq.github.io/) - M Shariq Ahmed (mshariqq), Web Developer in Hyderabad.
